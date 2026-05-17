@@ -1,0 +1,173 @@
+from decimal import Decimal
+
+from django.db import transaction
+from django.utils import timezone
+
+from splex.activity.services import record_activity
+from splex.currency.services import convert
+from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
+from splex.groups.services import ensure_group_member
+from splex.notifications.services import create_notifications_for_activity
+from splex.participants.services import get_or_create_user_participant
+from splex.shared.money import assert_sum, money, split_evenly
+
+
+def context_currency(group=None, friendship=None) -> str:
+    if group:
+        return group.default_currency
+    if friendship:
+        return friendship.default_currency
+    raise ValueError("Expense requires a group or friendship context.")
+
+
+def context_participants(group=None, friendship=None):
+    if group:
+        return list(
+            group.memberships.filter(removed_at__isnull=True).select_related("participant").values_list(
+                "participant_id", flat=True
+            )
+        )
+    return [friendship.participant_a_id, friendship.participant_b_id]
+
+
+def ensure_context_access(actor, group=None, friendship=None):
+    actor_participant = get_or_create_user_participant(actor)
+    if group:
+        ensure_group_member(actor, group)
+        return actor_participant
+    if friendship and actor_participant.id in [
+        friendship.participant_a_id,
+        friendship.participant_b_id,
+    ]:
+        return actor_participant
+    raise PermissionError("You cannot access this expense context.")
+
+
+def normalize_owed_shares(total, method: str, payload: dict, participant_ids):
+    total = money(total)
+    if method == Expense.SplitMethod.EQUAL_ALL:
+        return split_evenly(total, participant_ids)
+    if method == Expense.SplitMethod.EQUAL_SELECTED:
+        selected = payload.get("participant_ids") or payload.get("participantIds") or []
+        return split_evenly(total, selected)
+    if method == Expense.SplitMethod.EXACT:
+        shares = {int(item["participant_id"]): money(item["amount"]) for item in payload["shares"]}
+        assert_sum("Exact owed shares", shares.values(), total)
+        return shares
+    if method == Expense.SplitMethod.PERCENTAGE:
+        shares = {}
+        percent_sum = Decimal("0")
+        for item in payload["shares"]:
+            percent = Decimal(str(item["percentage"]))
+            percent_sum += percent
+            shares[int(item["participant_id"])] = money(total * percent / Decimal("100"))
+        if percent_sum != Decimal("100"):
+            raise ValueError("Percentages must sum to 100.")
+        assert_sum("Percentage owed shares", shares.values(), total)
+        return shares
+    if method == Expense.SplitMethod.ADJUSTED_EQUAL:
+        selected = (
+            payload.get("participant_ids") or payload.get("participantIds") or participant_ids
+        )
+        base = split_evenly(total, selected)
+        adjustments = {
+            int(item["participant_id"]): money(item["amount"])
+            for item in payload.get("adjustments", [])
+        }
+        adjusted = {
+            participant_id: money(amount + adjustments.get(participant_id, 0))
+            for participant_id, amount in base.items()
+        }
+        assert_sum("Adjusted owed shares", adjusted.values(), total)
+        return adjusted
+    raise ValueError(f"Unsupported split method: {method}")
+
+
+@transaction.atomic
+def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense:
+    ensure_context_access(actor, group, friendship)
+    currency = context_currency(group, friendship)
+    converted_amount, rate = convert(data["amount"], data["currency"], currency)
+    method = data.get("split_method") or Expense.SplitMethod.EQUAL_ALL
+    participants = context_participants(group, friendship)
+    payer_shares = {
+        int(item["participant_id"]): money(item["amount"]) for item in data.get("payments", [])
+    }
+    if not payer_shares:
+        payer_shares[get_or_create_user_participant(actor).id] = converted_amount
+    assert_sum("Payment shares", payer_shares.values(), converted_amount)
+    owed_shares = normalize_owed_shares(
+        converted_amount,
+        method,
+        data.get("split_payload") or {},
+        participants,
+    )
+    assert_sum("Owed shares", owed_shares.values(), converted_amount)
+    expense = Expense.objects.create(
+        client_id=data.get("client_id", ""),
+        group=group,
+        friendship=friendship,
+        description=data["description"],
+        date=data.get("date") or timezone.localdate(),
+        original_amount=money(data["amount"]),
+        original_currency=data["currency"].upper(),
+        converted_amount=converted_amount,
+        converted_currency=currency,
+        exchange_rate=rate.rate,
+        exchange_rate_source=rate.source,
+        split_method=method,
+        split_metadata=data.get("split_payload") or {},
+        created_by=actor,
+    )
+    ExpensePaymentShare.objects.bulk_create(
+        [
+            ExpensePaymentShare(
+                expense=expense,
+                participant_id=participant_id,
+                amount=amount,
+                currency=currency,
+            )
+            for participant_id, amount in payer_shares.items()
+        ]
+    )
+    ExpenseOwedShare.objects.bulk_create(
+        [
+            ExpenseOwedShare(
+                expense=expense,
+                participant_id=participant_id,
+                amount=amount,
+                currency=currency,
+            )
+            for participant_id, amount in owed_shares.items()
+        ]
+    )
+    event = record_activity(
+        actor,
+        "expense.created",
+        group=group,
+        friendship=friendship,
+        expense=expense,
+        payload={
+            "description": expense.description,
+            "amount": str(expense.converted_amount),
+            "currency": expense.converted_currency,
+        },
+    )
+    create_notifications_for_activity(event)
+    return expense
+
+@transaction.atomic
+def soft_delete_expense(*, actor, expense: Expense) -> Expense:
+    ensure_context_access(actor, expense.group, expense.friendship)
+    expense.deleted_at = timezone.now()
+    expense.save(update_fields=["deleted_at", "updated_at"])
+    event = record_activity(
+        actor,
+        "expense.deleted",
+        group=expense.group,
+        friendship=expense.friendship,
+        expense=expense,
+        payload={"description": expense.description},
+    )
+    create_notifications_for_activity(event)
+    return expense
