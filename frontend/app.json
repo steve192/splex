@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Splex",
+    "slug": "splex",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "platforms": ["android", "web"],
+    "scheme": "splex",
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": ["expo-notifications"]
+  }
+}
+

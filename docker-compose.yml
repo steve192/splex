@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - splex-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  splex-data:
+

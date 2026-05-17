@@ -1,0 +1,50 @@
+import { useState } from "react";
+import { Button, Card, Text, TextInput } from "react-native-paper";
+
+import { useAuth } from "../../features/auth/AuthContext";
+import { useI18n } from "../../shared/i18n/I18nContext";
+import { Group } from "../../shared/types/models";
+import { Screen } from "../../shared/ui/Screen";
+import { styles } from "../../shared/ui/styles";
+
+export function CreateGroupScreen({ navigation }: any) {
+  const { t } = useI18n();
+  const { api } = useAuth();
+  const [name, setName] = useState("");
+  const [currency, setCurrency] = useState("EUR");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const group = await api.post<Group>("/api/groups/", {
+        name,
+        default_currency: currency.toUpperCase()
+      });
+      navigation.replace("GroupDetail", { id: group.id });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Screen>
+      <Text variant="headlineSmall">{t("group.create")}</Text>
+      <Card mode="elevated">
+        <Card.Content style={styles.gap}>
+          <TextInput mode="outlined" label={t("group.name")} value={name} onChangeText={setName} />
+          <TextInput
+            mode="outlined"
+            label={t("expense.currency")}
+            autoCapitalize="characters"
+            value={currency}
+            onChangeText={setCurrency}
+          />
+          <Button mode="contained" loading={saving} disabled={!name || currency.length !== 3} onPress={save}>
+            {t("common.save")}
+          </Button>
+        </Card.Content>
+      </Card>
+    </Screen>
+  );
+}
