@@ -1,18 +1,31 @@
+import { RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, Divider, List, Portal, Text } from "react-native-paper";
+import { Button, Card, Dialog, Divider, List, Portal, Text, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Expense } from "../../shared/types/models";
 import { MoneyText } from "../../shared/ui/MoneyText";
+import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-export function ExpenseDetailScreen({ route, navigation }: any) {
+type ExpenseDetailNavigation = NativeStackNavigationProp<OverviewStackParamList & ActivityStackParamList>;
+
+type ExpenseDetailScreenProps = {
+  route: RouteProp<OverviewStackParamList, "ExpenseDetail">;
+  navigation: ExpenseDetailNavigation;
+};
+
+export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const theme = useTheme();
+  const dangerColor = negativeColor(theme);
   const expenseId = route.params.id;
   const [expense, setExpense] = useState<Expense | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -37,7 +50,7 @@ export function ExpenseDetailScreen({ route, navigation }: any) {
     navigation.navigate("AddExpense", {
       expenseId: expense.id,
       contextType: expense.group_id ? "group" : "friendship",
-      contextId: expense.group_id ?? expense.friendship_id,
+      contextId: expense.group_id ?? expense.friendship_id ?? undefined,
       resetKey: Date.now(),
       returnToPrevious: true
     });
@@ -106,7 +119,7 @@ export function ExpenseDetailScreen({ route, navigation }: any) {
             {expense.deleted_at ? (
               <Text variant="bodyMedium">{t("expense.deleted")}</Text>
             ) : (
-              <Button mode="elevated" icon="delete-outline" textColor="#B3261E" onPress={() => setConfirmDelete(true)}>
+              <Button mode="elevated" icon="delete-outline" textColor={dangerColor} onPress={() => setConfirmDelete(true)}>
                 {t("expense.delete")}
               </Button>
             )}

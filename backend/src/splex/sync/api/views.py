@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
 from splex.friends.models import Friendship
-from splex.groups.api.views import serialize_expense
+from splex.ledger.serializers import serialize_expense
 from splex.groups.models import Group
 from splex.sync.models import ClientMutation
 

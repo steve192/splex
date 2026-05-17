@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import {
@@ -10,14 +11,17 @@ import {
   Snackbar,
   Switch,
   Text,
-  TextInput
+  TextInput,
+  useTheme
 } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Group, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
+import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -29,10 +33,14 @@ const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }
   { value: "adjusted_equal", key: "split.adjusted_equal" }
 ];
 
-export function GroupSettingsScreen({ route, navigation }: any) {
+type GroupSettingsScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupSettings">;
+
+export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const theme = useTheme();
+  const dangerColor = negativeColor(theme);
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [name, setName] = useState("");
@@ -219,7 +227,7 @@ export function GroupSettingsScreen({ route, navigation }: any) {
                         </Button>
                       </>
                     ) : null}
-                    <Button mode="text" textColor="#B3261E" onPress={() => setRemoveTarget(participant)}>
+                    <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
                       {t("common.delete")}
                     </Button>
                   </View>
@@ -242,7 +250,7 @@ export function GroupSettingsScreen({ route, navigation }: any) {
             <Button
               mode="contained-tonal"
               icon="delete-outline"
-              textColor="#B3261E"
+              textColor={dangerColor}
               onPress={() => setDeleteConfirmVisible(true)}
             >
               {t("group.delete")}
@@ -284,7 +292,7 @@ export function GroupSettingsScreen({ route, navigation }: any) {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDeleteConfirmVisible(false)}>{t("common.cancel")}</Button>
-            <Button textColor="#B3261E" onPress={deleteCurrentGroup}>{t("common.delete")}</Button>
+            <Button textColor={dangerColor} onPress={deleteCurrentGroup}>{t("common.delete")}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

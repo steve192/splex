@@ -1,21 +1,30 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, List, Portal, Text, TextInput } from "react-native-paper";
+import { Button, Card, Dialog, List, Portal, Text, TextInput, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
 import { Friend, Group, Participant, Settlement } from "../../shared/types/models";
+import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 
-export function SettlementDetailScreen({ route, navigation }: any) {
+type SettlementDetailScreenProps =
+  | NativeStackScreenProps<OverviewStackParamList, "SettlementDetail">
+  | NativeStackScreenProps<ActivityStackParamList, "SettlementDetail">;
+
+export function SettlementDetailScreen({ route, navigation }: SettlementDetailScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const theme = useTheme();
+  const dangerColor = negativeColor(theme);
   const settlementId = route.params.id;
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -109,7 +118,7 @@ export function SettlementDetailScreen({ route, navigation }: any) {
                 <Button mode="contained-tonal" icon="pencil-outline" onPress={() => setEditing(true)}>
                   {t("common.edit")}
                 </Button>
-                <Button mode="elevated" icon="delete-outline" textColor="#B3261E" onPress={() => setConfirmDelete(true)}>
+                <Button mode="elevated" icon="delete-outline" textColor={dangerColor} onPress={() => setConfirmDelete(true)}>
                   {t("settlement.delete")}
                 </Button>
               </View>

@@ -7,7 +7,7 @@ from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
 from splex.friends.models import Friendship
 from splex.groups.api.serializers import ExpenseCreateSerializer, SettlementCreateSerializer
-from splex.groups.api.views import serialize_expense, serialize_ledger_item, serialize_settlement
+from splex.ledger.serializers import serialize_expense, serialize_ledger_item, serialize_settlement
 from splex.invitations.services import create_friend_invitation
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement

@@ -6,7 +6,7 @@ from splex.expenses.models import Expense
 from splex.expenses.services import ensure_context_access, soft_delete_expense
 from splex.expenses.services_update import update_expense
 from splex.groups.api.serializers import ExpenseCreateSerializer
-from splex.groups.api.views import serialize_expense
+from splex.ledger.serializers import serialize_expense
 
 
 class ExpenseDetailView(APIView):

@@ -1,14 +1,18 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { Button, Card, Text, TextInput } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Group } from "../../shared/types/models";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-export function CreateGroupScreen({ navigation }: any) {
+type CreateGroupScreenProps = NativeStackScreenProps<OverviewStackParamList, "CreateGroup">;
+
+export function CreateGroupScreen({ navigation }: CreateGroupScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();

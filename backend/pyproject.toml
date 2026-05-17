@@ -17,6 +17,13 @@ dependencies = [
   "requests>=2.31,<3",
   "gunicorn>=22,<24",
   "firebase-admin>=6.5,<7",
+  "google-api-core>=2.30,<3",
+  "google-api-python-client>=2.196,<3",
+  "google-cloud-firestore>=2.27,<3",
+  "google-cloud-storage>=3.10,<4",
+  "grpcio>=1.80,<2",
+  "grpcio-status>=1.80,<2",
+  "protobuf>=6.33,<7",
   "pywebpush>=2,<3",
 ]
 

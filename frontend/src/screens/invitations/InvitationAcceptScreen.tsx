@@ -1,18 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { Button, Card, List, Text, TextInput } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { RootStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../../shared/lib/inviteLinks";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-export function InvitationAcceptScreen({ navigation, route }: any) {
+type InvitationPreview = {
+  valid: boolean;
+  type: string;
+  group?: string;
+  target_participant?: string;
+};
+
+type InvitationAcceptScreenProps = NativeStackScreenProps<RootStackParamList, "InvitationAccept">;
+
+export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [token, setToken] = useState(route?.params?.token ?? inviteTokenFromCurrentUrl());
-  const [preview, setPreview] = useState<any | null>(null);
+  const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [message, setMessage] = useState("");
 
   async function dismissInvitation() {
@@ -28,7 +39,7 @@ export function InvitationAcceptScreen({ navigation, route }: any) {
       tokenPreview: token ? `${token.slice(0, 6)}...` : ""
     });
     try {
-      const response = await api.get(`/api/invitations/${token}/`);
+      const response = await api.get<InvitationPreview>(`/api/invitations/${token}/`);
       inviteDebug("invitation preview request succeeded", response);
       setPreview(response);
       setMessage("");

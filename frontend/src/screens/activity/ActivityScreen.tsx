@@ -1,28 +1,43 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { ActivityStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-function activityDescription(item: any): string {
+type ActivityEvent = {
+  id: number;
+  event_type: string;
+  actor: string;
+  actor_avatar_url?: string;
+  payload?: Record<string, string | number | undefined>;
+  created_at: string;
+  context_type?: "group" | "friend" | "";
+  context_name?: string;
+  expense_id?: number | null;
+  settlement_id?: number | null;
+};
+
+function activityDescription(item: ActivityEvent): string {
   const payload = item.payload ?? {};
   if (payload.description && payload.amount && payload.currency) {
     return `${payload.description} - ${payload.amount} ${payload.currency}`;
   }
-  if (payload.description) return payload.description;
+  if (payload.description) return String(payload.description);
   if (payload.groupName && payload.participantName) return `${payload.participantName} - ${payload.groupName}`;
-  if (payload.groupName) return payload.groupName;
-  if (payload.friendName) return payload.friendName;
+  if (payload.groupName) return String(payload.groupName);
+  if (payload.friendName) return String(payload.friendName);
   if (payload.amount && payload.currency) return `${payload.amount} ${payload.currency}`;
   return "";
 }
 
-function activityContext(item: any, t: (key: string, values?: Record<string, string | number>) => string): string {
+function activityContext(item: ActivityEvent, t: (key: string, values?: Record<string, string | number>) => string): string {
   if (!item.context_name) return "";
   if (item.context_type === "group") {
     return `${t("group.title")}: ${item.context_name}`;
@@ -41,10 +56,12 @@ function activityIcon(eventType: string): string {
   return "history";
 }
 
-export function ActivityScreen({ navigation }: any) {
+type ActivityScreenProps = NativeStackScreenProps<ActivityStackParamList, "ActivityHome">;
+
+export function ActivityScreen({ navigation }: ActivityScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +69,7 @@ export function ActivityScreen({ navigation }: any) {
     if (loading) return;
     setLoading(true);
     try {
-      const response = await api.get<{ results: any[]; next_offset: number | null }>(
+      const response = await api.get<{ results: ActivityEvent[]; next_offset: number | null }>(
         `/api/activity/?offset=${offset}&limit=50`
       );
       setEvents((current) => (offset ? [...current, ...response.results] : response.results));
@@ -66,7 +83,7 @@ export function ActivityScreen({ navigation }: any) {
     load(0).catch(() => undefined);
   }, []);
 
-  function openActivityItem(item: any) {
+  function openActivityItem(item: ActivityEvent) {
     if (item.expense_id) {
       navigation.navigate("ExpenseDetail", { id: item.expense_id });
       return;

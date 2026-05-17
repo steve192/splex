@@ -160,9 +160,6 @@ export const styles = StyleSheet.create({
     maxWidth: 960,
     width: "100%"
   },
-  splitHelperError: {
-    color: "#B3261E"
-  },
   splitRow: {
     alignItems: "center",
     flexDirection: "row",
