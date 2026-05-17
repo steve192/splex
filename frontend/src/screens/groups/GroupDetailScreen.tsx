@@ -1,15 +1,16 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TextInput, TouchableRipple } from "react-native-paper";
+import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
+import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
-import { asNumber, balanceText } from "../../shared/lib/money";
+import { asNumber, formatMoney } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
@@ -17,6 +18,7 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
+import { negativeColor, positiveColor } from "../../shared/ui/colors";
 import { styles } from "../../shared/ui/styles";
 
 type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
@@ -25,6 +27,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const theme = useTheme();
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [balances, setBalances] = useState<GroupBalance[]>([]);
@@ -32,9 +35,13 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
   const [selectedTab, setSelectedTab] = useState("expenses");
   const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
-  const [settleTarget, setSettleTarget] = useState<any | null>(null);
+  const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [snackbar, setSnackbar] = useState("");
+  const balanceSummary = useMemo(
+    () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
+    [balances, group?.current_participant_id, group?.default_currency]
+  );
 
   async function load() {
     const [detail, balanceRows, ledgerRows] = await Promise.all([
@@ -90,6 +97,10 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     );
   }
 
+  function avatarForParticipant(participantId: number) {
+    return balances.find((row) => row.participant_id === participantId)?.avatar_url;
+  }
+
   return (
     <View style={styles.flex}>
       <Screen>
@@ -119,6 +130,53 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
             {t("invite.create")}
           </Button>
         </View>
+
+        <Card mode="elevated" style={styles.card}>
+          <Card.Content style={styles.gap}>
+            {balanceSummary.total !== 0 ? (
+              <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
+                {balanceSummary.total > 0 ? t("balance.summaryGetting") : t("balance.summaryOweTotal")}{" "}
+                <Text
+                  variant="titleLarge"
+                  style={{
+                    color: balanceSummary.total > 0 ? positiveColor(theme) : negativeColor(theme),
+                    fontWeight: "700"
+                  }}
+                >
+                  {formatMoney(balanceSummary.total)} {balanceSummary.currency}
+                </Text>
+              </Text>
+            ) : (
+              <Text variant="titleLarge" style={{ color: theme.colors.onSurfaceVariant, fontWeight: "700" }}>
+                {t("balance.summarySettled")}
+              </Text>
+            )}
+            {balanceSummary.incoming.map((detail) => (
+              <Text
+                key={`incoming-${detail.from_participant_id}-${detail.to_participant_id}`}
+                variant="bodyMedium"
+                style={{ color: theme.colors.onSurface }}
+              >
+                {t("balance.summaryOwesYou").replace("{person}", detail.from_display_name)}{" "}
+                <Text variant="bodyMedium" style={{ color: positiveColor(theme), fontWeight: "700" }}>
+                  {formatMoney(detail.amount)} {detail.currency}
+                </Text>
+              </Text>
+            ))}
+            {balanceSummary.outgoing.map((detail) => (
+              <Text
+                key={`outgoing-${detail.from_participant_id}-${detail.to_participant_id}`}
+                variant="bodyMedium"
+                style={{ color: theme.colors.onSurface }}
+              >
+                {t("balance.summaryYouOwe").replace("{person}", detail.to_display_name)}{" "}
+                <Text variant="bodyMedium" style={{ color: negativeColor(theme), fontWeight: "700" }}>
+                  {formatMoney(detail.amount)} {detail.currency}
+                </Text>
+              </Text>
+            ))}
+          </Card.Content>
+        </Card>
 
         <SegmentedButtons
           value={selectedTab}
@@ -184,10 +242,10 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                           <View style={styles.flex}>
                             <Text variant="titleMedium">
                               {asNumber(row.amount) >= 0
-                                ? t("balance.personOwesYou")
+                                ? t("balance.personIsOwed")
                                     .replace("{person}", row.display_name)
                                     .replace("{amount}", `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`)
-                                : t("balance.youOwePerson")
+                                : t("balance.personOwes")
                                     .replace("{person}", row.display_name)
                                     .replace("{amount}", `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`)}
                             </Text>
@@ -212,11 +270,14 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                                   compact
                                   onPress={() => {
                                     setSettleTarget({
-                                      display_name: `${detail.from_display_name} -> ${detail.to_display_name}`,
                                       amount: detail.amount,
                                       currency: detail.currency,
                                       payer_participant_id: detail.from_participant_id,
-                                      receiver_participant_id: detail.to_participant_id
+                                      payer_display_name: detail.from_display_name,
+                                      payer_avatar_url: avatarForParticipant(detail.from_participant_id),
+                                      receiver_participant_id: detail.to_participant_id,
+                                      receiver_display_name: detail.to_display_name,
+                                      receiver_avatar_url: avatarForParticipant(detail.to_participant_id)
                                     });
                                     setSettleAmount(detail.amount);
                                   }}
@@ -243,27 +304,38 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
       </Screen>
 
       <Portal>
-        <Dialog visible={!!settleTarget} onDismiss={() => setSettleTarget(null)}>
-          <Dialog.Title>{t("settlement.title")}</Dialog.Title>
-          <Dialog.Content>
-            <Text>{settleTarget ? `${settleTarget.display_name} - ${balanceText(t, settleTarget.amount, settleTarget.currency)}` : ""}</Text>
-            <TextInput
-              mode="outlined"
-              label={t("expense.amount")}
-              keyboardType="decimal-pad"
-              value={settleAmount}
-              onChangeText={setSettleAmount}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setSettleTarget(null)}>{t("common.cancel")}</Button>
-            <Button disabled={!settleAmount} onPress={settle}>{t("settlement.save")}</Button>
-          </Dialog.Actions>
-        </Dialog>
+        <SettlementDialog
+          visible={!!settleTarget}
+          target={settleTarget}
+          amount={settleAmount}
+          t={t}
+          onAmountChange={setSettleAmount}
+          onDismiss={() => setSettleTarget(null)}
+          onSave={settle}
+        />
       </Portal>
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={8000}>
         {snackbar}
       </Snackbar>
     </View>
   );
+}
+
+function buildBalanceSummary(
+  balances: GroupBalance[],
+  currentParticipantId: number | undefined,
+  fallbackCurrency: string | undefined
+) {
+  const currentRow = balances.find((row) => row.participant_id === currentParticipantId);
+  const details = currentRow?.details ?? [];
+  const incoming = details.filter((detail) => detail.to_participant_id === currentParticipantId);
+  const outgoing = details.filter((detail) => detail.from_participant_id === currentParticipantId);
+  const incomingTotal = incoming.reduce((sum, detail) => sum + asNumber(detail.amount), 0);
+  const outgoingTotal = outgoing.reduce((sum, detail) => sum + asNumber(detail.amount), 0);
+  return {
+    currency: currentRow?.currency ?? fallbackCurrency ?? "EUR",
+    incoming,
+    outgoing,
+    total: incomingTotal - outgoingTotal
+  };
 }

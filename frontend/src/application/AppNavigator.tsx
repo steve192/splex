@@ -129,7 +129,9 @@ export function AppNavigator() {
         if (cancelled) return;
         if (preview.valid) {
           inviteDebug("navigator invite token is valid", { source });
-          await AsyncStorage.setItem(PENDING_INVITE_STORAGE_KEY, token);
+          if (source === "storage") {
+            await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
+          }
           setPendingInviteToken(token);
           return;
         }
