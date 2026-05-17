@@ -20,6 +20,7 @@ import {
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ApiError } from "../../shared/api/client";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { asNumber, buildParticipantsForFriend, createClientId, formatMoney, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
@@ -58,6 +59,7 @@ function currencyAmount(value: number, currency: string): string {
 export function AddScreen({ route, navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const theme = useTheme();
   const expenseId = route?.params?.expenseId as number | undefined;
   const pendingMutationId = route?.params?.pendingMutationId as string | undefined;
@@ -463,6 +465,7 @@ export function AddScreen({ route, navigation }: any) {
         await api.post(path, expense);
       }
       setMessage(t("expense.saved"));
+      showSuccess({ icon: "check" });
       navigation.setParams?.({ expenseId: undefined, contextType: undefined, contextId: undefined });
       navigateAfterSave();
       if (!expenseId) {
@@ -482,6 +485,7 @@ export function AddScreen({ route, navigation }: any) {
           status: "pending"
         });
         setMessage(t("expense.queued"));
+        showSuccess({ icon: "cloud-check-outline" });
       } else {
         setMessage(t("expense.saveFailed"));
       }

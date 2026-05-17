@@ -4,6 +4,7 @@ import { Button, Card, HelperText, List, Switch, Text, TextInput } from "react-n
 
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { urlBase64ToUint8Array } from "../../shared/lib/webPush";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
@@ -17,6 +18,7 @@ export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
   const { themeMode, toggleTheme } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
+  const { showSuccess } = useFeedback();
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
@@ -32,6 +34,7 @@ export function AccountScreen() {
       push_enabled: pushEnabled
     });
     await refreshUser();
+    showSuccess({ icon: "check" });
   }
 
   async function registerPushNotifications() {
