@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Button, Card, Dialog, List, Portal, Text, TextInput } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
 import { Friend, Group, Participant, Settlement } from "../../shared/types/models";
@@ -14,6 +15,7 @@ import { styles } from "../../shared/ui/styles";
 export function SettlementDetailScreen({ route, navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const settlementId = route.params.id;
   const [settlement, setSettlement] = useState<Settlement | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -57,6 +59,7 @@ export function SettlementDetailScreen({ route, navigation }: any) {
       receiver_participant_id: receiverId
     });
     setEditing(false);
+    showSuccess({ icon: "cash-check" });
     await load();
   }
 

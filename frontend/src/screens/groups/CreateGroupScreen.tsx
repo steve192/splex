@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Card, Text, TextInput } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Group } from "../../shared/types/models";
 import { Screen } from "../../shared/ui/Screen";
@@ -10,6 +11,7 @@ import { styles } from "../../shared/ui/styles";
 export function CreateGroupScreen({ navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [saving, setSaving] = useState(false);
@@ -21,6 +23,7 @@ export function CreateGroupScreen({ navigation }: any) {
         name,
         default_currency: currency.toUpperCase()
       });
+      showSuccess({ icon: "check" });
       navigation.replace("GroupDetail", { id: group.id });
     } finally {
       setSaving(false);

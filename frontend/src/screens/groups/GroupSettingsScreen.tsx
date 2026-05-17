@@ -14,6 +14,7 @@ import {
 } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Group, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
@@ -31,6 +32,7 @@ const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }
 export function GroupSettingsScreen({ route, navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [name, setName] = useState("");
@@ -70,12 +72,14 @@ export function GroupSettingsScreen({ route, navigation }: any) {
       default_split_payload: {}
     });
     await load();
+    showSuccess({ icon: "check" });
     navigation.navigate("GroupDetail", { id: groupId });
   }
 
   async function saveArchive() {
     await api.patch(`/api/groups/${groupId}/`, { archived });
     await load();
+    showSuccess({ icon: "archive-check-outline" });
     setSnackbar(t("group.saved"));
   }
 
@@ -98,6 +102,7 @@ export function GroupSettingsScreen({ route, navigation }: any) {
       display_name: newParticipantName.trim()
     });
     setNewParticipantName("");
+    showSuccess({ icon: "account-check-outline" });
     await load();
   }
 
@@ -108,6 +113,7 @@ export function GroupSettingsScreen({ route, navigation }: any) {
     });
     setRenameTarget(null);
     setRenameValue("");
+    showSuccess({ icon: "check" });
     await load();
   }
 

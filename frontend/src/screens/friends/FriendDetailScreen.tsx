@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Button, Card, List, Text, TextInput, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { asNumber, balanceText } from "../../shared/lib/money";
 import { PendingMutation, syncPendingMutations } from "../../shared/sync/queue";
@@ -16,6 +17,7 @@ import { styles } from "../../shared/ui/styles";
 export function FriendDetailScreen({ route, navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const friendshipId = route.params.id;
   const [friend, setFriend] = useState<Friend | null>(null);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
@@ -52,6 +54,7 @@ export function FriendDetailScreen({ route, navigation }: any) {
       amount: settleAmount
     });
     setSettleAmount("");
+    showSuccess({ icon: "cash-check" });
     await load();
   }
 

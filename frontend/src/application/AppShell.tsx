@@ -12,6 +12,7 @@ import { MD3DarkTheme, MD3LightTheme, PaperProvider } from "react-native-paper";
 
 import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient } from "../shared/api/client";
+import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ThemeMode } from "../shared/types/models";
 import { AppNavigator } from "./AppNavigator";
@@ -106,9 +107,11 @@ export function AppShell() {
       >
         <I18nProvider>
           <AuthProvider api={api}>
-            <NavigationContainer theme={navigationTheme} linking={linking}>
-              <AppNavigator />
-            </NavigationContainer>
+            <FeedbackProvider>
+              <NavigationContainer theme={navigationTheme} linking={linking}>
+                <AppNavigator />
+              </NavigationContainer>
+            </FeedbackProvider>
             <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
           </AuthProvider>
         </I18nProvider>

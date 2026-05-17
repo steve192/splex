@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TextInput, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { asNumber, balanceText } from "../../shared/lib/money";
 import { PendingMutation, syncPendingMutations } from "../../shared/sync/queue";
@@ -17,6 +18,7 @@ import { styles } from "../../shared/ui/styles";
 export function GroupDetailScreen({ route, navigation }: any) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSuccess } = useFeedback();
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [balances, setBalances] = useState<GroupBalance[]>([]);
@@ -66,6 +68,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
     });
     setSettleTarget(null);
     setSettleAmount("");
+    showSuccess({ icon: "cash-check" });
     await load();
   }
 
