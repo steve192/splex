@@ -160,6 +160,18 @@ export const styles = StyleSheet.create({
     maxWidth: 960,
     width: "100%"
   },
+  settlementPerson: {
+    alignItems: "center",
+    flex: 1,
+    gap: 6
+  },
+  settlementPreview: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginBottom: 16
+  },
   splitRow: {
     alignItems: "center",
     flexDirection: "row",

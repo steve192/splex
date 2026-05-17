@@ -1,5 +1,10 @@
 import logging
+import mimetypes
+from urllib.parse import urlparse
 
+from django.conf import settings
+from django.core.files.storage import default_storage
+from django.http import FileResponse
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,15 +15,31 @@ from splex.invitations.services import accept_invitation
 logger = logging.getLogger(__name__)
 
 
+def invitation_by_token(token: str):
+    return Invitation.objects.select_related("group", "target_participant", "invited_by").get(
+        token_hash=Invitation.hash_token(token)
+    )
+
+
+def invitation_image_url(token: str, kind: str, image_url: str) -> str:
+    return f"{settings.BACKEND_PUBLIC_URL}/api/invitations/{token}/images/{kind}/" if image_url else ""
+
+
+def storage_path_from_media_url(url: str) -> str:
+    path = urlparse(url).path
+    media_url = settings.MEDIA_URL
+    if not path.startswith(media_url):
+        raise ValueError("Image is not stored in local media.")
+    return path.removeprefix(media_url)
+
+
 class InvitationPreviewView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, token):
         logger.info("Invitation preview requested token_prefix=%s", token[:6])
         try:
-            invitation = Invitation.objects.select_related("group", "target_participant").get(
-                token_hash=Invitation.hash_token(token)
-            )
+            invitation = invitation_by_token(token)
         except Invitation.DoesNotExist:
             logger.info("Invitation preview failed token_prefix=%s reason=not_found", token[:6])
             return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -34,6 +55,15 @@ class InvitationPreviewView(APIView):
                 "type": invitation.type,
                 "valid": invitation.is_valid(),
                 "group": invitation.group.name if invitation.group else None,
+                "group_image_url": (
+                    invitation_image_url(token, "group", invitation.group.icon_url)
+                    if invitation.group
+                    else ""
+                ),
+                "invited_by": invitation.invited_by.display_name or invitation.invited_by.email,
+                "invited_by_image_url": invitation_image_url(
+                    token, "inviter", invitation.invited_by.avatar_url
+                ),
                 "target_participant": (
                     invitation.target_participant.display_name
                     if invitation.target_participant
@@ -41,6 +71,34 @@ class InvitationPreviewView(APIView):
                 ),
             }
         )
+
+
+class InvitationImageView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, token, kind):
+        try:
+            invitation = invitation_by_token(token)
+        except Invitation.DoesNotExist:
+            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not invitation.is_valid():
+            return Response({"detail": "Invitation is expired."}, status=status.HTTP_404_NOT_FOUND)
+        if kind == "inviter":
+            image_url = invitation.invited_by.avatar_url
+        elif kind == "group" and invitation.group:
+            image_url = invitation.group.icon_url
+        else:
+            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not image_url:
+            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            path = storage_path_from_media_url(image_url)
+        except ValueError:
+            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not default_storage.exists(path):
+            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+        content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+        return FileResponse(default_storage.open(path, "rb"), content_type=content_type)
 
 
 class InvitationAcceptView(APIView):
