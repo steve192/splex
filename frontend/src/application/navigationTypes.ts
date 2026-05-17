@@ -50,6 +50,7 @@ export type AddStackParamList = {
         expenseId?: number;
         pendingMutationId?: string;
         resetKey?: number;
+        returnToPrevious?: boolean;
       }
     | undefined;
 };

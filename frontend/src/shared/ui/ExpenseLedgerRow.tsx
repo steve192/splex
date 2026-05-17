@@ -4,6 +4,7 @@ import { Card, Text, TouchableRipple, useTheme } from "react-native-paper";
 import { asNumber, formatMoney } from "../lib/money";
 import { Expense } from "../types/models";
 import { AvatarStack } from "./AvatarStack";
+import { negativeColor, positiveColor } from "./colors";
 import { styles } from "./styles";
 
 type ExpenseLedgerRowProps = {
@@ -45,9 +46,9 @@ export function ExpenseLedgerRow({ expense, currentParticipantId, t, onPress }: 
   const net = paid - owed;
   const color =
     net > 0
-      ? (theme.dark ? "#7DDC9F" : "#0F7B3A")
+      ? positiveColor(theme)
       : net < 0
-        ? (theme.dark ? "#FFB4AB" : "#B3261E")
+        ? negativeColor(theme)
         : theme.colors.onSurfaceVariant;
   const label = net > 0 ? t("balance.owedToYou") : net < 0 ? t("balance.youOwe") : t("balance.settled");
 

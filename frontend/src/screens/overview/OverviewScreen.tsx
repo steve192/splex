@@ -1,8 +1,10 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, List, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Friend, OverviewItem } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
@@ -11,7 +13,9 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-export function OverviewScreen({ navigation }: any) {
+type OverviewScreenProps = NativeStackScreenProps<OverviewStackParamList, "OverviewHome">;
+
+export function OverviewScreen({ navigation }: OverviewScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [items, setItems] = useState<OverviewItem[]>([]);

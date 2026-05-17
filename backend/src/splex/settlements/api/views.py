@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 
 from splex.expenses.services import ensure_context_access
 from splex.groups.api.serializers import SettlementCreateSerializer
-from splex.groups.api.views import serialize_settlement
+from splex.ledger.serializers import serialize_settlement
 from splex.settlements.models import Settlement
 from splex.settlements.services import soft_delete_settlement, update_settlement
 

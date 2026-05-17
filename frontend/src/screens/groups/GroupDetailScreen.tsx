@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TextInput, TouchableRipple } from "react-native-paper";
@@ -5,17 +6,22 @@ import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snack
 import { useAuth } from "../../features/auth/AuthContext";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
+import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
+import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { asNumber, balanceText } from "../../shared/lib/money";
-import { PendingMutation, syncPendingMutations } from "../../shared/sync/queue";
+import { PendingMutation } from "../../shared/sync/queue";
 import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
+import { OverviewStackParamList } from "../../application/navigationTypes";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
-import { MoneyText } from "../../shared/ui/MoneyText";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-export function GroupDetailScreen({ route, navigation }: any) {
+type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
+
+export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
@@ -39,13 +45,7 @@ export function GroupDetailScreen({ route, navigation }: any) {
     setGroup(detail);
     setBalances(balanceRows);
     setLedger(ledgerRows);
-    const pendingRows = await syncPendingMutations.list();
-    setPendingExpenses(
-      pendingRows.filter((mutation) => {
-        const payload = mutation.payload as any;
-        return payload?.context_type === "group" && payload?.context_id === groupId;
-      })
-    );
+    setPendingExpenses(await pendingExpensesForContext("group", groupId));
   }
 
   useEffect(() => {
@@ -73,12 +73,12 @@ export function GroupDetailScreen({ route, navigation }: any) {
   }
 
   async function deletePendingExpense(id: string) {
-    await syncPendingMutations.remove(id);
+    await removePendingExpense(id);
     await load();
   }
 
   async function retryPendingExpenses() {
-    await syncPendingMutations.flush(api);
+    await retryPendingExpenseSync(api);
     await load();
   }
 
@@ -132,45 +132,20 @@ export function GroupDetailScreen({ route, navigation }: any) {
         {selectedTab === "expenses" ? (
           <>
             <Text variant="titleLarge">{t("group.expenses")}</Text>
-            {pendingExpenses.map((mutation) => {
-              const payload = mutation.payload as any;
-              const expense = payload?.expense ?? {};
-              return (
-                <Card key={`pending-${mutation.id}`} mode="elevated" style={styles.card}>
-                  <TouchableRipple
-                    style={styles.clickable}
-                    onPress={() =>
-                      navigation.navigate("AddExpense", {
-                        pendingMutationId: mutation.id,
-                        resetKey: Date.now(),
-                        returnToPrevious: true
-                      })
-                    }
-                  >
-                    <Card.Content>
-                      <List.Item
-                        style={styles.listTile}
-                        title={expense.description || t("expense.add")}
-                        description={`${t("expense.pendingSync")} - ${mutation.lastError ?? mutation.status}`}
-                        right={() => (
-                          <View style={styles.listTileRight}>
-                            <Text>{`${expense.amount ?? ""} ${expense.currency ?? group?.default_currency ?? ""}`}</Text>
-                            <View style={styles.rowActions}>
-                              <Button compact mode="text" onPress={() => retryPendingExpenses()}>
-                                {t("expense.retrySync")}
-                              </Button>
-                              <Button compact mode="text" textColor="#B3261E" onPress={() => deletePendingExpense(mutation.id)}>
-                                {t("common.delete")}
-                              </Button>
-                            </View>
-                          </View>
-                        )}
-                      />
-                    </Card.Content>
-                  </TouchableRipple>
-                </Card>
-              );
-            })}
+            <PendingExpenseList
+              mutations={pendingExpenses}
+              fallbackCurrency={group?.default_currency}
+              t={t}
+              onOpen={(mutationId) =>
+                navigation.navigate("AddExpense", {
+                  pendingMutationId: mutationId,
+                  resetKey: Date.now(),
+                  returnToPrevious: true
+                })
+              }
+              onRetry={retryPendingExpenses}
+              onDelete={deletePendingExpense}
+            />
             {ledger.length ? (
               ledger.map((item) =>
                 item.type === "expense" ? (
@@ -182,28 +157,12 @@ export function GroupDetailScreen({ route, navigation }: any) {
                     onPress={() => navigation.navigate("ExpenseDetail", { id: item.expense.id })}
                   />
                 ) : (
-                  <Card key={`settlement-${item.settlement.id}`} mode="elevated" style={styles.card}>
-                    <TouchableRipple
-                      style={styles.clickable}
-                      onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
-                    >
-                      <Card.Content>
-                        <List.Item
-                          style={styles.listTile}
-                          title={t("settlement.title")}
-                          description={t("settlement.line")
-                            .replace("{from}", item.settlement.payer_display_name ?? "")
-                            .replace("{to}", item.settlement.receiver_display_name ?? "")
-                            .replace("{amount}", `${item.settlement.amount} ${item.settlement.currency}`)}
-                          right={() => (
-                            <View style={styles.listTileRight}>
-                              <MoneyText amount={item.settlement.amount} currency={item.settlement.currency} />
-                            </View>
-                          )}
-                        />
-                      </Card.Content>
-                    </TouchableRipple>
-                  </Card>
+                  <SettlementLedgerRow
+                    key={`settlement-${item.settlement.id}`}
+                    settlement={item.settlement}
+                    t={t}
+                    onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
+                  />
                 )
               )
             ) : pendingExpenses.length ? null : (

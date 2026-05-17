@@ -1,6 +1,7 @@
 import { Text, TextProps, useTheme } from "react-native-paper";
 
 import { asNumber, balanceText } from "../lib/money";
+import { negativeColor, positiveColor } from "./colors";
 
 type MoneyTextProps = Omit<TextProps<never>, "children"> & {
   amount: string | number | undefined;
@@ -13,9 +14,9 @@ export function MoneyText({ amount, currency, t, style, ...props }: MoneyTextPro
   const numeric = asNumber(amount);
   const color =
     numeric > 0
-      ? (theme.dark ? "#7DDC9F" : "#0F7B3A")
+      ? positiveColor(theme)
       : numeric < 0
-        ? (theme.dark ? "#FFB4AB" : "#B3261E")
+        ? negativeColor(theme)
         : theme.colors.onSurfaceVariant;
   const label = t ? balanceText(t, String(amount ?? 0), currency) : `${numeric.toFixed(2)} ${currency}`;
   return (
