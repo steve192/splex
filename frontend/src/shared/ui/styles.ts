@@ -51,6 +51,17 @@ export const styles = StyleSheet.create({
   currencyInput: {
     width: 120
   },
+  emptyStateContent: {
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12
+  },
+  emptyStateImage: {
+    height: 170,
+    maxHeight: 170,
+    maxWidth: 320,
+    width: "82%"
+  },
   cropPreview: {
     alignSelf: "center",
     backgroundColor: "#111",
@@ -137,6 +148,58 @@ export const styles = StyleSheet.create({
   metricTile: {
     flexGrow: 1,
     minWidth: 140
+  },
+  loginBrandMark: {
+    alignItems: "center",
+    height: 72,
+    justifyContent: "center",
+    marginBottom: 24,
+    width: 72
+  },
+  loginBrandImage: {
+    height: 58,
+    width: 58
+  },
+  loginHero: {
+    alignItems: "flex-start",
+    justifyContent: "flex-end",
+    padding: 24,
+    paddingBottom: 28,
+    width: "100%"
+  },
+  loginHeroWeb: {
+    paddingHorizontal: 0,
+    paddingTop: 0
+  },
+  loginPanel: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    gap: 14,
+    padding: 24,
+    width: "100%"
+  },
+  loginPanelWeb: {
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28
+  },
+  loginScreen: {
+    alignItems: "center",
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20
+  },
+  loginShell: {
+    width: "100%"
+  },
+  loginShellWeb: {
+    maxWidth: 520
+  },
+  loginSubtitle: {
+    maxWidth: 440
+  },
+  loginTitle: {
+    fontWeight: "700",
+    marginBottom: 8
   },
   rowActions: {
     flexDirection: "row",

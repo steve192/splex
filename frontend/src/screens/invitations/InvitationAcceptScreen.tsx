@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { Image, View } from "react-native";
 import { Button, Card, List, Text } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { RootStackParamList } from "../../application/navigationTypes";
+import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../../shared/lib/inviteLinks";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
@@ -117,7 +118,12 @@ export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptSc
                   left={(props) => <List.Icon {...props} icon="account-outline" />}
                 />
               ) : null}
-              {!preview.valid ? <Text variant="bodyMedium">{t("invite.expired")}</Text> : null}
+              {!preview.valid ? (
+                <View style={styles.emptyStateContent}>
+                  <Image source={appImages.invitationExpired} style={styles.emptyStateImage} resizeMode="contain" />
+                  <Text variant="bodyMedium">{t("invite.expired")}</Text>
+                </View>
+              ) : null}
             </>
           ) : null}
           <Button mode="contained" disabled={!token || (preview ? !preview.valid : false)} onPress={accept}>

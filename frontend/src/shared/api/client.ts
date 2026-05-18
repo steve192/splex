@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 export type Tokens = {
   access: string;
@@ -6,7 +7,9 @@ export type Tokens = {
 };
 
 const runtimeEnv = process.env as Record<string, string | undefined>;
-const API_BASE_URL = runtimeEnv.EXPO_PUBLIC_API_BASE_URL || runtimeEnv.REACT_APP_API_BASE_URL || "";
+const WEB_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_API_BASE_URL || runtimeEnv.REACT_APP_API_BASE_URL || "";
+const DEFAULT_NATIVE_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_DEFAULT_API_BASE_URL || "https://splex.example.com";
+const API_BASE_URL_STORAGE_KEY = "splex.apiBaseUrl";
 
 function apiDebug(message: string, details?: unknown) {
   if (typeof window !== "undefined") {
@@ -29,6 +32,8 @@ export class ApiClient {
   private tokens: Tokens | null = null;
   private refreshPromise: Promise<void> | null = null;
   private tokenChangeHandler: ((tokens: Tokens | null) => void) | null = null;
+  private baseUrl: string | null = Platform.OS === "web" ? WEB_API_BASE_URL : null;
+  private baseUrlPromise: Promise<string> | null = null;
 
   setTokens(tokens: Tokens | null) {
     this.tokens = tokens;
@@ -37,6 +42,24 @@ export class ApiClient {
 
   setTokenChangeHandler(handler: (tokens: Tokens | null) => void) {
     this.tokenChangeHandler = handler;
+  }
+
+  async getBaseUrl(): Promise<string> {
+    if (Platform.OS === "web") return WEB_API_BASE_URL;
+    if (this.baseUrl !== null) return this.baseUrl;
+    if (!this.baseUrlPromise) {
+      this.baseUrlPromise = AsyncStorage.getItem(API_BASE_URL_STORAGE_KEY).then((stored) => {
+        this.baseUrl = normalizeBaseUrl(stored || DEFAULT_NATIVE_API_BASE_URL);
+        return this.baseUrl;
+      });
+    }
+    return this.baseUrlPromise;
+  }
+
+  async setBaseUrl(value: string): Promise<void> {
+    if (Platform.OS === "web") return;
+    this.baseUrl = normalizeBaseUrl(value || DEFAULT_NATIVE_API_BASE_URL);
+    await AsyncStorage.setItem(API_BASE_URL_STORAGE_KEY, this.baseUrl);
   }
 
   async request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
@@ -55,7 +78,7 @@ export class ApiClient {
     }
     let response: Response;
     try {
-      response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+      response = await fetch(`${await this.getBaseUrl()}${path}`, { ...options, headers });
     } catch (error) {
       if (path.includes("/invitations/") || path.includes("/auth/magic")) {
         apiDebug("request failed before response", { path, error });
@@ -89,7 +112,7 @@ export class ApiClient {
   }
 
   private async refreshAccessToken(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/auth/token/refresh/`, {
+    const response = await fetch(`${await this.getBaseUrl()}/api/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh: this.tokens?.refresh })
@@ -144,3 +167,7 @@ export const tokenStorage = {
     }
   }
 };
+
+function normalizeBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, "");
+}

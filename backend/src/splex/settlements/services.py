@@ -2,16 +2,18 @@ from django.db import transaction
 from django.utils import timezone
 
 from splex.activity.services import record_activity
+from splex.currency.services import convert
 from splex.expenses.services import context_currency, context_participants, ensure_context_access
 from splex.notifications.services import create_notifications_for_activity
 from splex.settlements.models import Settlement
-from splex.shared.money import money
 
 
 @transaction.atomic
 def create_settlement(*, actor, group=None, friendship=None, data: dict) -> Settlement:
     ensure_context_access(actor, group, friendship)
     currency = context_currency(group, friendship)
+    settlement_currency = data.get("currency") or currency
+    converted_amount, _rate = convert(data["amount"], settlement_currency, currency)
     allowed_participant_ids = set(context_participants(group, friendship))
     if data["payer_participant_id"] not in allowed_participant_ids:
         raise ValueError("Payer is not part of this context.")
@@ -25,7 +27,7 @@ def create_settlement(*, actor, group=None, friendship=None, data: dict) -> Sett
         friendship=friendship,
         payer_participant_id=data["payer_participant_id"],
         receiver_participant_id=data["receiver_participant_id"],
-        amount=money(data["amount"]),
+        amount=converted_amount,
         currency=currency,
         created_by=actor,
     )
@@ -76,12 +78,16 @@ def update_settlement(*, actor, settlement: Settlement, data: dict) -> Settlemen
     settlement.payer_participant_id = payer_id
     settlement.receiver_participant_id = receiver_id
     if "amount" in data:
-        settlement.amount = money(data["amount"])
+        context = context_currency(settlement.group, settlement.friendship)
+        settlement_currency = data.get("currency") or context
+        settlement.amount = convert(data["amount"], settlement_currency, context)[0]
+        settlement.currency = context
     settlement.save(
         update_fields=[
             "payer_participant",
             "receiver_participant",
             "amount",
+            "currency",
             "updated_at",
         ]
     )

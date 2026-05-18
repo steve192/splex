@@ -19,11 +19,14 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { CURRENCIES } from "../../shared/lib/currencies";
+import { formatDeviceDate } from "../../shared/lib/dates";
 import { Group, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
+import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 
 const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }> = [
@@ -45,6 +48,7 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const [group, setGroup] = useState<Group | null>(null);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("EUR");
+  const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [iconUrl, setIconUrl] = useState("");
   const [iconImage, setIconImage] = useState("");
   const [archived, setArchived] = useState(false);
@@ -55,6 +59,7 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const [renameValue, setRenameValue] = useState("");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [snackbar, setSnackbar] = useState("");
+  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
 
   async function load() {
     const row = await api.get<Group>(`/api/groups/${groupId}/`);
@@ -152,14 +157,9 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
                 setIconUrl(image.previewUrl);
               }}
             />
-            <TextInput
-              mode="outlined"
-              label={t("expense.currency")}
-              value={currency}
-              onChangeText={(value) => setCurrency(value.toUpperCase())}
-              autoCapitalize="characters"
-              maxLength={3}
-            />
+            <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)}>
+              {t("expense.currency")}: {currency}
+            </Button>
             <Text variant="titleMedium">{t("group.defaultSplit")}</Text>
             <SegmentedButtons
               value={defaultSplitMethod}
@@ -172,10 +172,10 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
             {group ? (
               <View style={styles.gap}>
                 <Text variant="bodyMedium">
-                  {t("group.createdAt")}: {new Date(group.created_at ?? "").toLocaleDateString()}
+                  {t("group.createdAt")}: {formatDeviceDate(group.created_at)}
                 </Text>
                 <Text variant="bodyMedium">
-                  {t("group.updatedAt")}: {new Date(group.updated_at ?? "").toLocaleDateString()}
+                  {t("group.updatedAt")}: {formatDeviceDate(group.updated_at)}
                 </Text>
               </View>
             ) : null}
@@ -299,6 +299,14 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={9000}>
         {snackbar}
       </Snackbar>
+      <SelectionSheet
+        visible={currencySheetOpen}
+        title={t("expense.currency")}
+        options={currencyOptions}
+        value={currency}
+        onSelect={setCurrency}
+        onDismiss={() => setCurrencySheetOpen(false)}
+      />
     </View>
   );
 }

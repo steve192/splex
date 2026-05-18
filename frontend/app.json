@@ -4,13 +4,48 @@
     "slug": "splex",
     "version": "0.1.0",
     "orientation": "portrait",
-    "platforms": ["android", "web"],
+    "icon": "./assets/images/pwa-maskable-icon.png",
+    "platforms": [
+      "android",
+      "web"
+    ],
     "scheme": "splex",
+    "splash": {
+      "image": "./assets/images/splash-screen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#006A60"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/app-icon-foreground.png",
+        "backgroundColor": "#006A60"
+      },
+      "package": "com.sterul.splex",
+      "versionCode": 1
+    },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/images/app-icon.png"
     },
-    "plugins": ["expo-notifications"]
+    "plugins": [
+      "expo-notifications",
+      "expo-updates"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
+      }
+    },
+    "ios": {}
   }
 }
-

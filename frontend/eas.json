@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 0.35.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "distribution": "internal",
+        "withoutCredentials": true,
+        "buildType": "apk"
+      },
+      "env": {
+        "EX_UPDATES_NATIVE_DEBUG": "1"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
+    },
+    "production-apk": {
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

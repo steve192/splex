@@ -2,11 +2,12 @@ import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, Divider, List, Portal, Text, useTheme } from "react-native-paper";
+import { Button, Card, Dialog, Divider, IconButton, List, Portal, Text, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { formatDeviceDate } from "../../shared/lib/dates";
 import { Expense } from "../../shared/types/models";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
@@ -29,6 +30,10 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
   const expenseId = route.params.id;
   const [expense, setExpense] = useState<Expense | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const converted = expense
+    ? expense.original_currency !== expense.converted_currency ||
+      expense.original_amount !== expense.converted_amount
+    : false;
 
   async function load() {
     setExpense(await api.get<Expense>(`/api/expenses/${expenseId}/`));
@@ -38,6 +43,16 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
     const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
     return unsubscribe;
   }, [navigation, expenseId]);
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: expense?.description ?? t("expense.details"),
+      headerRight: () =>
+        expense && !expense.deleted_at ? (
+          <IconButton icon="pencil" onPress={editExpense} />
+        ) : null
+    });
+  }, [expense, navigation, t]);
 
   async function deleteExpense() {
     await api.delete(`/api/expenses/${expenseId}/`);
@@ -59,18 +74,9 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
   return (
     <View style={styles.flex}>
       <Screen>
-        <View style={styles.rowBetween}>
-          <View style={styles.flex}>
-            <Text variant="headlineSmall">{expense?.description ?? t("expense.details")}</Text>
-            {expense ? <Text variant="bodyMedium">{expense.date}</Text> : null}
-          </View>
-          <Button mode="elevated" icon="pencil" disabled={!expense || Boolean(expense?.deleted_at)} onPress={editExpense}>
-            {t("common.edit")}
-          </Button>
-        </View>
-
         {expense ? (
           <>
+            <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
             <View style={styles.metricGrid}>
               <Card mode="elevated" style={styles.metricTile}>
                 <Card.Content>
@@ -82,14 +88,16 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                   />
                 </Card.Content>
               </Card>
-              <Card mode="elevated" style={styles.metricTile}>
-                <Card.Content>
-                  <Text variant="labelLarge">{t("expense.originalAmount")}</Text>
-                  <Text variant="headlineSmall">
-                    {expense.original_amount} {expense.original_currency}
-                  </Text>
-                </Card.Content>
-              </Card>
+              {converted ? (
+                <Card mode="elevated" style={styles.metricTile}>
+                  <Card.Content>
+                    <Text variant="labelLarge">{t("expense.originalAmount")}</Text>
+                    <Text variant="headlineSmall">
+                      {expense.original_amount} {expense.original_currency}
+                    </Text>
+                  </Card.Content>
+                </Card>
+              ) : null}
             </View>
 
             <Card mode="elevated">

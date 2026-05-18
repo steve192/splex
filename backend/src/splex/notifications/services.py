@@ -1,11 +1,13 @@
 import json
+from base64 import urlsafe_b64encode
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from splex.notifications.models import DeviceToken, Notification, WebPushSubscription
+from splex.notifications.models import DeviceToken, Notification, VapidKey, WebPushSubscription
 
 
 def users_for_context(group=None, friendship=None):
@@ -68,44 +70,72 @@ def dispatch_pending_notifications(notification_ids):
         notification.save(update_fields=["status", "sent_at", "error"])
 
 
-_firebase_ready = False
+def _base64url(value: bytes) -> str:
+    return urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
-def ensure_firebase_ready():
-    global _firebase_ready
-    if _firebase_ready:
-        return
-    if not settings.FCM_CREDENTIALS_JSON:
-        raise RuntimeError("FCM credentials are not configured.")
-    import firebase_admin
-    from firebase_admin import credentials
+def generate_vapid_key(expires_at=None) -> VapidKey:
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+    from py_vapid import Vapid
 
-    if not firebase_admin._apps:
-        credentials_data = json.loads(settings.FCM_CREDENTIALS_JSON)
-        firebase_admin.initialize_app(credentials.Certificate(credentials_data))
-    _firebase_ready = True
+    vapid = Vapid()
+    vapid.generate_keys()
+    public_raw = vapid.public_key.public_bytes(
+        encoding=Encoding.X962,
+        format=PublicFormat.UncompressedPoint,
+    )
+    return VapidKey.objects.create(
+        public_key=_base64url(public_raw),
+        private_key=vapid.private_pem().decode("utf-8"),
+        expires_at=expires_at or timezone.now() + timedelta(days=3650),
+        active=True,
+    )
+
+
+def get_active_vapid_key() -> VapidKey:
+    if settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY:
+        return VapidKey(
+            public_key=settings.VAPID_PUBLIC_KEY,
+            private_key=settings.VAPID_PRIVATE_KEY,
+            expires_at=timezone.now() + timedelta(days=3650),
+            active=True,
+        )
+    key = VapidKey.objects.filter(active=True, expires_at__gt=timezone.now()).order_by("-created_at").first()
+    if key:
+        return key
+    VapidKey.objects.filter(active=True).update(active=False)
+    return generate_vapid_key()
 
 
 def send_fcm_notification(token: str, notification: Notification):
-    ensure_firebase_ready()
-    from firebase_admin import messaging
+    send_expo_notification(token, notification)
 
-    message = messaging.Message(
-        token=token,
-        notification=messaging.Notification(
-            title=notification.title_key,
-            body=notification.body_key,
-        ),
-        data={key: str(value) for key, value in notification.payload.items()},
+
+def send_expo_notification(token: str, notification: Notification):
+    import requests
+
+    response = requests.post(
+        "https://exp.host/--/api/v2/push/send",
+        json={
+            "to": token,
+            "title": notification.title_key,
+            "body": notification.body_key,
+            "data": notification.payload,
+        },
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
+        timeout=10,
     )
-    messaging.send(message)
+    response.raise_for_status()
+    payload = response.json()
+    ticket = payload.get("data", {})
+    if isinstance(ticket, dict) and ticket.get("status") == "error":
+        raise RuntimeError(ticket.get("message") or "Expo push rejected the notification.")
 
 
 def send_web_push_notification(subscription: WebPushSubscription, notification: Notification):
-    if not settings.VAPID_PRIVATE_KEY:
-        raise RuntimeError("VAPID keys are not configured.")
     from pywebpush import webpush
 
+    vapid_key = get_active_vapid_key()
     webpush(
         subscription_info={
             "endpoint": subscription.endpoint,
@@ -118,6 +148,6 @@ def send_web_push_notification(subscription: WebPushSubscription, notification: 
                 "payload": notification.payload,
             }
         ),
-        vapid_private_key=settings.VAPID_PRIVATE_KEY,
+        vapid_private_key=vapid_key.private_key,
         vapid_claims={"sub": settings.VAPID_SUBJECT},
     )

@@ -1,16 +1,16 @@
-from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from splex.notifications.models import DeviceToken, WebPushSubscription
+from splex.notifications.services import get_active_vapid_key
 
 
 class NotificationConfigView(APIView):
     def get(self, request):
         return Response(
             {
-                "vapid_public_key": settings.VAPID_PUBLIC_KEY,
+                "vapid_public_key": get_active_vapid_key().public_key,
                 "push_enabled": request.user.push_enabled,
             }
         )

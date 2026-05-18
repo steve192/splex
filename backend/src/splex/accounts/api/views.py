@@ -20,6 +20,7 @@ from splex.shared.uploads import save_data_url_image
 
 class MagicLinkRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "magic_link"
 
     def post(self, request):
         serializer = MagicLinkRequestSerializer(data=request.data)
@@ -33,6 +34,7 @@ class MagicLinkRequestView(APIView):
 
 class MagicCodeVerifyView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "magic_code"
 
     def post(self, request):
         serializer = MagicCodeVerifySerializer(data=request.data)
@@ -46,6 +48,7 @@ class MagicCodeVerifyView(APIView):
 
 class MagicTokenVerifyView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "magic_token"
 
     def post(self, request):
         serializer = MagicTokenVerifySerializer(data=request.data)

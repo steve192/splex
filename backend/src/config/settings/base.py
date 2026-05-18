@@ -1,8 +1,10 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[3]
@@ -20,19 +22,81 @@ def env_bool(name: str, default: bool = False) -> bool:
     return value.lower() in {"1", "true", "yes", "on"}
 
 
-SECRET_KEY = env("SECRET_KEY", "development-only-secret-key-for-local-use")
+def env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return int(value)
+
+
+def env_list(name: str, default=None):
+    raw = os.environ.get(name)
+    if raw is None:
+        return list(default or [])
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def public_origin(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def public_host(url: str) -> str:
+    return urlparse(url).hostname or ""
+
+
+DEFAULT_INSECURE_SECRET_KEY = "development-only-secret-key-for-local-use"
+SECRET_KEY = env("SECRET_KEY", DEFAULT_INSECURE_SECRET_KEY)
 DEBUG = env_bool("DEBUG", False)
-ALLOWED_HOSTS = [host for host in env("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host]
-CSRF_TRUSTED_ORIGINS = [
-    origin for origin in env("CSRF_TRUSTED_ORIGINS", "").split(",") if origin
-]
-CORS_ALLOWED_ORIGINS = [origin for origin in env("CORS_ALLOWED_ORIGINS", "").split(",") if origin]
-CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
+if (
+    not DEBUG
+    and SECRET_KEY == DEFAULT_INSECURE_SECRET_KEY
+    and not env("DJANGO_SETTINGS_MODULE").endswith((".local", ".test"))
+):
+    raise ImproperlyConfigured("SECRET_KEY must be set to a unique production value.")
 
 FRONTEND_PUBLIC_URL = env("FRONTEND_PUBLIC_URL", "http://localhost:8000")
 BACKEND_PUBLIC_URL = env("BACKEND_PUBLIC_URL", "http://localhost:8000")
+PUBLIC_ORIGINS = sorted(
+    {origin for origin in [public_origin(FRONTEND_PUBLIC_URL), public_origin(BACKEND_PUBLIC_URL)] if origin}
+)
+PUBLIC_HOSTS = sorted(
+    {host for host in [public_host(FRONTEND_PUBLIC_URL), public_host(BACKEND_PUBLIC_URL)] if host}
+)
+DEFAULT_ALLOWED_HOSTS = [*PUBLIC_HOSTS, *(["localhost", "127.0.0.1"] if DEBUG else [])]
+ALLOWED_HOSTS = env_list(
+    "ALLOWED_HOSTS",
+    DEFAULT_ALLOWED_HOSTS,
+)
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", PUBLIC_ORIGINS)
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", PUBLIC_ORIGINS)
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", False)
 SERVE_PWA = env_bool("SERVE_PWA", True)
+ENABLE_ADMIN_UI = env_bool("ENABLE_ADMIN_UI", DEBUG)
 PWA_ROOT = BASE_DIR / "static_pwa"
+
+APP_BEHIND_PROXY = env_bool("APP_BEHIND_PROXY", False)
+PROXY_USES_TLS = env_bool("PROXY_USES_TLS", False)
+PUBLIC_USES_TLS = (
+    FRONTEND_PUBLIC_URL.startswith("https://")
+    or BACKEND_PUBLIC_URL.startswith("https://")
+    or PROXY_USES_TLS
+)
+SECURE_SSL_REDIRECT = PUBLIC_USES_TLS
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if APP_BEHIND_PROXY and PROXY_USES_TLS else None
+)
+SECURE_HSTS_SECONDS = 31536000 if PUBLIC_USES_TLS else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = PUBLIC_USES_TLS
+SECURE_HSTS_PRELOAD = PUBLIC_USES_TLS
+SESSION_COOKIE_SECURE = PUBLIC_USES_TLS
+CSRF_COOKIE_SECURE = PUBLIC_USES_TLS
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+PRIVATE_MEDIA_URL_MAX_AGE_SECONDS = env_int("PRIVATE_MEDIA_URL_MAX_AGE_SECONDS", 3600)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -128,6 +192,20 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("THROTTLE_ANON_RATE", "120/minute"),
+        "user": env("THROTTLE_USER_RATE", "600/minute"),
+        "magic_link": env("THROTTLE_MAGIC_LINK_RATE", "5/minute"),
+        "magic_code": env("THROTTLE_MAGIC_CODE_RATE", "20/minute"),
+        "magic_token": env("THROTTLE_MAGIC_TOKEN_RATE", "20/minute"),
+        "invitation_preview": env("THROTTLE_INVITATION_PREVIEW_RATE", "60/minute"),
+        "private_media": env("THROTTLE_PRIVATE_MEDIA_RATE", "120/minute"),
+    },
     "EXCEPTION_HANDLER": "splex.shared.api.exception_handler",
 }
 

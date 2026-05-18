@@ -12,6 +12,7 @@ from splex.invitations.services import create_friend_invitation
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
 from splex.settlements.services import create_settlement
+from splex.shared.media import signed_media_url
 
 
 def accessible_friendships(user):
@@ -39,7 +40,11 @@ class FriendListView(APIView):
                 {
                     "id": friendship.id,
                     "display_name": other.display_name,
-                    "avatar_url": other.user.avatar_url if other.user_id else "",
+                    "avatar_url": (
+                        signed_media_url(other.user.avatar_url)
+                        if other.user_id and other.user.avatar_url
+                        else ""
+                    ),
                     "participant_id": other.id,
                     "currency": friendship.default_currency,
                     "balance": str(friendship_balance_for_user(friendship, request.user)),
@@ -63,7 +68,11 @@ class FriendDetailView(APIView):
             {
                 "id": friendship.id,
                 "display_name": other.display_name,
-                "avatar_url": other.user.avatar_url if other.user_id else "",
+                "avatar_url": (
+                    signed_media_url(other.user.avatar_url)
+                    if other.user_id and other.user.avatar_url
+                    else ""
+                ),
                 "participant_id": other.id,
                 "current_participant_id": participant.id,
                 "currency": friendship.default_currency,
@@ -134,9 +143,12 @@ class FriendSettlementsView(APIView):
         friendship = Friendship.objects.get(id=friendship_id)
         serializer = SettlementCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        settlement = create_settlement(
-            actor=request.user,
-            friendship=friendship,
-            data=serializer.validated_data,
-        )
+        try:
+            settlement = create_settlement(
+                actor=request.user,
+                friendship=friendship,
+                data=serializer.validated_data,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serialize_settlement(settlement), status=status.HTTP_201_CREATED)

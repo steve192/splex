@@ -6,6 +6,7 @@ import { Button, Card, List, Snackbar, Text, TouchableRipple } from "react-nativ
 import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
 import { Friend, OverviewItem } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { MoneyText } from "../../shared/ui/MoneyText";
@@ -75,7 +76,11 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
               description={`${item.type === "group" ? t("group.title") : t("friend.title")} - ${item.currency}`}
               left={(props) =>
                 item.type === "group" ? (
-                  <PersonAvatar name={item.name} imageUrl={item.icon_url} />
+                  <PersonAvatar
+                    name={item.name}
+                    imageUrl={item.icon_url}
+                    imageSource={defaultGroupAvatar(item.name)}
+                  />
                 ) : (
                   <PersonAvatar name={item.name} imageUrl={item.avatar_url} />
                 )
@@ -104,7 +109,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
               {t("friend.invite")}
             </Button>
           </View>
-        {!items.length ? <EmptyState text={t("overview.empty")} /> : null}
+        {!items.length ? <EmptyState image={appImages.emptyGroupsFriends} text={t("overview.empty")} /> : null}
         <View style={styles.listSection}>
           <Text variant="titleLarge">{t("overview.groups")}</Text>
           {groups.length ? groups.map(renderItem) : <Text variant="bodyMedium">{t("overview.noGroups")}</Text>}

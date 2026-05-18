@@ -1,4 +1,4 @@
-export function urlBase64ToUint8Array(value: string): Uint8Array {
+export function urlBase64ToArrayBuffer(value: string): ArrayBuffer {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
@@ -6,5 +6,5 @@ export function urlBase64ToUint8Array(value: string): Uint8Array {
   for (let index = 0; index < rawData.length; index += 1) {
     output[index] = rawData.charCodeAt(index);
   }
-  return output;
+  return output.buffer.slice(output.byteOffset, output.byteOffset + output.byteLength);
 }

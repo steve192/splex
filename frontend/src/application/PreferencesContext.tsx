@@ -4,7 +4,8 @@ import { ThemeMode } from "../shared/types/models";
 
 export type PreferencesContextValue = {
   themeMode: ThemeMode;
-  toggleTheme(): void;
+  resolvedThemeMode: Exclude<ThemeMode, "system">;
+  setThemeMode(mode: ThemeMode): void;
 };
 
 export const PreferencesContext = createContext<PreferencesContextValue | null>(null);

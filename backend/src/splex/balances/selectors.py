@@ -5,6 +5,7 @@ from splex.expenses.models import Expense
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
+from splex.shared.media import signed_media_url
 from splex.shared.money import money
 
 
@@ -74,7 +75,7 @@ def group_member_balance_rows(group):
     participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
     names = {participant.id: participant.display_name for participant in participants}
     avatars = {
-        participant.id: participant.user.avatar_url
+        participant.id: signed_media_url(participant.user.avatar_url)
         for participant in participants
         if participant.user_id and participant.user.avatar_url
     }

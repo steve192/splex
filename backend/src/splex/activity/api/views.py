@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from splex.activity.models import ActivityEvent
+from splex.shared.media import signed_media_url
 
 
 def activity_context(event, user):
@@ -58,7 +59,9 @@ class ActivityListView(APIView):
                     "id": event.id,
                     "event_type": event.event_type,
                     "actor": str(event.actor),
-                    "actor_avatar_url": event.actor.avatar_url,
+                    "actor_avatar_url": signed_media_url(event.actor.avatar_url)
+                    if event.actor.avatar_url
+                    else "",
                     "payload": event.payload,
                     "created_at": event.created_at,
                     "group_id": event.group_id,

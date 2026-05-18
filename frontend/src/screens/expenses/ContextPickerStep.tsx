@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { View } from "react-native";
 import { Card, HelperText, List, Searchbar, Text, TouchableRipple } from "react-native-paper";
 
+import { defaultGroupAvatar } from "../../shared/assets/images";
 import { ContextOption, Friend, Group } from "../../shared/types/models";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -38,6 +39,7 @@ export function ContextPickerStep({
             title={group.name}
             description={group.default_currency}
             imageUrl={group.icon_url}
+            imageSource={defaultGroupAvatar(group.name)}
             onPress={() =>
               onSelect({
                 type: "group",
@@ -101,11 +103,13 @@ function ContextRow({
   title,
   description,
   imageUrl,
+  imageSource,
   onPress
 }: {
   title: string;
   description: string;
   imageUrl?: string;
+  imageSource?: Parameters<typeof PersonAvatar>[0]["imageSource"];
   onPress: () => void;
 }) {
   return (
@@ -116,7 +120,7 @@ function ContextRow({
             style={styles.listTile}
             title={title}
             description={description}
-            left={() => <PersonAvatar name={title} imageUrl={imageUrl} />}
+            left={() => <PersonAvatar name={title} imageUrl={imageUrl} imageSource={imageSource} />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
           />
         </Card.Content>

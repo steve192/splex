@@ -1,7 +1,5 @@
 import logging
 import mimetypes
-from urllib.parse import urlparse
-
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.http import FileResponse
@@ -11,6 +9,7 @@ from rest_framework.views import APIView
 
 from splex.invitations.models import Invitation
 from splex.invitations.services import accept_invitation
+from splex.shared.media import media_storage_path
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +25,13 @@ def invitation_image_url(token: str, kind: str, image_url: str) -> str:
 
 
 def storage_path_from_media_url(url: str) -> str:
-    path = urlparse(url).path
-    media_url = settings.MEDIA_URL
-    if not path.startswith(media_url):
-        raise ValueError("Image is not stored in local media.")
-    return path.removeprefix(media_url)
+    return media_storage_path(url)
 
 
 class InvitationPreviewView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_scope = "invitation_preview"
 
     def get(self, request, token):
         logger.info("Invitation preview requested token_prefix=%s", token[:6])
@@ -75,6 +72,8 @@ class InvitationPreviewView(APIView):
 
 class InvitationImageView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_scope = "private_media"
 
     def get(self, request, token, kind):
         try:
