@@ -13,7 +13,12 @@ from splex.participants.services import get_or_create_user_participant
 
 def request_magic_login(email: str, invite_token: str = ""):
     email = email.strip().lower()
-    challenge, code, token = MagicLoginChallenge.create(email)
+    with transaction.atomic():
+        MagicLoginChallenge.objects.filter(
+            email=email,
+            consumed_at__isnull=True,
+        ).update(consumed_at=timezone.now())
+        challenge, code, token = MagicLoginChallenge.create(email)
     query = {"token": token}
     if invite_token:
         query["inviteToken"] = invite_token
@@ -31,7 +36,8 @@ def request_magic_login(email: str, invite_token: str = ""):
 @transaction.atomic
 def authenticate_magic_code(email: str, code: str):
     challenge = (
-        MagicLoginChallenge.objects.filter(email=email.strip().lower())
+        MagicLoginChallenge.objects.select_for_update()
+        .filter(email=email.strip().lower())
         .order_by("-created_at")
         .first()
     )
@@ -43,7 +49,7 @@ def authenticate_magic_code(email: str, code: str):
 @transaction.atomic
 def authenticate_magic_token(token: str):
     token_hash = MagicLoginChallenge.hash_token(token)
-    challenge = MagicLoginChallenge.objects.filter(token_hash=token_hash).first()
+    challenge = MagicLoginChallenge.objects.select_for_update().filter(token_hash=token_hash).first()
     if not challenge or not challenge.is_valid():
         raise ValueError("Invalid or expired login token.")
     return consume_challenge(challenge)

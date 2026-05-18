@@ -1,5 +1,6 @@
 from splex.expenses.models import Expense
 from splex.participants.models import Participant
+from splex.shared.media import signed_media_url
 
 
 def serialize_expense(expense):
@@ -10,7 +11,7 @@ def serialize_expense(expense):
     participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
     participant_names = {participant.id: participant.display_name for participant in participants}
     participant_avatars = {
-        participant.id: participant.user.avatar_url
+        participant.id: signed_media_url(participant.user.avatar_url)
         for participant in participants
         if participant.user_id and participant.user.avatar_url
     }
@@ -59,13 +60,15 @@ def serialize_settlement(settlement):
         "payer_display_name": settlement.payer_participant.display_name,
         "receiver_display_name": settlement.receiver_participant.display_name,
         "payer_avatar_url": (
-            settlement.payer_participant.user.avatar_url
+            signed_media_url(settlement.payer_participant.user.avatar_url)
             if settlement.payer_participant.user_id
+            and settlement.payer_participant.user.avatar_url
             else ""
         ),
         "receiver_avatar_url": (
-            settlement.receiver_participant.user.avatar_url
+            signed_media_url(settlement.receiver_participant.user.avatar_url)
             if settlement.receiver_participant.user_id
+            and settlement.receiver_participant.user.avatar_url
             else ""
         ),
         "amount": str(settlement.amount),

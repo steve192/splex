@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from splex.shared.media import signed_media_url
+
 
 class MagicLinkRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -20,8 +22,11 @@ class UserSerializer(serializers.Serializer):
     email = serializers.EmailField()
     display_name = serializers.CharField()
     default_currency = serializers.CharField()
-    avatar_url = serializers.CharField()
+    avatar_url = serializers.SerializerMethodField()
     push_enabled = serializers.BooleanField()
+
+    def get_avatar_url(self, user):
+        return signed_media_url(user.avatar_url) if user.avatar_url else ""
 
 
 class UserUpdateSerializer(serializers.Serializer):

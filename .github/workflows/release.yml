@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      GH_TOKEN:
+        required: true
+      EXPO_TOKEN:
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  semantic-preview:
+    name: Semantic release preview
+    runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.semantic.outputs.new_release_published }}
+      version: ${{ steps.semantic.outputs.new_release_version }}
+      tag: ${{ steps.semantic.outputs.new_release_git_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run semantic-release dry run
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          dry_run: true
+          semantic_version: 23
+          branches: main
+          extra_plugins: |
+            @semantic-release/exec
+            @semantic-release/git
+            conventional-changelog-conventionalcommits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  release:
+    name: Publish release
+    needs: semantic-preview
+    if: needs.semantic-preview.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run semantic-release
+        id: semrel
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23
+          branches: main
+          extra_plugins: |
+            @semantic-release/exec
+            @semantic-release/git
+            conventional-changelog-conventionalcommits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup frontend dependencies
+        if: steps.semrel.outputs.new_release_published == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Android APK and AAB on EAS
+        if: steps.semrel.outputs.new_release_published == 'true'
+        working-directory: frontend
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is required to build release artifacts."
+            exit 1
+          fi
+          npx eas-cli build --platform android --profile production-apk --non-interactive --wait --json > /tmp/eas-apk.json
+          npx eas-cli build --platform android --profile production --non-interactive --wait --json > /tmp/eas-aab.json
+
+      - name: Download Android artifacts
+        if: steps.semrel.outputs.new_release_published == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.semrel.outputs.new_release_version }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          mkdir -p release-artifacts
+          apk_url=$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl else .artifacts.buildUrl // .artifacts.applicationArchiveUrl end' /tmp/eas-apk.json)
+          aab_url=$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl else .artifacts.buildUrl // .artifacts.applicationArchiveUrl end' /tmp/eas-aab.json)
+          curl -fsSL "$apk_url" -o "release-artifacts/splex-${RELEASE_VERSION}.apk"
+          curl -fsSL "$aab_url" -o "release-artifacts/splex-${RELEASE_VERSION}.aab"
+
+      - name: Attach APK/AAB to GitHub release
+        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semrel.outputs.new_release_git_tag }}
+          files: |
+            release-artifacts/*.apk
+            release-artifacts/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

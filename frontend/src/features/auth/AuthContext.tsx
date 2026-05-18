@@ -15,6 +15,7 @@ type AuthContextValue = {
   api: ApiClient;
   user: User | null;
   tokens: Tokens | null;
+  initialized: boolean;
   refreshUser(): Promise<void>;
   requestMagicLink(email: string, inviteToken?: string): Promise<void>;
   loginWithCode(email: string, code: string): Promise<void>;
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ api, children }: { api: ApiClient; children: ReactNode }) {
   const [tokens, setTokens] = useState<Tokens | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     api.setTokenChangeHandler(setTokens);
@@ -34,7 +36,10 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
 
   useEffect(() => {
     tokenStorage.get().then(async (stored) => {
-      if (!stored) return;
+      if (!stored) {
+        setInitialized(true);
+        return;
+      }
       api.setTokens(stored);
       setTokens(stored);
       try {
@@ -43,6 +48,8 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         await tokenStorage.set(null);
         api.setTokens(null);
         setTokens(null);
+      } finally {
+        setInitialized(true);
       }
     });
   }, [api]);
@@ -52,6 +59,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
       api,
       user,
       tokens,
+      initialized,
       async refreshUser() {
         setUser(await api.get<User>("/api/me/"));
       },
@@ -88,7 +96,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         }
       }
     }),
-    [api, tokens, user]
+    [api, initialized, tokens, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

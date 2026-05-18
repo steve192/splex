@@ -33,6 +33,7 @@ from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
 from splex.settlements.services import create_settlement
+from splex.shared.media import signed_media_url
 
 
 def get_active_group(group_id):
@@ -55,7 +56,7 @@ class OverviewView(APIView):
                     "type": "group",
                     "id": group.id,
                     "name": group.name,
-                    "icon_url": group.icon_url,
+                    "icon_url": signed_media_url(group.icon_url) if group.icon_url else "",
                     "currency": group.default_currency,
                     "balance": str(total),
                     "archived_at": group.archived_at,
@@ -209,11 +210,14 @@ class GroupSettlementsView(APIView):
         group = get_active_group(group_id)
         serializer = SettlementCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        settlement = create_settlement(
-            actor=request.user,
-            group=group,
-            data=serializer.validated_data,
-        )
+        try:
+            settlement = create_settlement(
+                actor=request.user,
+                group=group,
+                data=serializer.validated_data,
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serialize_settlement(settlement), status=status.HTTP_201_CREATED)
 
 

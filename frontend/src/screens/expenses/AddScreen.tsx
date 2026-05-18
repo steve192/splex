@@ -15,8 +15,10 @@ import {
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, AddStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { ApiError } from "../../shared/api/client";
+import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { CURRENCIES } from "../../shared/lib/currencies";
 import { asNumber, buildParticipantsForFriend, createClientId, formatMoney, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -39,8 +41,6 @@ import {
 } from "./expenseFormLogic";
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
-
-const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "PLN", "CZK", "DKK", "SEK", "NOK"];
 
 type ActiveSheet = "currency" | "date" | "payer" | "split" | null;
 type AddStep = "context" | "details";
@@ -476,7 +476,15 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       <Screen>
         <View style={styles.rowBetween}>
           <View style={[styles.flex, styles.inline]}>
-            {selectedContext ? <PersonAvatar name={selectedContext.name} imageUrl={selectedContext.image_url} /> : null}
+            {selectedContext ? (
+              <PersonAvatar
+                name={selectedContext.name}
+                imageUrl={selectedContext.image_url}
+                imageSource={
+                  selectedContext.type === "group" ? defaultGroupAvatar(selectedContext.name) : undefined
+                }
+              />
+            ) : null}
             <View>
               <Text variant="headlineSmall">{editing ? t("expense.edit") : t("expense.add")}</Text>
               {selectedContext ? <Text variant="bodyMedium">{selectedContext.name}</Text> : null}

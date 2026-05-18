@@ -5,7 +5,9 @@ import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
+import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { formatDeviceDate } from "../../shared/lib/dates";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -96,7 +98,7 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
   return (
     <Screen>
       <Text variant="headlineSmall">{t("tabs.activity")}</Text>
-      {!events.length ? <EmptyState text={t("activity.empty")} /> : null}
+      {!events.length ? <EmptyState image={appImages.emptyActivity} text={t("activity.empty")} /> : null}
       {events.map((item) => {
         const description = activityDescription(item);
         const context = activityContext(item, t);
@@ -115,7 +117,7 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
                   right={() => (
                     <View style={styles.listTileRight}>
                       <List.Icon icon={activityIcon(item.event_type)} />
-                      <Text variant="bodySmall">{new Date(item.created_at).toLocaleDateString()}</Text>
+                      <Text variant="bodySmall">{formatDeviceDate(item.created_at)}</Text>
                     </View>
                   )}
                 />

@@ -32,7 +32,11 @@ function OverviewStackNavigator() {
   const { t } = useI18n();
   return (
     <OverviewStack.Navigator>
-      <OverviewStack.Screen name="OverviewHome" component={OverviewScreen} options={{ headerShown: false }} />
+      <OverviewStack.Screen
+        name="OverviewHome"
+        component={OverviewScreen}
+        options={{ headerShown: false, title: t("tabs.overview") }}
+      />
       <OverviewStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: t("group.create") }} />
       <OverviewStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: t("group.title") }} />
       <OverviewStack.Screen name="GroupSettings" component={GroupSettingsScreen} options={{ title: t("group.settings") }} />
@@ -48,7 +52,11 @@ function ActivityStackNavigator() {
   const { t } = useI18n();
   return (
     <ActivityStack.Navigator>
-      <ActivityStack.Screen name="ActivityHome" component={ActivityScreen} options={{ headerShown: false }} />
+      <ActivityStack.Screen
+        name="ActivityHome"
+        component={ActivityScreen}
+        options={{ headerShown: false, title: t("tabs.activity") }}
+      />
       <ActivityStack.Screen name="AddExpense" component={AddScreen} options={{ title: t("expense.add") }} />
       <ActivityStack.Screen name="ExpenseDetail" component={ExpenseDetailScreen} options={{ title: t("expense.details") }} />
       <ActivityStack.Screen name="SettlementDetail" component={SettlementDetailScreen} options={{ title: t("settlement.title") }} />
@@ -77,6 +85,18 @@ function MainTabs() {
       <Tabs.Screen
         name="Overview"
         component={OverviewStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: (event) => {
+            event.preventDefault();
+            navigation.navigate({
+              name: "Overview",
+              params: {
+                screen: "OverviewHome"
+              },
+              merge: false
+            } as never);
+          }
+        })}
         options={{ title: t("tabs.overview"), tabBarIcon: ({ color }) => <MaterialCommunityIcons name="view-dashboard-outline" size={22} color={color} /> }}
       />
       <Tabs.Screen
@@ -112,7 +132,8 @@ function MainTabs() {
 }
 
 export function AppNavigator() {
-  const { tokens, api } = useAuth();
+  const { t } = useI18n();
+  const { tokens, api, initialized } = useAuth();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
   const [checkedAuthState, setCheckedAuthState] = useState<"guest" | "auth" | null>("guest");
 
@@ -195,6 +216,10 @@ export function AppNavigator() {
     }
   }, [tokens]);
 
+  if (!initialized) {
+    return null;
+  }
+
   if (tokens && checkedAuthState !== "auth") {
     inviteDebug("navigator waiting for invite check before rendering");
     return null;
@@ -229,7 +254,11 @@ export function AppNavigator() {
           </>
         )
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false, title: t("auth.title") }}
+        />
       )}
     </Stack.Navigator>
   );

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    ":rebaseStalePrs"
+  ],
+  "labels": ["dependencies"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 10,
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "description": "Automerge safe dependency updates",
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Never automerge major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "Keep Expo ecosystem updates visible and grouped",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["expo", "expo-*", "@expo/*", "react-native", "react-native-*"],
+      "groupName": "expo-and-react-native"
+    },
+    {
+      "description": "Python backend dependencies",
+      "matchManagers": ["pep621", "pip_requirements"],
+      "groupName": "python-backend"
+    }
+  ]
+}

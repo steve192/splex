@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Dialog, List, Text, TextInput } from "react-native-paper";
 
+import { CURRENCIES } from "../lib/currencies";
 import { PersonAvatar } from "../ui/PersonAvatar";
+import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
 import { styles } from "../ui/styles";
 
 export type SettlementDialogTarget = {
@@ -19,8 +22,10 @@ type SettlementDialogProps = {
   visible: boolean;
   target: SettlementDialogTarget | null;
   amount: string;
+  currency: string;
   t: (key: string) => string;
   onAmountChange: (amount: string) => void;
+  onCurrencyChange: (currency: string) => void;
   onDismiss: () => void;
   onSave: () => void;
 };
@@ -29,42 +34,67 @@ export function SettlementDialog({
   visible,
   target,
   amount,
+  currency,
   t,
   onAmountChange,
+  onCurrencyChange,
   onDismiss,
   onSave
 }: SettlementDialogProps) {
+  const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
+  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
+
+  useEffect(() => {
+    if (!visible) setCurrencySheetOpen(false);
+  }, [visible]);
+
   return (
-    <Dialog visible={visible} onDismiss={onDismiss}>
-      <Dialog.Title>{t("settlement.title")}</Dialog.Title>
-      <Dialog.Content>
-        {target ? (
-          <View style={styles.settlementPreview}>
-            <View style={styles.settlementPerson}>
-              <PersonAvatar name={target.payer_display_name} imageUrl={target.payer_avatar_url} />
-              <Text variant="bodyMedium">{target.payer_display_name}</Text>
+    <>
+      <Dialog visible={visible} onDismiss={onDismiss}>
+        <Dialog.Title>{t("settlement.title")}</Dialog.Title>
+        <Dialog.Content>
+          {target ? (
+            <View style={styles.settlementPreview}>
+              <View style={styles.settlementPerson}>
+                <PersonAvatar name={target.payer_display_name} imageUrl={target.payer_avatar_url} />
+                <Text variant="bodyMedium">{target.payer_display_name}</Text>
+              </View>
+              <List.Icon icon="arrow-right" />
+              <View style={styles.settlementPerson}>
+                <PersonAvatar name={target.receiver_display_name} imageUrl={target.receiver_avatar_url} />
+                <Text variant="bodyMedium">{target.receiver_display_name}</Text>
+              </View>
             </View>
-            <List.Icon icon="arrow-right" />
-            <View style={styles.settlementPerson}>
-              <PersonAvatar name={target.receiver_display_name} imageUrl={target.receiver_avatar_url} />
-              <Text variant="bodyMedium">{target.receiver_display_name}</Text>
-            </View>
+          ) : null}
+          <View style={styles.formRow}>
+            <TextInput
+              mode="outlined"
+              label={t("expense.amount")}
+              keyboardType="decimal-pad"
+              value={amount}
+              onChangeText={onAmountChange}
+              style={styles.flex}
+            />
+            <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)} style={{ alignSelf: "center" }}>
+              {currency}
+            </Button>
           </View>
-        ) : null}
-        <TextInput
-          mode="outlined"
-          label={t("expense.amount")}
-          keyboardType="decimal-pad"
-          value={amount}
-          onChangeText={onAmountChange}
-        />
-      </Dialog.Content>
-      <Dialog.Actions>
-        <Button onPress={onDismiss}>{t("common.cancel")}</Button>
-        <Button disabled={!amount || !target} onPress={onSave}>
-          {t("settlement.save")}
-        </Button>
-      </Dialog.Actions>
-    </Dialog>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={onDismiss}>{t("common.cancel")}</Button>
+          <Button disabled={!amount || !target} onPress={onSave}>
+            {t("settlement.save")}
+          </Button>
+        </Dialog.Actions>
+      </Dialog>
+      <SelectionSheet
+        visible={visible && currencySheetOpen}
+        title={t("expense.currency")}
+        options={currencyOptions}
+        value={currency}
+        onSelect={onCurrencyChange}
+        onDismiss={() => setCurrencySheetOpen(false)}
+      />
+    </>
   );
 }

@@ -57,6 +57,7 @@ class MagicLoginChallenge(models.Model):
 
     @classmethod
     def create(cls, email: str):
+        email = email.strip().lower()
         code = f"{secrets.randbelow(1_000_000):06d}"
         token = secrets.token_urlsafe(32)
         challenge = cls.objects.create(

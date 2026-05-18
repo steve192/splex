@@ -1,61 +1,50 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  DarkTheme as NavigationDarkTheme,
-  DefaultTheme as NavigationLightTheme,
-  LinkingOptions,
-  NavigationContainer
-} from "@react-navigation/native";
+import { LinkingOptions, NavigationContainer } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
-import { MD3DarkTheme, MD3LightTheme, PaperProvider } from "react-native-paper";
+import { useColorScheme } from "react-native";
+import { PaperProvider } from "react-native-paper";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient } from "../shared/api/client";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ThemeMode } from "../shared/types/models";
+import { styles } from "../shared/ui/styles";
 import { AppNavigator } from "./AppNavigator";
 import { PreferencesContext } from "./PreferencesContext";
 import { RootStackParamList } from "./navigationTypes";
+import { createAppTheme, createNavigationTheme } from "./theme";
 
 export function AppShell() {
   const api = useMemo(() => new ApiClient(), []);
-  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const systemThemeMode = useColorScheme();
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+  const resolvedThemeMode = themeMode === "system" ? (systemThemeMode === "dark" ? "dark" : "light") : themeMode;
 
   useEffect(() => {
     AsyncStorage.getItem("splex.theme").then((stored) => {
-      if (stored === "light" || stored === "dark") setThemeMode(stored);
+      if (stored === "light" || stored === "dark" || stored === "system") setThemeModeState(stored);
     });
   }, []);
 
-  const paperTheme = {
-    ...(themeMode === "dark" ? MD3DarkTheme : MD3LightTheme),
-    roundness: 2
-  };
-  const navigationTheme = {
-    ...(themeMode === "dark" ? NavigationDarkTheme : NavigationLightTheme),
-    colors: {
-      ...(themeMode === "dark" ? NavigationDarkTheme.colors : NavigationLightTheme.colors),
-      primary: paperTheme.colors.primary,
-      background: paperTheme.colors.background,
-      card: paperTheme.colors.surface,
-      text: paperTheme.colors.onSurface,
-      border: paperTheme.colors.outline
-    }
-  };
+  const paperTheme = useMemo(() => createAppTheme(resolvedThemeMode), [resolvedThemeMode]);
+  const navigationTheme = useMemo(
+    () => createNavigationTheme(resolvedThemeMode, paperTheme),
+    [paperTheme, resolvedThemeMode]
+  );
   const preferences = useMemo(
     () => ({
       themeMode,
-      toggleTheme() {
-        setThemeMode((current) => {
-          const next = current === "dark" ? "light" : "dark";
-          AsyncStorage.setItem("splex.theme", next).catch(() => undefined);
-          return next;
-        });
+      resolvedThemeMode,
+      setThemeMode(mode: ThemeMode) {
+        setThemeModeState(mode);
+        AsyncStorage.setItem("splex.theme", mode).catch(() => undefined);
       }
     }),
-    [themeMode]
+    [resolvedThemeMode, themeMode]
   );
 
   const linking = useMemo<LinkingOptions<RootStackParamList>>(
@@ -99,23 +88,41 @@ export function AppShell() {
 
   return (
     <PreferencesContext.Provider value={preferences}>
-      <PaperProvider
-        theme={paperTheme}
-        settings={{
-          icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
-        }}
-      >
-        <I18nProvider>
-          <AuthProvider api={api}>
-            <FeedbackProvider>
-              <NavigationContainer theme={navigationTheme} linking={linking}>
-                <AppNavigator />
-              </NavigationContainer>
-            </FeedbackProvider>
-            <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
-          </AuthProvider>
-        </I18nProvider>
-      </PaperProvider>
+      <I18nProvider>
+        <PaperProvider
+          theme={paperTheme}
+          settings={{
+            icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
+          }}
+        >
+          <SafeAreaProvider>
+            <AuthProvider api={api}>
+              <FeedbackProvider>
+                <SafeAreaView
+                  edges={["top"]}
+                  style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}
+                >
+                  <NavigationContainer
+                    theme={navigationTheme}
+                    linking={linking}
+                    documentTitle={{
+                      formatter(options) {
+                        return options?.title ? `Splex | ${options.title}` : "Splex";
+                      }
+                    }}
+                  >
+                    <AppNavigator />
+                  </NavigationContainer>
+                </SafeAreaView>
+              </FeedbackProvider>
+              <StatusBar
+                style={resolvedThemeMode === "dark" ? "light" : "dark"}
+                backgroundColor={paperTheme.colors.background}
+              />
+            </AuthProvider>
+          </SafeAreaProvider>
+        </PaperProvider>
+      </I18nProvider>
     </PreferencesContext.Provider>
   );
 }

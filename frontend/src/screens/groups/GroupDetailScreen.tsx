@@ -4,6 +4,7 @@ import { View } from "react-native";
 import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
@@ -37,6 +38,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
+  const [settleCurrency, setSettleCurrency] = useState("EUR");
   const [snackbar, setSnackbar] = useState("");
   const balanceSummary = useMemo(
     () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
@@ -60,6 +62,25 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     return unsubscribe;
   }, [navigation, groupId]);
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.inline}>
+          <PersonAvatar
+            name={group?.name ?? t("group.title")}
+            imageUrl={group?.icon_url}
+            imageSource={defaultGroupAvatar(group?.name)}
+            size={30}
+          />
+          <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
+        </View>
+      ),
+      headerRight: () => (
+        <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
+      )
+    });
+  }, [group, groupId, navigation, t]);
+
   async function invite() {
     const body = {};
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, body);
@@ -71,7 +92,8 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     await api.post(`/api/groups/${groupId}/settlements/`, {
       payer_participant_id: settleTarget.payer_participant_id,
       receiver_participant_id: settleTarget.receiver_participant_id,
-      amount: settleAmount
+      amount: settleAmount,
+      currency: settleCurrency
     });
     setSettleTarget(null);
     setSettleAmount("");
@@ -104,13 +126,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   return (
     <View style={styles.flex}>
       <Screen>
-        <View style={styles.rowBetween}>
-          <View style={styles.inline}>
-            <PersonAvatar name={group?.name ?? t("group.title")} imageUrl={group?.icon_url} size={44} />
-            <Text variant="headlineSmall">{group?.name ?? t("group.title")}</Text>
-          </View>
-          <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
-        </View>
         <View style={styles.rowActions}>
           <Button
             mode="contained"
@@ -224,7 +239,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                 )
               )
             ) : pendingExpenses.length ? null : (
-              <EmptyState text={t("expense.empty")} />
+              <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
             )}
           </>
         ) : (
@@ -267,6 +282,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                                 </Text>
                                 <Button
                                   mode="elevated"
+                                  icon="cash-check"
                                   compact
                                   onPress={() => {
                                     setSettleTarget({
@@ -280,6 +296,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                                       receiver_avatar_url: avatarForParticipant(detail.to_participant_id)
                                     });
                                     setSettleAmount(detail.amount);
+                                    setSettleCurrency(detail.currency);
                                   }}
                                 >
                                   {t("settlement.settle")}
@@ -296,7 +313,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                 );
               })
             ) : (
-              <EmptyState text={t("balance.empty")} />
+              <EmptyState image={appImages.emptyExpenses} text={t("balance.empty")} />
             )}
           </>
         )}
@@ -308,8 +325,10 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           visible={!!settleTarget}
           target={settleTarget}
           amount={settleAmount}
+          currency={settleCurrency}
           t={t}
           onAmountChange={setSettleAmount}
+          onCurrencyChange={setSettleCurrency}
           onDismiss={() => setSettleTarget(null)}
           onSave={settle}
         />

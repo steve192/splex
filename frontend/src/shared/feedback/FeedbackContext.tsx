@@ -1,12 +1,15 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createContext, ReactNode, useContext, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { Animated, Easing, Image, ImageSourcePropType, StyleSheet, View } from "react-native";
 import { Surface, useTheme } from "react-native-paper";
+
+import { appImages } from "../assets/images";
 
 type FeedbackIcon = keyof typeof MaterialCommunityIcons.glyphMap;
 
 type FeedbackOptions = {
   icon?: FeedbackIcon;
+  image?: ImageSourcePropType;
 };
 
 type FeedbackContextValue = {
@@ -19,6 +22,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
   const [icon, setIcon] = useState<FeedbackIcon>("check");
+  const [image, setImage] = useState<ImageSourcePropType>(appImages.successCheck);
   const opacity = useRef(new Animated.Value(0)).current;
   const iconScale = useRef(new Animated.Value(0.4)).current;
   const iconRotate = useRef(new Animated.Value(0)).current;
@@ -28,6 +32,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     runId.current += 1;
     const currentRun = runId.current;
     setIcon(options?.icon ?? "check");
+    setImage(options?.image ?? feedbackImageForIcon(options?.icon));
     setVisible(true);
     opacity.setValue(0);
     iconScale.setValue(0.4);
@@ -108,7 +113,11 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                     transform: [{ scale: iconScale }, { rotate: rotation }]
                   }}
                 >
-                  <MaterialCommunityIcons name={icon} size={66} color={theme.colors.primary} />
+                  {image ? (
+                    <Image source={image} style={feedbackStyles.image} resizeMode="contain" />
+                  ) : (
+                    <MaterialCommunityIcons name={icon} size={66} color={theme.colors.primary} />
+                  )}
                 </Animated.View>
               </View>
             </Surface>
@@ -117,6 +126,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       </View>
     </FeedbackContext.Provider>
   );
+}
+
+function feedbackImageForIcon(icon?: FeedbackIcon): ImageSourcePropType {
+  if (icon === "cash-check") return appImages.settlementSuccess;
+  if (icon === "cloud-check-outline") return appImages.offlineSync;
+  return appImages.successCheck;
 }
 
 export function useFeedback(): FeedbackContextValue {
@@ -135,6 +150,10 @@ const feedbackStyles = StyleSheet.create({
     height: 112,
     justifyContent: "center",
     width: 112
+  },
+  image: {
+    height: 80,
+    width: 80
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

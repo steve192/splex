@@ -40,3 +40,10 @@ class WebPushSubscription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+class VapidKey(models.Model):
+    public_key = models.TextField()
+    private_key = models.TextField()
+    expires_at = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)

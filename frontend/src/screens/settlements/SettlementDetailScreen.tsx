@@ -7,6 +7,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { formatDeviceDate } from "../../shared/lib/dates";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
 import { Friend, Group, Participant, Settlement } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
@@ -55,6 +56,14 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
     return unsubscribe;
   }, [navigation, settlementId]);
 
+  useEffect(() => {
+    navigation.setOptions({
+      title: settlement
+        ? `${settlement.amount} ${settlement.currency}`
+        : t("settlement.title")
+    });
+  }, [navigation, settlement, t]);
+
   async function deleteSettlement() {
     await api.delete(`/api/settlements/${settlementId}/`);
     setConfirmDelete(false);
@@ -84,7 +93,6 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
   return (
     <View style={styles.flex}>
       <Screen>
-        <Text variant="headlineSmall">{t("settlement.title")}</Text>
         {settlement ? (
           <>
             <Card mode="elevated">
@@ -92,7 +100,7 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
                 <Text variant="headlineMedium">
                   {settlement.amount} {settlement.currency}
                 </Text>
-                <Text variant="bodyMedium">{new Date(settlement.created_at).toLocaleDateString()}</Text>
+                <Text variant="bodyMedium">{formatDeviceDate(settlement.created_at)}</Text>
               </Card.Content>
             </Card>
 

@@ -5,6 +5,7 @@ import { Button, Card, Portal, Text, useTheme } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
+import { appImages } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
@@ -34,6 +35,7 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
   const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
+  const [settleCurrency, setSettleCurrency] = useState("EUR");
   const balanceSummary = useMemo(() => asNumber(friend?.balance), [friend?.balance]);
 
   async function load() {
@@ -51,12 +53,24 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
     return unsubscribe;
   }, [navigation, friendshipId]);
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.inline}>
+          <PersonAvatar name={friend?.display_name ?? t("friend.title")} imageUrl={friend?.avatar_url} size={30} />
+          <Text variant="titleMedium">{friend?.display_name ?? t("friend.title")}</Text>
+        </View>
+      )
+    });
+  }, [friend, navigation, t]);
+
   async function settle() {
     if (!friend || !settleTarget) return;
     await api.post(`/api/friends/${friendshipId}/settlements/`, {
       payer_participant_id: settleTarget.payer_participant_id,
       receiver_participant_id: settleTarget.receiver_participant_id,
-      amount: settleAmount
+      amount: settleAmount,
+      currency: settleCurrency
     });
     setSettleTarget(null);
     setSettleAmount("");
@@ -89,18 +103,12 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
       currency: friend.currency
     });
     setSettleAmount(formatMoney(friend.balance));
+    setSettleCurrency(friend.currency);
   }
 
   return (
     <View style={styles.flex}>
       <Screen>
-        <View style={styles.rowBetween}>
-          <View style={styles.inline}>
-            <PersonAvatar name={friend?.display_name ?? t("friend.title")} imageUrl={friend?.avatar_url} size={44} />
-            <Text variant="headlineSmall">{friend?.display_name ?? t("friend.title")}</Text>
-          </View>
-        </View>
-
         <View style={styles.rowActions}>
           <Button
             mode="contained"
@@ -195,7 +203,9 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
             />
           )
         )}
-        {!ledger.length && !pendingExpenses.length ? <EmptyState text={t("expense.empty")} /> : null}
+        {!ledger.length && !pendingExpenses.length ? (
+          <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
+        ) : null}
       </Screen>
 
       <Portal>
@@ -203,8 +213,10 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
           visible={!!settleTarget}
           target={settleTarget}
           amount={settleAmount}
+          currency={settleCurrency}
           t={t}
           onAmountChange={setSettleAmount}
+          onCurrencyChange={setSettleCurrency}
           onDismiss={() => setSettleTarget(null)}
           onSave={settle}
         />

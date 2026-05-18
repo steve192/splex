@@ -1,4 +1,4 @@
-export type ThemeMode = "light" | "dark";
+export type ThemeMode = "light" | "dark" | "system";
 export type ContextType = "group" | "friendship";
 export type SplitMethod = "equal_all" | "equal_selected" | "exact" | "percentage" | "adjusted_equal";
 

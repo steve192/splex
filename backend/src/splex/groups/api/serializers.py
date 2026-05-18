@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from splex.shared.media import signed_media_url
+
 
 class ParticipantSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -9,13 +11,17 @@ class ParticipantSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
 
     def get_avatar_url(self, participant):
-        return participant.user.avatar_url if participant.user_id and participant.user.avatar_url else ""
+        return (
+            signed_media_url(participant.user.avatar_url)
+            if participant.user_id and participant.user.avatar_url
+            else ""
+        )
 
 
 class GroupSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
-    icon_url = serializers.CharField()
+    icon_url = serializers.SerializerMethodField()
     default_currency = serializers.CharField()
     default_split_method = serializers.CharField()
     default_split_payload = serializers.JSONField()
@@ -23,6 +29,9 @@ class GroupSerializer(serializers.Serializer):
     deleted_at = serializers.DateTimeField(allow_null=True)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+    def get_icon_url(self, group):
+        return signed_media_url(group.icon_url) if group.icon_url else ""
 
 
 class GroupCreateSerializer(serializers.Serializer):
@@ -63,6 +72,7 @@ class SettlementCreateSerializer(serializers.Serializer):
     payer_participant_id = serializers.IntegerField()
     receiver_participant_id = serializers.IntegerField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    currency = serializers.CharField(min_length=3, max_length=3, required=False)
 
 
 class InvitationCreateSerializer(serializers.Serializer):

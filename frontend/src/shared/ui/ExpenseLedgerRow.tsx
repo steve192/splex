@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { Card, Text, TouchableRipple, useTheme } from "react-native-paper";
 
+import { formatDeviceDateParts } from "../lib/dates";
 import { asNumber, formatMoney } from "../lib/money";
 import { Expense } from "../types/models";
 import { AvatarStack } from "./AvatarStack";
@@ -13,14 +14,6 @@ type ExpenseLedgerRowProps = {
   t: (key: string) => string;
   onPress: () => void;
 };
-
-function dateParts(value: string) {
-  const date = value ? new Date(value) : new Date();
-  return {
-    month: date.toLocaleString(undefined, { month: "short" }).toUpperCase(),
-    day: String(date.getDate()).padStart(2, "0")
-  };
-}
 
 function payerLine(expense: Expense, t: (key: string) => string): string {
   if (!expense.payments.length) return "";
@@ -36,7 +29,7 @@ function payerLine(expense: Expense, t: (key: string) => string): string {
 
 export function ExpenseLedgerRow({ expense, currentParticipantId, t, onPress }: ExpenseLedgerRowProps) {
   const theme = useTheme();
-  const parts = dateParts(expense.date);
+  const parts = formatDeviceDateParts(expense.date);
   const paid = expense.payments
     .filter((share) => share.participant_id === currentParticipantId)
     .reduce((sum, share) => sum + asNumber(share.amount), 0);
