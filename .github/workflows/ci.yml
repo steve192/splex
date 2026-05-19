@@ -138,6 +138,8 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -153,10 +155,8 @@ jobs:
         run: npm ci
 
       - name: Publish Expo update
-        if: ${{ secrets.EXPO_TOKEN != '' }}
+        if: ${{ env.EXPO_TOKEN != '' }}
         run: npx eas update --branch production --auto
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
   renovate-release-check:
     name: Evaluate Renovate-only commits
