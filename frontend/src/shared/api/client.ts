@@ -6,9 +6,12 @@ export type Tokens = {
   refresh: string;
 };
 
-const runtimeEnv = process.env as Record<string, string | undefined>;
-const WEB_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_API_BASE_URL || runtimeEnv.REACT_APP_API_BASE_URL || "";
-const DEFAULT_NATIVE_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_DEFAULT_API_BASE_URL || "https://splex.example.com";
+// Web always uses relative URLs — the PWA is served from the same host as the backend.
+// Native uses a configurable URL stored in AsyncStorage; EXPO_PUBLIC_DEFAULT_API_BASE_URL
+// is the pre-filled default shown on the login screen, baked in at build time.
+const NATIVE_DEFAULT_BASE_URL =
+  (process.env as Record<string, string | undefined>).EXPO_PUBLIC_DEFAULT_API_BASE_URL ??
+  "https://splex.example.com";
 const API_BASE_URL_STORAGE_KEY = "splex.apiBaseUrl";
 
 function summarizeResponseBody(body: string): string {
@@ -55,7 +58,7 @@ export class ApiClient {
   private tokens: Tokens | null = null;
   private refreshPromise: Promise<void> | null = null;
   private tokenChangeHandler: ((tokens: Tokens | null) => void) | null = null;
-  private baseUrl: string | null = Platform.OS === "web" ? WEB_API_BASE_URL : null;
+  private baseUrl: string | null = Platform.OS === "web" ? "" : null;
   private baseUrlPromise: Promise<string> | null = null;
 
   setTokens(tokens: Tokens | null) {
@@ -68,11 +71,11 @@ export class ApiClient {
   }
 
   async getBaseUrl(): Promise<string> {
-    if (Platform.OS === "web") return WEB_API_BASE_URL;
+    if (Platform.OS === "web") return "";
     if (this.baseUrl !== null) return this.baseUrl;
     if (!this.baseUrlPromise) {
       this.baseUrlPromise = AsyncStorage.getItem(API_BASE_URL_STORAGE_KEY).then((stored) => {
-        this.baseUrl = normalizeBaseUrl(stored || DEFAULT_NATIVE_API_BASE_URL);
+        this.baseUrl = normalizeBaseUrl(stored || NATIVE_DEFAULT_BASE_URL);
         return this.baseUrl;
       });
     }
@@ -81,7 +84,7 @@ export class ApiClient {
 
   async setBaseUrl(value: string): Promise<void> {
     if (Platform.OS === "web") return;
-    this.baseUrl = normalizeBaseUrl(value || DEFAULT_NATIVE_API_BASE_URL);
+    this.baseUrl = normalizeBaseUrl(value || NATIVE_DEFAULT_BASE_URL);
     await AsyncStorage.setItem(API_BASE_URL_STORAGE_KEY, this.baseUrl);
   }
 
