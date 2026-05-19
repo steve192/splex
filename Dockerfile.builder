@@ -2,7 +2,7 @@
 # Usage: docker run -e EXPO_TOKEN=... \
 #          -v "$(pwd)/frontend":/builder ghcr.io/steve192/splex-easbuilder:latest <eas-profile> [output-file]
 
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 RUN echo '\
 Acquire::Retries "100";\
