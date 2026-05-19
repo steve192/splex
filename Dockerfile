@@ -1,4 +1,4 @@
-FROM node:20-bookworm AS frontend-build
+FROM node:24.15.0-bookworm AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
