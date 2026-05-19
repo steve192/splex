@@ -136,6 +136,14 @@ export const styles = StyleSheet.create({
     minHeight: 64,
     paddingVertical: 6
   },
+  optionRow: {
+    cursor: "pointer" as any,
+    paddingHorizontal: 16,
+    paddingVertical: 14
+  },
+  optionRowCard: {
+    padding: 0
+  },
   listTileRight: {
     alignItems: "flex-end",
     justifyContent: "center"
