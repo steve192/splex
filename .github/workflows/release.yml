@@ -113,7 +113,7 @@ jobs:
 
       - name: Attach APK to GitHub release
         if: steps.semrel.outputs.new_release_published == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.semrel.outputs.new_release_git_tag }}
           files: frontend/splex-${{ steps.semrel.outputs.new_release_version }}.apk
