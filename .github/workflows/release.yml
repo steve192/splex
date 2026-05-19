@@ -107,7 +107,7 @@ jobs:
         run: |
           docker run \
             -e EXPO_TOKEN="$EXPO_TOKEN" \
-            -v "$(pwd)/frontend":/builder \
+            -v "$(pwd)":/builder \
             ghcr.io/steve192/splex-easbuilder:latest \
             production-apk "splex-${RELEASE_VERSION}.apk"
 

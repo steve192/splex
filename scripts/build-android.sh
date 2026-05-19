@@ -7,6 +7,8 @@ else
     output_file="app-build.apk"
 fi
 
+cd /builder/frontend
+
 npm ci
 eas build --local \
     --non-interactive \
