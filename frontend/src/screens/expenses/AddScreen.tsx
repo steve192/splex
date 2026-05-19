@@ -555,8 +555,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         {canRevealOptions ? (
           <>
             <Card mode="elevated" style={styles.card}>
-              <Card.Content style={styles.gap}>
-                <TouchableRipple onPress={() => setActiveSheet("context")}>
+              <Card.Content style={styles.optionRowCard}>
+                <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("context")}>
                   <View style={styles.rowBetween}>
                     <Text variant="titleMedium">{t("expense.contextLabel")}</Text>
                     <Text variant="bodyMedium">{selectedContext?.name ?? t("expense.contextChoose")}</Text>
@@ -565,21 +565,21 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 {selectedContext ? (
                   <>
                     <Divider />
-                    <TouchableRipple onPress={() => setActiveSheet("date")}>
+                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("date")}>
                       <View style={styles.rowBetween}>
                         <Text variant="titleMedium">{t("expense.date")}</Text>
                         <Text variant="bodyMedium">{date || t("common.today")}</Text>
                       </View>
                     </TouchableRipple>
                     <Divider />
-                    <TouchableRipple onPress={() => setActiveSheet("payer")}>
+                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("payer")}>
                       <View style={styles.rowBetween}>
                         <Text variant="titleMedium">{t("expense.paidBy")}</Text>
                         <Text variant="bodyMedium">{paymentSummary()}</Text>
                       </View>
                     </TouchableRipple>
                     <Divider />
-                    <TouchableRipple onPress={() => setActiveSheet("split")}>
+                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("split")}>
                       <View style={styles.rowBetween}>
                         <Text variant="titleMedium">{t("expense.split")}</Text>
                         <Text variant="bodyMedium">{splitSummary()}</Text>
