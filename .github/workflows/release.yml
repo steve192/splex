@@ -93,7 +93,7 @@ jobs:
 
       - name: Log into ghcr.io
         if: steps.semrel.outputs.new_release_published == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
