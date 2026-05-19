@@ -17,7 +17,7 @@ dependencies = [
   "requests>=2.34.0,<3",
   "gunicorn>=22,<24",
   "pywebpush>=2.3.0,<3",
-  "Pillow>=10,<12",
+  "Pillow>=12.2.0,<13",
 ]
 
 [project.optional-dependencies]
