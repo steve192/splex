@@ -16,7 +16,7 @@ dependencies = [
   "python-dotenv>=1,<2",
   "requests>=2.31,<3",
   "gunicorn>=22,<24",
-  "pywebpush>=2,<3",
+  "pywebpush>=2.3.0,<3",
   "Pillow>=10,<12",
 ]
 
