@@ -57,6 +57,9 @@ jobs:
     needs: semantic-preview
     if: needs.semantic-preview.outputs.published == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,44 +89,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Setup frontend dependencies
+      - name: Log into ghcr.io
         if: steps.semrel.outputs.new_release_published == 'true'
-        working-directory: frontend
-        run: npm ci
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Android APK and AAB on EAS
+      - name: Build Android APK
         if: steps.semrel.outputs.new_release_published == 'true'
-        working-directory: frontend
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "EXPO_TOKEN is required to build release artifacts."
-            exit 1
-          fi
-          npx eas-cli build --platform android --profile production-apk --non-interactive --wait --json > /tmp/eas-apk.json
-          npx eas-cli build --platform android --profile production --non-interactive --wait --json > /tmp/eas-aab.json
-
-      - name: Download Android artifacts
-        if: steps.semrel.outputs.new_release_published == 'true'
-        env:
           RELEASE_VERSION: ${{ steps.semrel.outputs.new_release_version }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-          mkdir -p release-artifacts
-          apk_url=$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl else .artifacts.buildUrl // .artifacts.applicationArchiveUrl end' /tmp/eas-apk.json)
-          aab_url=$(jq -r 'if type=="array" then .[0].artifacts.buildUrl // .[0].artifacts.applicationArchiveUrl else .artifacts.buildUrl // .artifacts.applicationArchiveUrl end' /tmp/eas-aab.json)
-          curl -fsSL "$apk_url" -o "release-artifacts/splex-${RELEASE_VERSION}.apk"
-          curl -fsSL "$aab_url" -o "release-artifacts/splex-${RELEASE_VERSION}.aab"
+          docker run \
+            -e EXPO_TOKEN="$EXPO_TOKEN" \
+            -v "$(pwd)/frontend":/builder \
+            ghcr.io/steve192/splex-easbuilder:latest \
+            production-apk "splex-${RELEASE_VERSION}.apk"
 
-      - name: Attach APK/AAB to GitHub release
+      - name: Attach APK to GitHub release
         if: steps.semrel.outputs.new_release_published == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.semrel.outputs.new_release_git_tag }}
-          files: |
-            release-artifacts/*.apk
-            release-artifacts/*.aab
+          files: frontend/splex-${{ steps.semrel.outputs.new_release_version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
