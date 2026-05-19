@@ -5,7 +5,7 @@ RUN npm install
 COPY frontend ./
 RUN npm run build:web
 
-FROM python:3.11-slim AS backend
+FROM python:3.12-slim AS backend
 LABEL org.opencontainers.image.source=https://github.com/steve192/splex
 
 ENV PYTHONDONTWRITEBYTECODE=1
