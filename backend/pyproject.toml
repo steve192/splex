@@ -24,7 +24,7 @@ dependencies = [
 dev = [
   "pytest>=7.4,<9",
   "pytest-django>=4.7,<5",
-  "ruff>=0.5,<1",
+  "ruff>=0.15.12,<1",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
