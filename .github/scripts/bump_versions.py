@@ -44,15 +44,10 @@ def update_frontend_app_json(version: str) -> None:
 def update_backend_pyproject(version: str) -> None:
     path = Path("backend/pyproject.toml")
     source = path.read_text(encoding="utf-8")
-    updated = re.sub(
-        r'(?m)^version = "[^"]+"$',
-        f'version = "{version}"',
-        source,
-        count=1,
-    )
-    if updated == source:
+    pattern = re.compile(r'(?m)^version = "[^"]+"$')
+    if not pattern.search(source):
         raise ValueError("Could not find backend version in backend/pyproject.toml")
-    path.write_text(updated, encoding="utf-8")
+    path.write_text(pattern.sub(f'version = "{version}"', source, count=1), encoding="utf-8")
 
 
 def main() -> None:
