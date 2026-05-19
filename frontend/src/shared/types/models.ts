@@ -31,7 +31,7 @@ export type Friend = {
   avatar_url?: string;
   participant_id: number;
   current_participant_id?: number;
-  currency: string;
+  default_currency: string;
   balance: string;
 };
 

@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, List, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
@@ -47,7 +48,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
           id: friend.id,
           name: friend.display_name,
           avatar_url: friend.avatar_url,
-          currency: friend.currency,
+          currency: friend.default_currency,
           balance: friend.balance
         }))
       ];
@@ -62,7 +63,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
           id: friend.id,
           name: friend.display_name,
           avatar_url: friend.avatar_url,
-          currency: friend.currency,
+          currency: friend.default_currency,
           balance: friend.balance
         }))
       ]);
@@ -72,10 +73,11 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
     }
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [])
+  );
 
   async function createFriendInvite() {
     const invitation = await api.post<{ url: string }>("/api/friends/invitations/");
@@ -93,7 +95,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
       ] ?? 0;
     const descriptionParts = [`${item.type === "group" ? t("group.title") : t("friend.title")} - ${item.currency}`];
     if (pendingCount) {
-      descriptionParts.push(t("expense.pendingSyncCount").replace("{count}", String(pendingCount)));
+      descriptionParts.push(t("expense.pendingSyncCount", { count: pendingCount }));
     }
 
     return (
@@ -122,7 +124,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
               }
               right={() => (
                 <View style={styles.listTileRight}>
-                  <MoneyText variant="bodyMedium" amount={item.balance} currency={item.currency} t={t} />
+                  <MoneyText variant="bodyMedium" amount={item.balance} currency={item.currency} />
                 </View>
               )}
             />

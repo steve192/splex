@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
+from splex.activity.events import EventType
 from splex.activity.services import record_activity
 from splex.currency.services import convert
 from splex.expenses.services import context_currency, context_participants, ensure_context_access
@@ -33,7 +34,7 @@ def create_settlement(*, actor, group=None, friendship=None, data: dict) -> Sett
     )
     event = record_activity(
         actor,
-        "settlement.created",
+        EventType.SETTLEMENT_CREATED,
         group=group,
         friendship=friendship,
         settlement=settlement,
@@ -50,7 +51,7 @@ def soft_delete_settlement(*, actor, settlement: Settlement) -> Settlement:
     settlement.save(update_fields=["deleted_at", "updated_at"])
     event = record_activity(
         actor,
-        "settlement.deleted",
+        EventType.SETTLEMENT_DELETED,
         group=settlement.group,
         friendship=settlement.friendship,
         settlement=settlement,
@@ -93,7 +94,7 @@ def update_settlement(*, actor, settlement: Settlement, data: dict) -> Settlemen
     )
     event = record_activity(
         actor,
-        "settlement.updated",
+        EventType.SETTLEMENT_UPDATED,
         group=settlement.group,
         friendship=settlement.friendship,
         settlement=settlement,

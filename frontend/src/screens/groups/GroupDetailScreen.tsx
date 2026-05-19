@@ -1,7 +1,8 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
-import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
-import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple, useTheme } from "react-native-paper";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
+import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
@@ -11,18 +12,19 @@ import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
+import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { copyTextToClipboard } from "../../shared/lib/clipboard";
 import { loadCachedGroupDetail, saveCachedGroupDetail } from "../../shared/lib/offlineCache";
-import { asNumber, formatMoney } from "../../shared/lib/money";
+import { asNumber } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
+import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
-import { negativeColor, positiveColor } from "../../shared/ui/colors";
 import { styles } from "../../shared/ui/styles";
 
 type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
@@ -31,7 +33,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
-  const theme = useTheme();
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [balances, setBalances] = useState<GroupBalance[]>([]);
@@ -71,7 +72,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         await saveCachedGroupDetail(groupId, {
           detail,
           balances: balanceRows,
-          ledger: ledgerResponse.results,
+          ledger: ledgerResponse.results
         });
       }
     } catch {
@@ -87,10 +88,11 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     }
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation, groupId]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [groupId])
+  );
 
   useEffect(() => {
     navigation.setOptions({
@@ -112,8 +114,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   }, [group, groupId, navigation, t]);
 
   async function invite() {
-    const body = {};
-    const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, body);
+    const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, {});
     if (await copyTextToClipboard(response.url)) {
       setSnackbar(t("invite.copied"));
       return;
@@ -157,14 +158,12 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     return balances.find((row) => row.participant_id === participantId)?.avatar_url;
   }
 
-  function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    if (selectedTab !== "expenses" || loadingMore || nextOffset === null) return;
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const remaining = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-    if (remaining < 320) {
-      load(nextOffset).catch(() => undefined);
-    }
-  }
+  const handleScroll = useInfiniteScroll({
+    enabled: selectedTab === "expenses",
+    loadingMore,
+    nextOffset,
+    onLoadMore: (offset) => load(offset).catch(() => undefined)
+  });
 
   return (
     <View style={styles.flex}>
@@ -189,52 +188,32 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           </Button>
         </View>
 
-        <Card mode="elevated" style={styles.card}>
-          <Card.Content style={styles.gap}>
-            {balanceSummary.total !== 0 ? (
-              <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
-                {balanceSummary.total > 0 ? t("balance.summaryGetting") : t("balance.summaryOweTotal")}{" "}
-                <Text
-                  variant="titleLarge"
-                  style={{
-                    color: balanceSummary.total > 0 ? positiveColor(theme) : negativeColor(theme),
-                    fontWeight: "700"
-                  }}
-                >
-                  {formatMoney(balanceSummary.total)} {balanceSummary.currency}
-                </Text>
-              </Text>
-            ) : (
-              <Text variant="titleLarge" style={{ color: theme.colors.onSurfaceVariant, fontWeight: "700" }}>
-                {t("balance.summarySettled")}
-              </Text>
-            )}
-            {balanceSummary.incoming.map((detail) => (
-              <Text
-                key={`incoming-${detail.from_participant_id}-${detail.to_participant_id}`}
-                variant="bodyMedium"
-                style={{ color: theme.colors.onSurface }}
-              >
-                {t("balance.summaryOwesYou").replace("{person}", detail.from_display_name)}{" "}
-                <Text variant="bodyMedium" style={{ color: positiveColor(theme), fontWeight: "700" }}>
-                  {formatMoney(detail.amount)} {detail.currency}
-                </Text>
-              </Text>
-            ))}
-            {balanceSummary.outgoing.map((detail) => (
-              <Text
-                key={`outgoing-${detail.from_participant_id}-${detail.to_participant_id}`}
-                variant="bodyMedium"
-                style={{ color: theme.colors.onSurface }}
-              >
-                {t("balance.summaryYouOwe").replace("{person}", detail.to_display_name)}{" "}
-                <Text variant="bodyMedium" style={{ color: negativeColor(theme), fontWeight: "700" }}>
-                  {formatMoney(detail.amount)} {detail.currency}
-                </Text>
-              </Text>
-            ))}
-          </Card.Content>
-        </Card>
+        <BalanceSummaryCard
+          total={balanceSummary.total}
+          currency={balanceSummary.currency}
+          detailLines={
+            <>
+              {balanceSummary.incoming.map((detail) => (
+                <BalanceLine
+                  key={`incoming-${detail.from_participant_id}-${detail.to_participant_id}`}
+                  variant="incoming"
+                  person={detail.from_display_name}
+                  amount={String(asNumber(detail.amount))}
+                  currency={detail.currency}
+                />
+              ))}
+              {balanceSummary.outgoing.map((detail) => (
+                <BalanceLine
+                  key={`outgoing-${detail.from_participant_id}-${detail.to_participant_id}`}
+                  variant="outgoing"
+                  person={detail.to_display_name}
+                  amount={String(asNumber(detail.amount))}
+                  currency={detail.currency}
+                />
+              ))}
+            </>
+          }
+        />
 
         <SegmentedButtons
           value={selectedTab}
@@ -251,7 +230,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
             <PendingExpenseList
               mutations={pendingExpenses}
               fallbackCurrency={group?.default_currency}
-              t={t}
               onOpen={(mutationId) =>
                 navigation.navigate("AddExpense", {
                   pendingMutationId: mutationId,
@@ -269,14 +247,12 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                     key={`expense-${item.expense.id}`}
                     expense={item.expense}
                     currentParticipantId={group?.current_participant_id}
-                    t={t}
                     onPress={() => navigation.navigate("ExpenseDetail", { id: item.expense.id })}
                   />
                 ) : (
                   <SettlementLedgerRow
                     key={`settlement-${item.settlement.id}`}
                     settlement={item.settlement}
-                    t={t}
                     onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
                   />
                 )
@@ -304,13 +280,10 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                           <PersonAvatar name={row.display_name} imageUrl={row.avatar_url} />
                           <View style={styles.flex}>
                             <Text variant="titleMedium">
-                              {asNumber(row.amount) >= 0
-                                ? t("balance.personIsOwed")
-                                    .replace("{person}", row.display_name)
-                                    .replace("{amount}", `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`)
-                                : t("balance.personOwes")
-                                    .replace("{person}", row.display_name)
-                                    .replace("{amount}", `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`)}
+                              {t(asNumber(row.amount) >= 0 ? "balance.personIsOwed" : "balance.personOwes", {
+                                person: row.display_name,
+                                amount: `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`
+                              })}
                             </Text>
                           </View>
                           <List.Icon icon={expanded ? "chevron-up" : "chevron-down"} />
@@ -323,10 +296,11 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                                 style={styles.subtleRow}
                               >
                                 <Text variant="bodyMedium">
-                                  {t("balance.owesLine")
-                                    .replace("{from}", detail.from_display_name)
-                                    .replace("{to}", detail.to_display_name)
-                                    .replace("{amount}", `${detail.amount} ${detail.currency}`)}
+                                  {t("balance.owesLine", {
+                                    from: detail.from_display_name,
+                                    to: detail.to_display_name,
+                                    amount: `${detail.amount} ${detail.currency}`
+                                  })}
                                 </Text>
                                 <Button
                                   mode="elevated"
@@ -365,7 +339,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
             )}
           </>
         )}
-
       </Screen>
 
       <Portal>
@@ -374,7 +347,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           target={settleTarget}
           amount={settleAmount}
           currency={settleCurrency}
-          t={t}
           onAmountChange={setSettleAmount}
           onCurrencyChange={setSettleCurrency}
           onDismiss={() => setSettleTarget(null)}

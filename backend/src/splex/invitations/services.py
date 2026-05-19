@@ -2,11 +2,12 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from splex.activity.events import EventType
 from splex.activity.services import record_activity
 from splex.friends.models import Friendship
 from splex.friends.services import create_friendship
 from splex.groups.models import GroupMembership
-from splex.groups.services import ensure_friendships_for_group, ensure_group_member
+from splex.groups.services import assert_group_member, ensure_friendships_for_group
 from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
 from splex.participants.services import get_or_create_user_participant
@@ -18,7 +19,7 @@ def invitation_url(token: str) -> str:
 
 @transaction.atomic
 def create_group_invitation(*, actor, group):
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     invitation, token = Invitation.create_with_token(
         type=Invitation.Type.GROUP_JOIN,
         group=group,
@@ -26,7 +27,7 @@ def create_group_invitation(*, actor, group):
     )
     event = record_activity(
         actor,
-        "group.member_invited",
+        EventType.GROUP_MEMBER_INVITED,
         group=group,
         payload={"groupName": group.name},
     )
@@ -36,7 +37,7 @@ def create_group_invitation(*, actor, group):
 
 @transaction.atomic
 def create_claim_invitation(*, actor, group, target_participant):
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     invitation, token = Invitation.create_with_token(
         type=Invitation.Type.CLAIM_PARTICIPANT,
         group=group,
@@ -45,7 +46,7 @@ def create_claim_invitation(*, actor, group, target_participant):
     )
     event = record_activity(
         actor,
-        "group.member_invited",
+        EventType.GROUP_MEMBER_INVITED,
         group=group,
         payload={"participantName": target_participant.display_name, "groupName": group.name},
     )
@@ -59,7 +60,7 @@ def create_friend_invitation(*, actor):
         type=Invitation.Type.FRIEND_JOIN,
         invited_by=actor,
     )
-    record_activity(actor, "friend.invited", payload={})
+    record_activity(actor, EventType.FRIEND_INVITED, payload={})
     return invitation, token, invitation_url(token)
 
 
@@ -93,7 +94,7 @@ def accept_invitation(*, actor, token: str):
         ensure_friendships_for_group(invitation.group)
         event = record_activity(
             actor,
-            "group.member_joined",
+            EventType.GROUP_MEMBER_JOINED,
             group=invitation.group,
             payload={"groupName": invitation.group.name},
         )
@@ -109,7 +110,7 @@ def accept_invitation(*, actor, token: str):
         ensure_friendships_for_group(invitation.group)
         event = record_activity(
             actor,
-            "invitation.accepted",
+            EventType.INVITATION_ACCEPTED,
             group=invitation.group,
             payload={"participantName": target.display_name, "groupName": invitation.group.name},
         )

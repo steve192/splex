@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Dialog, List, Text, TextInput } from "react-native-paper";
 
+import { useI18n } from "../i18n/I18nContext";
 import { CURRENCIES } from "../lib/currencies";
 import { PersonAvatar } from "../ui/PersonAvatar";
 import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
@@ -23,7 +24,6 @@ type SettlementDialogProps = {
   target: SettlementDialogTarget | null;
   amount: string;
   currency: string;
-  t: (key: string) => string;
   onAmountChange: (amount: string) => void;
   onCurrencyChange: (currency: string) => void;
   onDismiss: () => void;
@@ -35,12 +35,12 @@ export function SettlementDialog({
   target,
   amount,
   currency,
-  t,
   onAmountChange,
   onCurrencyChange,
   onDismiss,
   onSave
 }: SettlementDialogProps) {
+  const { t } = useI18n();
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
 
@@ -75,7 +75,7 @@ export function SettlementDialog({
               onChangeText={onAmountChange}
               style={styles.flex}
             />
-            <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)} style={{ alignSelf: "center" }}>
+            <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)} style={styles.selfCenter}>
               {currency}
             </Button>
           </View>

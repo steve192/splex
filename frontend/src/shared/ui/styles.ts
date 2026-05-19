@@ -144,6 +144,25 @@ export const styles = StyleSheet.create({
   optionRowCard: {
     padding: 0
   },
+  bold: {
+    fontWeight: "700"
+  },
+  selfCenter: {
+    alignSelf: "center"
+  },
+  searchbarInSheet: {
+    marginBottom: 8,
+    marginTop: 8
+  },
+  bottomSheetFooter: {
+    marginTop: 12
+  },
+  sectionGap: {
+    marginTop: 8
+  },
+  sectionLabel: {
+    marginBottom: 4
+  },
   listTileRight: {
     alignItems: "flex-end",
     justifyContent: "center"

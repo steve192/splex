@@ -1,10 +1,10 @@
 from pathlib import PurePosixPath
+from typing import Optional
 
 from django.conf import settings
 from django.core import signing
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
-
 
 MEDIA_SIGNER_SALT = "splex.private-media"
 
@@ -27,7 +27,9 @@ def media_storage_path(value: str) -> str:
     return path.as_posix()
 
 
-def signed_media_url(value: str) -> str:
+def signed_media_url(value: Optional[str]) -> str:
+    if not value:
+        return ""
     try:
         path = media_storage_path(value)
     except ValueError:

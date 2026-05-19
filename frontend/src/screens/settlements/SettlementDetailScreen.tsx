@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, List, Portal, Text, TextInput, useTheme } from "react-native-paper";
 
@@ -51,10 +52,11 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
     }
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation, settlementId]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [settlementId])
+  );
 
   useEffect(() => {
     navigation.setOptions({

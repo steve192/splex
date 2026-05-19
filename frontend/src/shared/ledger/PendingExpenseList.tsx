@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { Button, Card, List, Text, TouchableRipple, useTheme } from "react-native-paper";
 
+import { useI18n } from "../i18n/I18nContext";
 import { PendingMutation } from "../sync/queue";
 import { negativeColor } from "../ui/colors";
 import { styles } from "../ui/styles";
@@ -8,7 +9,6 @@ import { styles } from "../ui/styles";
 type PendingExpenseListProps = {
   mutations: PendingMutation[];
   fallbackCurrency?: string;
-  t: (key: string) => string;
   onOpen: (mutationId: string) => void;
   onRetry: () => void;
   onDelete: (mutationId: string) => void;
@@ -17,11 +17,11 @@ type PendingExpenseListProps = {
 export function PendingExpenseList({
   mutations,
   fallbackCurrency,
-  t,
   onOpen,
   onRetry,
   onDelete
 }: PendingExpenseListProps) {
+  const { t } = useI18n();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
   return (

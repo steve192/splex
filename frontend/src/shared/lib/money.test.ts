@@ -34,7 +34,7 @@ describe("money helpers", () => {
       participant_id: 2,
       current_participant_id: 3,
       balance: "0",
-      currency: "EUR"
+      default_currency: "EUR"
     });
     expect(participants).toHaveLength(2);
     expect(participants[0].display_name).toBe("You");

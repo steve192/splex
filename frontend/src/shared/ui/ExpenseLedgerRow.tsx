@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { Card, Text, TouchableRipple, useTheme } from "react-native-paper";
 
+import { useI18n, TranslateFn } from "../i18n/I18nContext";
 import { formatDeviceDateParts } from "../lib/dates";
 import { asNumber, formatMoney } from "../lib/money";
 import { Expense } from "../types/models";
@@ -11,23 +12,24 @@ import { styles } from "./styles";
 type ExpenseLedgerRowProps = {
   expense: Expense;
   currentParticipantId?: number | null;
-  t: (key: string) => string;
   onPress: () => void;
 };
 
-function payerLine(expense: Expense, t: (key: string) => string): string {
+function payerLine(expense: Expense, t: TranslateFn): string {
   if (!expense.payments.length) return "";
   const names = expense.payments.map((share) => share.display_name).filter(Boolean);
   const payerNames =
     names.length <= 2
       ? names.join(", ")
       : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-  return t("expense.payerLine")
-    .replace("{payer}", payerNames)
-    .replace("{amount}", `${formatMoney(expense.converted_amount)} ${expense.converted_currency}`);
+  return t("expense.payerLine", {
+    payer: payerNames,
+    amount: `${formatMoney(expense.converted_amount)} ${expense.converted_currency}`
+  });
 }
 
-export function ExpenseLedgerRow({ expense, currentParticipantId, t, onPress }: ExpenseLedgerRowProps) {
+export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: ExpenseLedgerRowProps) {
+  const { t } = useI18n();
   const theme = useTheme();
   const parts = formatDeviceDateParts(expense.date);
   const paid = expense.payments

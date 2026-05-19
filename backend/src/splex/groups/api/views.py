@@ -20,18 +20,18 @@ from splex.groups.api.serializers import (
 from splex.groups.models import Group
 from splex.groups.services import (
     add_unregistered_participant,
+    assert_group_member,
     create_group,
     delete_group,
-    ensure_group_member,
-    rename_unregistered_participant,
     remove_group_participant,
+    rename_unregistered_participant,
     update_group,
 )
 from splex.invitations.services import create_claim_invitation, create_group_invitation
-from splex.ledger.serializers import serialize_expense, serialize_ledger_item, serialize_settlement
+from splex.ledger.selectors import paginated_ledger_response
+from splex.ledger.serializers import serialize_expense, serialize_settlement
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
-from splex.settlements.models import Settlement
 from splex.settlements.services import create_settlement
 from splex.shared.media import signed_media_url
 
@@ -56,7 +56,7 @@ class OverviewView(APIView):
                     "type": "group",
                     "id": group.id,
                     "name": group.name,
-                    "icon_url": signed_media_url(group.icon_url) if group.icon_url else "",
+                    "icon_url": signed_media_url(group.icon_url),
                     "currency": group.default_currency,
                     "balance": str(total),
                     "archived_at": group.archived_at,
@@ -85,7 +85,7 @@ class GroupListCreateView(APIView):
 class GroupDetailView(APIView):
     def get(self, request, group_id):
         group = get_active_group(group_id)
-        ensure_group_member(request.user, group)
+        assert_group_member(request.user, group)
         participants = Participant.objects.filter(
             group_memberships__group=group,
             group_memberships__removed_at__isnull=True,
@@ -158,14 +158,14 @@ class GroupParticipantDetailView(APIView):
 class GroupBalancesView(APIView):
     def get(self, request, group_id):
         group = get_active_group(group_id)
-        ensure_group_member(request.user, group)
+        assert_group_member(request.user, group)
         return Response(group_member_balance_rows(group))
 
 
 class GroupExpensesView(APIView):
     def get(self, request, group_id):
         group = get_active_group(group_id)
-        ensure_group_member(request.user, group)
+        assert_group_member(request.user, group)
         expenses = (
             Expense.objects.filter(group=group, deleted_at__isnull=True)
             .prefetch_related("payment_shares", "owed_shares")
@@ -175,6 +175,7 @@ class GroupExpensesView(APIView):
 
     def post(self, request, group_id):
         group = get_active_group(group_id)
+        assert_group_member(request.user, group)
         serializer = ExpenseCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         expense = create_expense(actor=request.user, group=group, data=serializer.validated_data)
@@ -187,36 +188,14 @@ class GroupExpensesView(APIView):
 class GroupLedgerView(APIView):
     def get(self, request, group_id):
         group = get_active_group(group_id)
-        ensure_group_member(request.user, group)
-        limit = request.query_params.get("limit")
-        offset = request.query_params.get("offset")
-        expenses = list(
-            Expense.objects.filter(group=group, deleted_at__isnull=True)
-            .prefetch_related("payment_shares", "owed_shares")
-        )
-        settlements = list(
-            Settlement.objects.filter(group=group, deleted_at__isnull=True).select_related(
-                "payer_participant__user", "receiver_participant__user"
+        assert_group_member(request.user, group)
+        return Response(
+            paginated_ledger_response(
+                group=group,
+                limit=request.query_params.get("limit"),
+                offset=request.query_params.get("offset"),
             )
         )
-        items = sorted(
-            [*expenses, *settlements],
-            key=lambda item: item.created_at,
-            reverse=True,
-        )
-        if limit is not None or offset is not None:
-            resolved_limit = min(int(limit or 50), 100)
-            resolved_offset = max(int(offset or 0), 0)
-            page = items[resolved_offset : resolved_offset + resolved_limit]
-            return Response(
-                {
-                    "results": [serialize_ledger_item(item) for item in page],
-                    "next_offset": (
-                        resolved_offset + resolved_limit if len(page) == resolved_limit else None
-                    ),
-                }
-            )
-        return Response([serialize_ledger_item(item) for item in items])
 
 
 class GroupSettlementsView(APIView):

@@ -52,7 +52,7 @@ export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismi
             value={query}
             onChangeText={setQuery}
             placeholder={t("expense.searchContext")}
-            style={{ marginTop: 8, marginBottom: 8 }}
+            style={styles.searchbarInSheet}
           />
           <ScrollView keyboardShouldPersistTaps="handled">
             {!groups.length && !friends.length ? (
@@ -84,14 +84,14 @@ export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismi
                     <ContextRow
                       key={`f-${friend.id}`}
                       title={friend.display_name}
-                      description={friend.currency}
+                      description={friend.default_currency}
                       imageUrl={friend.avatar_url}
                       onPress={() =>
                         pick({
                           type: "friendship",
                           id: friend.id,
                           name: friend.display_name,
-                          currency: friend.currency,
+                          currency: friend.default_currency,
                           image_url: friend.avatar_url
                         })
                       }
@@ -125,8 +125,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <View style={{ marginTop: 8 }}>
-      <Text variant="titleMedium" style={{ marginBottom: 4 }}>
+    <View style={styles.sectionGap}>
+      <Text variant="titleMedium" style={styles.sectionLabel}>
         {title}
       </Text>
       {items.length ? children : <Text variant="bodyMedium">{emptyText}</Text>}

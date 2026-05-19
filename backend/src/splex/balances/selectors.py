@@ -1,16 +1,17 @@
+from __future__ import annotations
+
 from collections import defaultdict
 from decimal import Decimal
 
 from splex.expenses.models import Expense
 from splex.participants.models import Participant
-from splex.participants.services import get_or_create_user_participant
+from splex.participants.services import get_or_create_user_participant, participant_avatar_url
 from splex.settlements.models import Settlement
-from splex.shared.media import signed_media_url
 from splex.shared.money import money
 
 
 def _expense_debt_rows(expenses):
-    debts = defaultdict(lambda: Decimal("0.00"))
+    debts: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal("0.00"))
     for expense in expenses:
         payments = list(expense.payment_shares.all())
         owed_shares = list(expense.owed_shares.all())
@@ -27,9 +28,10 @@ def _expense_debt_rows(expenses):
 
 
 def _net_debts(debts):
-    normalized = defaultdict(lambda: Decimal("0.00"))
-    handled = set()
-    for debtor_id, creditor_id in list(debts.keys()):
+    normalized: dict[tuple[int, int], Decimal] = defaultdict(lambda: Decimal("0.00"))
+    handled: set[tuple[int, int]] = set()
+    # Snapshot keys: reading `debts[(reverse_key)]` below mutates the defaultdict.
+    for debtor_id, creditor_id in list(debts.keys()):  # noqa: S7504
         if debtor_id == creditor_id or (debtor_id, creditor_id) in handled:
             continue
         forward = debts[(debtor_id, creditor_id)]
@@ -44,22 +46,33 @@ def _net_debts(debts):
     return normalized
 
 
-def group_debts(group):
-    expenses = (
-        Expense.objects.filter(group=group, deleted_at__isnull=True)
-        .prefetch_related("payment_shares", "owed_shares")
-    )
+def _context_debts(expenses, settlements):
     debts = _expense_debt_rows(expenses)
-    settlements = Settlement.objects.filter(group=group, deleted_at__isnull=True)
     for settlement in settlements:
         key = (settlement.payer_participant_id, settlement.receiver_participant_id)
         debts[key] -= settlement.amount
     return _net_debts(debts)
 
 
+def group_debts(group):
+    expenses = Expense.objects.filter(group=group, deleted_at__isnull=True).prefetch_related(
+        "payment_shares", "owed_shares"
+    )
+    settlements = Settlement.objects.filter(group=group, deleted_at__isnull=True)
+    return _context_debts(expenses, settlements)
+
+
+def friendship_debts(friendship):
+    expenses = Expense.objects.filter(
+        friendship=friendship, deleted_at__isnull=True
+    ).prefetch_related("payment_shares", "owed_shares")
+    settlements = Settlement.objects.filter(friendship=friendship, deleted_at__isnull=True)
+    return _context_debts(expenses, settlements)
+
+
 def group_pair_balances_for_user(group, user):
     current = get_or_create_user_participant(user)
-    balances = defaultdict(lambda: Decimal("0.00"))
+    balances: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
     for (debtor_id, creditor_id), amount in group_debts(group).items():
         if creditor_id == current.id:
             balances[debtor_id] += amount
@@ -74,13 +87,9 @@ def group_member_balance_rows(group):
     )
     participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
     names = {participant.id: participant.display_name for participant in participants}
-    avatars = {
-        participant.id: signed_media_url(participant.user.avatar_url)
-        for participant in participants
-        if participant.user_id and participant.user.avatar_url
-    }
-    totals = defaultdict(lambda: Decimal("0.00"))
-    details_by_participant = defaultdict(list)
+    avatars = {participant.id: participant_avatar_url(participant) for participant in participants}
+    totals: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
+    details_by_participant: dict[int, list[dict]] = defaultdict(list)
     for (debtor_id, creditor_id), amount in group_debts(group).items():
         amount = money(amount)
         totals[debtor_id] -= amount
@@ -108,34 +117,13 @@ def group_member_balance_rows(group):
     ]
 
 
-def friendship_balance_for_user(friendship, user):
-    current = get_or_create_user_participant(user)
+def friendship_balance_for_participant(friendship, current_participant: Participant) -> Decimal:
     other_id = (
         friendship.participant_b_id
-        if friendship.participant_a_id == current.id
+        if friendship.participant_a_id == current_participant.id
         else friendship.participant_a_id
     )
-    balances = defaultdict(lambda: Decimal("0.00"))
-    expenses = (
-        Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
-        .prefetch_related("payment_shares", "owed_shares")
-    )
-    for expense in expenses:
-        payments = list(expense.payment_shares.all())
-        owed_shares = list(expense.owed_shares.all())
-        total_paid = sum((payment.amount for payment in payments), Decimal("0.00"))
-        if total_paid == 0:
-            continue
-        for owed in owed_shares:
-            for payment in payments:
-                allocated = money(owed.amount * payment.amount / total_paid)
-                if owed.participant_id == current.id and payment.participant_id != current.id:
-                    balances[payment.participant_id] -= allocated
-                elif payment.participant_id == current.id and owed.participant_id != current.id:
-                    balances[owed.participant_id] += allocated
-    for settlement in Settlement.objects.filter(friendship=friendship, deleted_at__isnull=True):
-        if settlement.receiver_participant_id == current.id:
-            balances[settlement.payer_participant_id] -= settlement.amount
-        elif settlement.payer_participant_id == current.id:
-            balances[settlement.receiver_participant_id] += settlement.amount
-    return money(balances[other_id])
+    debts = friendship_debts(friendship)
+    incoming = debts.get((other_id, current_participant.id), Decimal("0.00"))
+    outgoing = debts.get((current_participant.id, other_id), Decimal("0.00"))
+    return money(incoming - outgoing)

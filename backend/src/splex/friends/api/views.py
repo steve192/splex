@@ -2,82 +2,37 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from splex.balances.selectors import friendship_balance_for_user
 from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
-from splex.friends.models import Friendship
+from splex.friends.serializers import serialize_friend
+from splex.friends.services import accessible_friendships, ensure_friendship_member
 from splex.groups.api.serializers import ExpenseCreateSerializer, SettlementCreateSerializer
-from splex.ledger.serializers import serialize_expense, serialize_ledger_item, serialize_settlement
 from splex.invitations.services import create_friend_invitation
+from splex.ledger.selectors import paginated_ledger_response
+from splex.ledger.serializers import serialize_expense, serialize_settlement
 from splex.participants.services import get_or_create_user_participant
-from splex.settlements.models import Settlement
 from splex.settlements.services import create_settlement
-from splex.shared.media import signed_media_url
-
-
-def accessible_friendships(user):
-    participant = get_or_create_user_participant(user)
-    return Friendship.objects.filter(
-        ended_at__isnull=True,
-    ).filter(participant_a=participant) | Friendship.objects.filter(
-        ended_at__isnull=True,
-    ).filter(participant_b=participant)
 
 
 class FriendListView(APIView):
     def get(self, request):
         participant = get_or_create_user_participant(request.user)
-        rows = []
-        for friendship in accessible_friendships(request.user).distinct().select_related(
+        friendships = accessible_friendships(request.user).select_related(
             "participant_a__user", "participant_b__user"
-        ):
-            other = (
-                friendship.participant_b
-                if friendship.participant_a_id == participant.id
-                else friendship.participant_a
-            )
-            rows.append(
-                {
-                    "id": friendship.id,
-                    "display_name": other.display_name,
-                    "avatar_url": (
-                        signed_media_url(other.user.avatar_url)
-                        if other.user_id and other.user.avatar_url
-                        else ""
-                    ),
-                    "participant_id": other.id,
-                    "currency": friendship.default_currency,
-                    "balance": str(friendship_balance_for_user(friendship, request.user)),
-                }
-            )
-        return Response(rows)
+        )
+        return Response(
+            [
+                serialize_friend(friendship, current_participant=participant)
+                for friendship in friendships
+            ]
+        )
 
 
 class FriendDetailView(APIView):
     def get(self, request, friendship_id):
-        participant = get_or_create_user_participant(request.user)
-        friendship = Friendship.objects.get(id=friendship_id, ended_at__isnull=True)
-        if participant.id not in [friendship.participant_a_id, friendship.participant_b_id]:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        other = (
-            friendship.participant_b
-            if friendship.participant_a_id == participant.id
-            else friendship.participant_a
-        )
+        friendship, participant = ensure_friendship_member(request.user, friendship_id)
         return Response(
-            {
-                "id": friendship.id,
-                "display_name": other.display_name,
-                "avatar_url": (
-                    signed_media_url(other.user.avatar_url)
-                    if other.user_id and other.user.avatar_url
-                    else ""
-                ),
-                "participant_id": other.id,
-                "current_participant_id": participant.id,
-                "currency": friendship.default_currency,
-                "balance": str(friendship_balance_for_user(friendship, request.user)),
-            }
+            serialize_friend(friendship, current_participant=participant, include_current=True)
         )
 
 
@@ -92,9 +47,7 @@ class FriendInvitationsView(APIView):
 
 class FriendExpensesView(APIView):
     def get(self, request, friendship_id):
-        friendship = Friendship.objects.get(id=friendship_id)
-        if friendship not in accessible_friendships(request.user):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        friendship, _ = ensure_friendship_member(request.user, friendship_id)
         expenses = (
             Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
             .prefetch_related("payment_shares", "owed_shares")
@@ -103,7 +56,7 @@ class FriendExpensesView(APIView):
         return Response([serialize_expense(expense) for expense in expenses])
 
     def post(self, request, friendship_id):
-        friendship = Friendship.objects.get(id=friendship_id)
+        friendship, _ = ensure_friendship_member(request.user, friendship_id)
         serializer = ExpenseCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         expense = create_expense(
@@ -117,44 +70,19 @@ class FriendExpensesView(APIView):
 
 class FriendLedgerView(APIView):
     def get(self, request, friendship_id):
-        friendship = Friendship.objects.get(id=friendship_id)
-        participant = get_or_create_user_participant(request.user)
-        if participant.id not in [friendship.participant_a_id, friendship.participant_b_id]:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        limit = request.query_params.get("limit")
-        offset = request.query_params.get("offset")
-        expenses = list(
-            Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
-            .prefetch_related("payment_shares", "owed_shares")
-        )
-        settlements = list(
-            Settlement.objects.filter(friendship=friendship, deleted_at__isnull=True).select_related(
-                "payer_participant__user", "receiver_participant__user"
+        friendship, _ = ensure_friendship_member(request.user, friendship_id)
+        return Response(
+            paginated_ledger_response(
+                friendship=friendship,
+                limit=request.query_params.get("limit"),
+                offset=request.query_params.get("offset"),
             )
         )
-        items = sorted(
-            [*expenses, *settlements],
-            key=lambda item: item.created_at,
-            reverse=True,
-        )
-        if limit is not None or offset is not None:
-            resolved_limit = min(int(limit or 50), 100)
-            resolved_offset = max(int(offset or 0), 0)
-            page = items[resolved_offset : resolved_offset + resolved_limit]
-            return Response(
-                {
-                    "results": [serialize_ledger_item(item) for item in page],
-                    "next_offset": (
-                        resolved_offset + resolved_limit if len(page) == resolved_limit else None
-                    ),
-                }
-            )
-        return Response([serialize_ledger_item(item) for item in items])
 
 
 class FriendSettlementsView(APIView):
     def post(self, request, friendship_id):
-        friendship = Friendship.objects.get(id=friendship_id)
+        friendship, _ = ensure_friendship_member(request.user, friendship_id)
         serializer = SettlementCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:

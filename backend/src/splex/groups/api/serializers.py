@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from splex.participants.services import participant_avatar_url
 from splex.shared.media import signed_media_url
 
 
@@ -11,11 +12,7 @@ class ParticipantSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
 
     def get_avatar_url(self, participant):
-        return (
-            signed_media_url(participant.user.avatar_url)
-            if participant.user_id and participant.user.avatar_url
-            else ""
-        )
+        return participant_avatar_url(participant)
 
 
 class GroupSerializer(serializers.Serializer):
@@ -31,7 +28,7 @@ class GroupSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField()
 
     def get_icon_url(self, group):
-        return signed_media_url(group.icon_url) if group.icon_url else ""
+        return signed_media_url(group.icon_url)
 
 
 class GroupCreateSerializer(serializers.Serializer):
