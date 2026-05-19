@@ -46,9 +46,9 @@ jobs:
           semantic_version: 23
           branches: main
           extra_plugins: |
-            @semantic-release/exec
-            @semantic-release/git
-            conventional-changelog-conventionalcommits
+            @semantic-release/exec@6
+            @semantic-release/git@10
+            conventional-changelog-conventionalcommits@7
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -80,9 +80,9 @@ jobs:
           semantic_version: 23
           branches: main
           extra_plugins: |
-            @semantic-release/exec
-            @semantic-release/git
-            conventional-changelog-conventionalcommits
+            @semantic-release/exec@6
+            @semantic-release/git@10
+            conventional-changelog-conventionalcommits@7
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
