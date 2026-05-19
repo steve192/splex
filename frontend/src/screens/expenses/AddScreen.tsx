@@ -39,7 +39,7 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
-import { ContextPickerStep } from "./ContextPickerStep";
+import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
   buildPayments,
   buildSplitPayload,
@@ -53,8 +53,7 @@ import {
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 
-type ActiveSheet = "currency" | "date" | "payer" | "split" | null;
-type AddStep = "context" | "details";
+type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
 
 type AddScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "AddExpense">
@@ -71,10 +70,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const pendingMutationId = route?.params?.pendingMutationId as string | undefined;
   const editing = Boolean(expenseId || pendingMutationId);
 
-  const [step, setStep] = useState<AddStep>(route?.params?.contextId || expenseId ? "details" : "context");
   const [groups, setGroups] = useState<Group[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [contextQuery, setContextQuery] = useState("");
   const [contextType, setContextType] = useState<ContextType>(route?.params?.contextType ?? "group");
   const [contextId, setContextId] = useState<number | null>(route?.params?.contextId ?? null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -97,7 +94,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   function resetForm(params = route?.params ?? {}) {
     const nextContextType = params.contextType ?? "group";
     const nextContextId = params.contextId ?? null;
-    setStep(nextContextId || params.expenseId ? "details" : "context");
     setContextType(nextContextType);
     setContextId(nextContextId);
     setParticipants([]);
@@ -221,7 +217,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
         setContextId(expense.group_id ?? expense.friendship_id ?? null);
-        setStep("details");
         if (expense.payments.length > 1) {
           setMultiPayer(true);
           setPaymentValues(
@@ -260,7 +255,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         const expense = payload.expense;
         setContextType(payload.context_type);
         setContextId(payload.context_id);
-        setStep("details");
         setDescription(expense.description);
         setAmount(expense.amount);
         setCurrency(expense.currency);
@@ -374,7 +368,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setContextType(option.type);
     setContextId(option.id);
     setCurrency(option.currency);
-    setStep("details");
   }
 
   function toggleParticipant(participantId: number) {
@@ -504,19 +497,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
 
-  if (step === "context" && !editing) {
-    return (
-      <ContextPickerStep
-        groups={groups}
-        friends={friends}
-        query={contextQuery}
-        t={t}
-        onQueryChange={setContextQuery}
-        onSelect={selectContext}
-      />
-    );
-  }
-
   return (
     <View style={styles.flex}>
       <Screen>
@@ -536,26 +516,19 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               {selectedContext ? <Text variant="bodyMedium">{selectedContext.name}</Text> : null}
             </View>
           </View>
-          {!editing ? (
-            <Button mode="text" icon="swap-horizontal" onPress={() => setStep("context")}>
-              {t("expense.changeContext")}
-            </Button>
-          ) : (
+          {editing ? (
             <Button mode="text" onPress={navigateAfterSave}>
               {t("common.cancel")}
             </Button>
-          )}
+          ) : selectedContext ? (
+            <Button mode="text" icon="swap-horizontal" onPress={() => setActiveSheet("context")}>
+              {t("expense.changeContext")}
+            </Button>
+          ) : null}
         </View>
 
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>
-            <TextInput
-              mode="outlined"
-              label={t("expense.description")}
-              value={description}
-              onChangeText={setDescription}
-              autoFocus={!description}
-            />
             <View style={styles.formRow}>
               <TextInput
                 mode="outlined"
@@ -564,11 +537,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 keyboardType="decimal-pad"
                 value={amount}
                 onChangeText={setAmount}
+                autoFocus={!amount}
               />
               <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={{ alignSelf: "center" }}>
                 {currency}
               </Button>
             </View>
+            <TextInput
+              mode="outlined"
+              label={t("expense.description")}
+              value={description}
+              onChangeText={setDescription}
+            />
           </Card.Content>
         </Card>
 
@@ -576,26 +556,37 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           <>
             <Card mode="elevated" style={styles.card}>
               <Card.Content style={styles.gap}>
-                <TouchableRipple onPress={() => setActiveSheet("date")}>
+                <TouchableRipple onPress={() => setActiveSheet("context")}>
                   <View style={styles.rowBetween}>
-                    <Text variant="titleMedium">{t("expense.date")}</Text>
-                    <Text variant="bodyMedium">{date || t("common.today")}</Text>
+                    <Text variant="titleMedium">{t("expense.contextLabel")}</Text>
+                    <Text variant="bodyMedium">{selectedContext?.name ?? t("expense.contextChoose")}</Text>
                   </View>
                 </TouchableRipple>
-                <Divider />
-                <TouchableRipple onPress={() => setActiveSheet("payer")}>
-                  <View style={styles.rowBetween}>
-                    <Text variant="titleMedium">{t("expense.paidBy")}</Text>
-                    <Text variant="bodyMedium">{paymentSummary()}</Text>
-                  </View>
-                </TouchableRipple>
-                <Divider />
-                <TouchableRipple onPress={() => setActiveSheet("split")}>
-                  <View style={styles.rowBetween}>
-                    <Text variant="titleMedium">{t("expense.split")}</Text>
-                    <Text variant="bodyMedium">{splitSummary()}</Text>
-                  </View>
-                </TouchableRipple>
+                {selectedContext ? (
+                  <>
+                    <Divider />
+                    <TouchableRipple onPress={() => setActiveSheet("date")}>
+                      <View style={styles.rowBetween}>
+                        <Text variant="titleMedium">{t("expense.date")}</Text>
+                        <Text variant="bodyMedium">{date || t("common.today")}</Text>
+                      </View>
+                    </TouchableRipple>
+                    <Divider />
+                    <TouchableRipple onPress={() => setActiveSheet("payer")}>
+                      <View style={styles.rowBetween}>
+                        <Text variant="titleMedium">{t("expense.paidBy")}</Text>
+                        <Text variant="bodyMedium">{paymentSummary()}</Text>
+                      </View>
+                    </TouchableRipple>
+                    <Divider />
+                    <TouchableRipple onPress={() => setActiveSheet("split")}>
+                      <View style={styles.rowBetween}>
+                        <Text variant="titleMedium">{t("expense.split")}</Text>
+                        <Text variant="bodyMedium">{splitSummary()}</Text>
+                      </View>
+                    </TouchableRipple>
+                  </>
+                ) : null}
               </Card.Content>
             </Card>
 
@@ -688,6 +679,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         }}
         onToggleParticipant={toggleParticipant}
         onSplitValueChange={setSplitValue}
+      />
+      <ContextPickerSheet
+        visible={activeSheet === "context"}
+        groups={groups}
+        friends={friends}
+        onSelect={selectContext}
+        onDismiss={() => setActiveSheet(null)}
       />
     </View>
   );
