@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Self-hosted expense splitter backend"
 requires-python = ">=3.8"
 dependencies = [
-  "Django>=4.2,<4.3",
+  "Django>=4.2.30,<4.3",
   "djangorestframework>=3.14,<3.16",
   "djangorestframework-simplejwt>=5.3,<6",
   "django-cors-headers>=4.3,<5",
