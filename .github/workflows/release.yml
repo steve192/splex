@@ -41,7 +41,7 @@ jobs:
 
       - name: Run semantic-release dry run
         id: semantic
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v6.0.0
         with:
           dry_run: true
           semantic_version: 23
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run semantic-release
         id: semrel
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@v6.0.0
         with:
           semantic_version: 23
           branches: main
