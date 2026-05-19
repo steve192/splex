@@ -1,37 +1,105 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":semanticCommits",
-    ":dependencyDashboard",
-    ":rebaseStalePrs"
+    "config:recommended",
+    ":semanticCommits"
   ],
-  "labels": ["dependencies"],
-  "prHourlyLimit": 2,
-  "prConcurrentLimit": 10,
+  "timezone": "UTC",
+  "dependencyDashboard": true,
   "rangeStrategy": "bump",
+  "minimumReleaseAge": "7 days",
+  "platformAutomerge": true,
+  "automergeType": "branch",
+  "labels": [
+    "dependencies"
+  ],
   "packageRules": [
     {
-      "description": "Automerge safe dependency updates",
-      "matchUpdateTypes": ["patch", "minor", "pin", "digest"],
-      "automerge": true,
-      "automergeType": "pr"
+      "description": "Safely automerge patch and digest updates",
+      "matchUpdateTypes": [
+        "patch",
+        "digest"
+      ],
+      "automerge": true
     },
     {
       "description": "Never automerge major updates",
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "automerge": false
     },
     {
-      "description": "Keep Expo ecosystem updates visible and grouped",
-      "matchManagers": ["npm"],
-      "matchPackageNames": ["expo", "expo-*", "@expo/*", "react-native", "react-native-*"],
+      "description": "Frontend: Expo / React Native ecosystem - grouped, manually reviewed",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "frontend/**"
+      ],
+      "matchPackageNames": [
+        "expo",
+        "expo-*",
+        "@expo/*",
+        "react-native",
+        "react-native-*"
+      ],
       "groupName": "expo-and-react-native"
     },
     {
-      "description": "Python backend dependencies",
-      "matchManagers": ["pep621", "pip_requirements"],
-      "groupName": "python-backend"
+      "description": "Frontend: other npm minor/patch updates",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "frontend/**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "frontend-dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Backend: Python runtime/dev dependencies from pyproject (PEP 621)",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchFileNames": [
+        "backend/**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "python-dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Docker base images (runtime)",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "docker-base-images",
+      "automerge": true
+    },
+    {
+      "description": "GitHub Actions workflow dependencies",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "github-actions",
+      "automerge": true
     }
   ]
 }
