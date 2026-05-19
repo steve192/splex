@@ -3,9 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "exclude": ["dist", "node_modules"]
