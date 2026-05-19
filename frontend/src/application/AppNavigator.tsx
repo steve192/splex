@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import NetInfo from "@react-native-community/netinfo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
@@ -211,10 +212,16 @@ export function AppNavigator() {
   }, [tokens, api]);
 
   useEffect(() => {
-    if (tokens) {
-      syncPendingMutations.flush(api).catch(() => undefined);
-    }
-  }, [tokens]);
+    if (!tokens) return;
+
+    syncPendingMutations.flush(api).catch(() => undefined);
+
+    return NetInfo.addEventListener((state) => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        syncPendingMutations.flush(api).catch(() => undefined);
+      }
+    });
+  }, [api, tokens]);
 
   if (!initialized) {
     return null;

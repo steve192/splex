@@ -7,6 +7,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
+import { ensureServiceWorkerRegistration } from "../../shared/lib/serviceWorker";
 import { urlBase64ToArrayBuffer } from "../../shared/lib/webPush";
 import { ThemeMode } from "../../shared/types/models";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
@@ -83,7 +84,11 @@ export function AccountScreen() {
         setNotificationMessage(t("notifications.webUnavailable"));
         return;
       }
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await ensureServiceWorkerRegistration();
+      if (!registration) {
+        setNotificationMessage(t("notifications.webUnavailable"));
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setNotificationMessage(t("notifications.permissionDenied"));
@@ -101,7 +106,7 @@ export function AccountScreen() {
   }
 
   return (
-    <Screen>
+    <Screen topInset>
       <Text variant="headlineSmall">{t("account.title")}</Text>
       <Card mode="elevated">
         <Card.Content style={styles.gap}>

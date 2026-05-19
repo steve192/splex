@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
 import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
@@ -11,12 +11,15 @@ import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
+import { copyTextToClipboard } from "../../shared/lib/clipboard";
+import { loadCachedGroupDetail, saveCachedGroupDetail } from "../../shared/lib/offlineCache";
 import { asNumber, formatMoney } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
+import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { negativeColor, positiveColor } from "../../shared/ui/colors";
@@ -34,27 +37,54 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [balances, setBalances] = useState<GroupBalance[]>([]);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
+  const [nextOffset, setNextOffset] = useState<number | null>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedTab, setSelectedTab] = useState("expenses");
   const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
   const [snackbar, setSnackbar] = useState("");
+  const [manualCopyLink, setManualCopyLink] = useState("");
   const balanceSummary = useMemo(
     () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
     [balances, group?.current_participant_id, group?.default_currency]
   );
 
-  async function load() {
-    const [detail, balanceRows, ledgerRows] = await Promise.all([
-      api.get<Group>(`/api/groups/${groupId}/`),
-      api.get<GroupBalance[]>(`/api/groups/${groupId}/balances/`),
-      api.get<LedgerItem[]>(`/api/groups/${groupId}/ledger/`)
-    ]);
-    setGroup(detail);
-    setBalances(balanceRows);
-    setLedger(ledgerRows);
+  async function load(offset = 0) {
+    if (loadingMore && offset) return;
+    if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("group", groupId));
+    try {
+      const [detail, balanceRows, ledgerResponse] = await Promise.all([
+        api.get<Group>(`/api/groups/${groupId}/`),
+        api.get<GroupBalance[]>(`/api/groups/${groupId}/balances/`),
+        api.get<{ results: LedgerItem[]; next_offset: number | null }>(
+          `/api/groups/${groupId}/ledger/?offset=${offset}&limit=30`
+        )
+      ]);
+      setGroup(detail);
+      setBalances(balanceRows);
+      setLedger((current) => (offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results));
+      setNextOffset(ledgerResponse.next_offset);
+      if (!offset) {
+        await saveCachedGroupDetail(groupId, {
+          detail,
+          balances: balanceRows,
+          ledger: ledgerResponse.results,
+        });
+      }
+    } catch {
+      if (offset) return;
+      const cached = await loadCachedGroupDetail(groupId);
+      if (!cached) throw new Error("missing cached group detail");
+      setGroup(cached.detail);
+      setBalances(cached.balances);
+      setLedger(cached.ledger);
+      setNextOffset(null);
+    } finally {
+      if (offset) setLoadingMore(false);
+    }
   }
 
   useEffect(() => {
@@ -84,7 +114,11 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   async function invite() {
     const body = {};
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, body);
-    setSnackbar(response.url);
+    if (await copyTextToClipboard(response.url)) {
+      setSnackbar(t("invite.copied"));
+      return;
+    }
+    setManualCopyLink(response.url);
   }
 
   async function settle() {
@@ -123,9 +157,18 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     return balances.find((row) => row.participant_id === participantId)?.avatar_url;
   }
 
+  function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (selectedTab !== "expenses" || loadingMore || nextOffset === null) return;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const remaining = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    if (remaining < 320) {
+      load(nextOffset).catch(() => undefined);
+    }
+  }
+
   return (
     <View style={styles.flex}>
-      <Screen>
+      <Screen scrollViewProps={{ onScroll: handleScroll }}>
         <View style={styles.rowActions}>
           <Button
             mode="contained"
@@ -241,6 +284,11 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
             ) : pendingExpenses.length ? null : (
               <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
             )}
+            {nextOffset !== null ? (
+              <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
+                {t("activity.loadMore")}
+              </Button>
+            ) : null}
           </>
         ) : (
           <>
@@ -336,6 +384,14 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={8000}>
         {snackbar}
       </Snackbar>
+      <ManualCopyDialog
+        visible={!!manualCopyLink}
+        title={t("invite.copyManual")}
+        description={t("invite.copyManualHelp")}
+        value={manualCopyLink}
+        label={t("invite.copyLabel")}
+        onDismiss={() => setManualCopyLink("")}
+      />
     </View>
   );
 }

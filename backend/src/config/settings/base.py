@@ -247,18 +247,34 @@ VAPID_SUBJECT = env("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "default",
         },
     },
     "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
         "config.urls": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
         "splex.invitations": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "splex.sync": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,

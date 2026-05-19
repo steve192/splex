@@ -3,9 +3,9 @@ import { LinkingOptions, NavigationContainer } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
-import { useColorScheme } from "react-native";
+import { View, useColorScheme } from "react-native";
 import { PaperProvider } from "react-native-paper";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient } from "../shared/api/client";
@@ -98,10 +98,7 @@ export function AppShell() {
           <SafeAreaProvider>
             <AuthProvider api={api}>
               <FeedbackProvider>
-                <SafeAreaView
-                  edges={["top"]}
-                  style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}
-                >
+                <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
                   <NavigationContainer
                     theme={navigationTheme}
                     linking={linking}
@@ -113,7 +110,7 @@ export function AppShell() {
                   >
                     <AppNavigator />
                   </NavigationContainer>
-                </SafeAreaView>
+                </View>
               </FeedbackProvider>
               <StatusBar
                 style={resolvedThemeMode === "dark" ? "light" : "dark"}

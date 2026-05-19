@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
 import { Button, Card, Portal, Text, useTheme } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
@@ -12,6 +12,7 @@ import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
+import { loadCachedFriendDetail, saveCachedFriendDetail } from "../../shared/lib/offlineCache";
 import { asNumber, formatMoney } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Friend, LedgerItem } from "../../shared/types/models";
@@ -33,19 +34,40 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
   const [friend, setFriend] = useState<Friend | null>(null);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
+  const [nextOffset, setNextOffset] = useState<number | null>(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
   const balanceSummary = useMemo(() => asNumber(friend?.balance), [friend?.balance]);
 
-  async function load() {
-    const [detail, ledgerRows] = await Promise.all([
-      api.get<Friend>(`/api/friends/${friendshipId}/`),
-      api.get<LedgerItem[]>(`/api/friends/${friendshipId}/ledger/`)
-    ]);
-    setFriend(detail);
-    setLedger(ledgerRows);
+  async function load(offset = 0) {
+    if (loadingMore && offset) return;
+    if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
+    try {
+      const [detail, ledgerResponse] = await Promise.all([
+        api.get<Friend>(`/api/friends/${friendshipId}/`),
+        api.get<{ results: LedgerItem[]; next_offset: number | null }>(
+          `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=30`
+        )
+      ]);
+      setFriend(detail);
+      setLedger((current) => (offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results));
+      setNextOffset(ledgerResponse.next_offset);
+      if (!offset) {
+        await saveCachedFriendDetail(friendshipId, { detail, ledger: ledgerResponse.results });
+      }
+    } catch {
+      if (offset) return;
+      const cached = await loadCachedFriendDetail(friendshipId);
+      if (!cached) throw new Error("missing cached friend detail");
+      setFriend(cached.detail);
+      setLedger(cached.ledger);
+      setNextOffset(null);
+    } finally {
+      if (offset) setLoadingMore(false);
+    }
   }
 
   useEffect(() => {
@@ -106,9 +128,18 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
     setSettleCurrency(friend.currency);
   }
 
+  function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (loadingMore || nextOffset === null) return;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const remaining = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    if (remaining < 320) {
+      load(nextOffset).catch(() => undefined);
+    }
+  }
+
   return (
     <View style={styles.flex}>
-      <Screen>
+      <Screen scrollViewProps={{ onScroll: handleScroll }}>
         <View style={styles.rowActions}>
           <Button
             mode="contained"
@@ -205,6 +236,11 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
         )}
         {!ledger.length && !pendingExpenses.length ? (
           <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
+        ) : null}
+        {nextOffset !== null ? (
+          <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
+            {t("activity.loadMore")}
+          </Button>
         ) : null}
       </Screen>
 

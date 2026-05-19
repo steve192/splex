@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ApiClient } from "../api/client";
+import { ApiError, ApiClient } from "../api/client";
 
 export type PendingMutation = {
   id: string;
@@ -20,6 +20,12 @@ async function read(): Promise<PendingMutation[]> {
 
 async function write(mutations: PendingMutation[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mutations));
+}
+
+function syncErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
 export const syncPendingMutations = {
@@ -49,7 +55,7 @@ export const syncPendingMutations = {
           payload: mutation.payload
         });
       } catch (error) {
-        remaining.push({ ...mutation, status: "failed", lastError: String(error) });
+        remaining.push({ ...mutation, status: "failed", lastError: syncErrorMessage(error) });
       }
     }
     await write(remaining);

@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { Image, Platform, ScrollView, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Button, Divider, HelperText, IconButton, Surface, Text, TextInput, useTheme } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
@@ -12,6 +13,7 @@ import { styles } from "../../shared/ui/styles";
 export function LoginScreen() {
   const { t } = useI18n();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { api, loginWithCode, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -108,7 +110,16 @@ export function LoginScreen() {
       {loginRequested ? (
         <>
           <Divider />
-          <TextInput mode="outlined" label={t("auth.code")} value={code} onChangeText={setCode} />
+          <TextInput
+            mode="outlined"
+            label={t("auth.code")}
+            value={code}
+            onChangeText={setCode}
+            keyboardType={Platform.OS === "ios" ? "number-pad" : "numeric"}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+          />
           <Button mode="elevated" disabled={!email || !code || loading} onPress={verifyCode}>
             {t("auth.verify")}
           </Button>
@@ -143,46 +154,57 @@ export function LoginScreen() {
   );
 
   return (
-    <ScrollView
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[
-        styles.loginScreen,
-        { backgroundColor: theme.colors.background }
-      ]}
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View
-        style={[
-          styles.loginShell,
-          Platform.OS === "web" ? styles.loginShellWeb : undefined
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={[
+          styles.loginScreen,
+          {
+            backgroundColor: theme.colors.background,
+            paddingTop: 20 + insets.top,
+            paddingBottom: 20 + insets.bottom
+          }
         ]}
       >
         <View
           style={[
-            styles.loginHero,
-            Platform.OS === "web" ? styles.loginHeroWeb : undefined
+            styles.loginShell,
+            Platform.OS === "web" ? styles.loginShellWeb : undefined
           ]}
         >
-          <View style={styles.loginBrandMark}>
-            <Image source={appImages.pwaMaskableIcon} style={styles.loginBrandImage} />
+          <View
+            style={[
+              styles.loginHero,
+              Platform.OS === "web" ? styles.loginHeroWeb : undefined
+            ]}
+          >
+            <View style={styles.loginBrandMark}>
+              <Image source={appImages.pwaMaskableIcon} style={styles.loginBrandImage} />
+            </View>
+            <Text variant="displaySmall" style={styles.loginTitle}>
+              {t("auth.title")}
+            </Text>
+            <Text variant="bodyLarge" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+              {t("auth.subtitle")}
+            </Text>
           </View>
-          <Text variant="displaySmall" style={styles.loginTitle}>
-            {t("auth.title")}
-          </Text>
-          <Text variant="bodyLarge" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-            {t("auth.subtitle")}
-          </Text>
+          <Surface
+            mode={Platform.OS === "web" ? "elevated" : "flat"}
+            style={[
+              styles.loginPanel,
+              Platform.OS === "web" ? styles.loginPanelWeb : undefined,
+              { backgroundColor: theme.colors.surface }
+            ]}
+          >
+            {form}
+          </Surface>
         </View>
-        <Surface
-          mode={Platform.OS === "web" ? "elevated" : "flat"}
-          style={[
-            styles.loginPanel,
-            Platform.OS === "web" ? styles.loginPanelWeb : undefined,
-            { backgroundColor: theme.colors.surface }
-          ]}
-        >
-          {form}
-        </Surface>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
