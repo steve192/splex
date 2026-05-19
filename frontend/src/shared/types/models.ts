@@ -46,6 +46,20 @@ export type OverviewItem = {
   archived_at?: string | null;
 };
 
+export type ActivityFeedEvent = {
+  id: number | string;
+  event_type: string;
+  actor: string;
+  actor_avatar_url?: string;
+  payload?: Record<string, string | number | undefined>;
+  created_at: string;
+  context_type?: "group" | "friend" | "";
+  context_name?: string;
+  expense_id?: number | null;
+  settlement_id?: number | null;
+  pending_mutation_id?: string;
+};
+
 export type ContextOption = {
   type: ContextType;
   id: number;

@@ -7,8 +7,12 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
+import { copyTextToClipboard } from "../../shared/lib/clipboard";
+import { countPendingExpensesByContext, pendingExpenseContextKey } from "../../shared/ledger/pendingExpenses";
+import { loadCachedFriends, loadCachedOverviewItems, saveCachedFriends, saveCachedOverviewItems } from "../../shared/lib/offlineCache";
 import { Friend, OverviewItem } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
+import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -22,6 +26,8 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
   const [items, setItems] = useState<OverviewItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState("");
+  const [manualCopyLink, setManualCopyLink] = useState("");
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
   const groups = items.filter((item) => item.type === "group" && !item.archived_at);
   const archivedGroups = items.filter((item) => item.type === "group" && item.archived_at);
   const friends = items.filter((item) => item.type === "friend");
@@ -34,7 +40,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
         api.get<{ items: OverviewItem[] }>("/api/overview/"),
         api.get<Friend[]>("/api/friends/")
       ]);
-      setItems([
+      const nextItems = [
         ...overview.items,
         ...friends.map((friend) => ({
           type: "friend" as const,
@@ -44,8 +50,24 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
           currency: friend.currency,
           balance: friend.balance
         }))
+      ];
+      setItems(nextItems);
+      await Promise.all([saveCachedOverviewItems(overview.items), saveCachedFriends(friends)]);
+    } catch {
+      const [cachedOverview, cachedFriends] = await Promise.all([loadCachedOverviewItems(), loadCachedFriends()]);
+      setItems([
+        ...cachedOverview,
+        ...cachedFriends.map((friend) => ({
+          type: "friend" as const,
+          id: friend.id,
+          name: friend.display_name,
+          avatar_url: friend.avatar_url,
+          currency: friend.currency,
+          balance: friend.balance
+        }))
       ]);
     } finally {
+      setPendingCounts(await countPendingExpensesByContext());
       setLoading(false);
     }
   }
@@ -57,10 +79,23 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
 
   async function createFriendInvite() {
     const invitation = await api.post<{ url: string }>("/api/friends/invitations/");
-    setSnackbar(invitation.url);
+    if (await copyTextToClipboard(invitation.url)) {
+      setSnackbar(t("invite.copied"));
+      return;
+    }
+    setManualCopyLink(invitation.url);
   }
 
   function renderItem(item: OverviewItem) {
+    const pendingCount =
+      pendingCounts[
+        pendingExpenseContextKey(item.type === "group" ? "group" : "friendship", item.id)
+      ] ?? 0;
+    const descriptionParts = [`${item.type === "group" ? t("group.title") : t("friend.title")} - ${item.currency}`];
+    if (pendingCount) {
+      descriptionParts.push(t("expense.pendingSyncCount").replace("{count}", String(pendingCount)));
+    }
+
     return (
       <Card key={`${item.type}-${item.id}`} style={styles.card} mode="elevated">
         <TouchableRipple
@@ -73,7 +108,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
             <List.Item
               style={styles.listTile}
               title={item.name}
-              description={`${item.type === "group" ? t("group.title") : t("friend.title")} - ${item.currency}`}
+              description={descriptionParts.join(" • ")}
               left={(props) =>
                 item.type === "group" ? (
                   <PersonAvatar
@@ -99,16 +134,16 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
 
   return (
     <View style={styles.flex}>
-      <Screen>
-          <Text variant="headlineSmall">{t("tabs.overview")}</Text>
-          <View style={styles.rowActions}>
-            <Button mode="contained" icon="account-group" loading={loading} onPress={() => navigation.navigate("CreateGroup")}>
-              {t("group.create")}
-            </Button>
-            <Button mode="elevated" icon="link-variant" onPress={createFriendInvite}>
-              {t("friend.invite")}
-            </Button>
-          </View>
+      <Screen topInset>
+        <Text variant="headlineSmall">{t("tabs.overview")}</Text>
+        <View style={styles.rowActions}>
+          <Button mode="contained" icon="account-group" loading={loading} onPress={() => navigation.navigate("CreateGroup")}>
+            {t("group.create")}
+          </Button>
+          <Button mode="elevated" icon="link-variant" onPress={createFriendInvite}>
+            {t("friend.invite")}
+          </Button>
+        </View>
         {!items.length ? <EmptyState image={appImages.emptyGroupsFriends} text={t("overview.empty")} /> : null}
         <View style={styles.listSection}>
           <Text variant="titleLarge">{t("overview.groups")}</Text>
@@ -133,6 +168,14 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={8000}>
         {snackbar}
       </Snackbar>
+      <ManualCopyDialog
+        visible={!!manualCopyLink}
+        title={t("invite.copyManual")}
+        description={t("invite.copyManualHelp")}
+        value={manualCopyLink}
+        label={t("invite.copyLabel")}
+        onDismiss={() => setManualCopyLink("")}
+      />
     </View>
   );
 }

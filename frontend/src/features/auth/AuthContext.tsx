@@ -1,6 +1,7 @@
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ApiClient, tokenStorage, Tokens } from "../../shared/api/client";
+import { ApiClient, ApiError, tokenStorage, Tokens } from "../../shared/api/client";
 
 type User = {
   id: number;
@@ -24,6 +25,20 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const USER_STORAGE_KEY = "splex.user";
+
+async function getStoredUser(): Promise<User | null> {
+  const raw = await AsyncStorage.getItem(USER_STORAGE_KEY);
+  return raw ? (JSON.parse(raw) as User) : null;
+}
+
+async function setStoredUser(user: User | null): Promise<void> {
+  if (user) {
+    await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    return;
+  }
+  await AsyncStorage.removeItem(USER_STORAGE_KEY);
+}
 
 export function AuthProvider({ api, children }: { api: ApiClient; children: ReactNode }) {
   const [tokens, setTokens] = useState<Tokens | null>(null);
@@ -40,14 +55,27 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         setInitialized(true);
         return;
       }
+
+      const cachedUser = await getStoredUser();
       api.setTokens(stored);
       setTokens(stored);
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
       try {
-        setUser(await api.get<User>("/api/me/"));
-      } catch {
+        const freshUser = await api.get<User>("/api/me/");
+        setUser(freshUser);
+        await setStoredUser(freshUser);
+      } catch (error) {
+        if (error instanceof ApiError && error.offline) {
+          setInitialized(true);
+          return;
+        }
         await tokenStorage.set(null);
+        await setStoredUser(null);
         api.setTokens(null);
         setTokens(null);
+        setUser(null);
       } finally {
         setInitialized(true);
       }
@@ -61,7 +89,9 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
       tokens,
       initialized,
       async refreshUser() {
-        setUser(await api.get<User>("/api/me/"));
+        const freshUser = await api.get<User>("/api/me/");
+        setUser(freshUser);
+        await setStoredUser(freshUser);
       },
       async requestMagicLink(email: string, inviteToken?: string) {
         await api.post("/api/auth/magic-link/", { email, invite_token: inviteToken ?? "" });
@@ -72,6 +102,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
           code
         });
         await tokenStorage.set(response.tokens);
+        await setStoredUser(response.user);
         api.setTokens(response.tokens);
         setTokens(response.tokens);
         setUser(response.user);
@@ -81,6 +112,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
           token
         });
         await tokenStorage.set(response.tokens);
+        await setStoredUser(response.user);
         api.setTokens(response.tokens);
         setTokens(response.tokens);
         setUser(response.user);
@@ -88,6 +120,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
       async logout() {
         const refresh = tokens?.refresh;
         await tokenStorage.set(null);
+        await setStoredUser(null);
         api.setTokens(null);
         setTokens(null);
         setUser(null);

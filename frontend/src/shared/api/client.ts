@@ -11,6 +11,20 @@ const WEB_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_API_BASE_URL || runtimeEnv.REACT
 const DEFAULT_NATIVE_API_BASE_URL = runtimeEnv.EXPO_PUBLIC_DEFAULT_API_BASE_URL || "https://splex.example.com";
 const API_BASE_URL_STORAGE_KEY = "splex.apiBaseUrl";
 
+function summarizeResponseBody(body: string): string {
+  const normalized = body.replace(/\s+/g, " ").trim();
+  if (!normalized) return "Empty response body";
+  if (/^<!doctype html>|^<html/i.test(normalized)) {
+    return "Unexpected HTML response";
+  }
+  return normalized.slice(0, 220);
+}
+
+function formatResponseError(url: string, response: Response, body: string): string {
+  const summary = summarizeResponseBody(body);
+  return `${summary} (${response.status}) at ${url}`;
+}
+
 function apiDebug(message: string, details?: unknown) {
   if (typeof window !== "undefined") {
     console.info(`[splex:api] ${message}`, details ?? "");
@@ -64,6 +78,7 @@ export class ApiClient {
 
   async request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
     const headers = new Headers(options.headers);
+    headers.set("Accept", "application/json");
     headers.set("Content-Type", "application/json");
     if (this.tokens?.access) {
       headers.set("Authorization", `Bearer ${this.tokens.access}`);
@@ -77,8 +92,9 @@ export class ApiClient {
       });
     }
     let response: Response;
+    const requestUrl = `${await this.getBaseUrl()}${path}`;
     try {
-      response = await fetch(`${await this.getBaseUrl()}${path}`, { ...options, headers });
+      response = await fetch(requestUrl, { ...options, headers });
     } catch (error) {
       if (path.includes("/invitations/") || path.includes("/auth/magic")) {
         apiDebug("request failed before response", { path, error });
@@ -103,20 +119,30 @@ export class ApiClient {
       if (path.includes("/invitations/") || path.includes("/auth/magic")) {
         apiDebug("response not ok", { path, status: response.status, body: text });
       }
-      throw new ApiError(text || response.statusText, { status: response.status });
+      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status });
     }
     if (response.status === 204) {
       return undefined as T;
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      const text = await response.text();
+      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status });
     }
     return response.json() as Promise<T>;
   }
 
   private async refreshAccessToken(): Promise<void> {
-    const response = await fetch(`${await this.getBaseUrl()}/api/auth/token/refresh/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: this.tokens?.refresh })
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${await this.getBaseUrl()}/api/auth/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh: this.tokens?.refresh })
+      });
+    } catch {
+      throw new ApiError("Network unavailable", { offline: true });
+    }
     if (!response.ok) {
       this.setTokens(null);
       await tokenStorage.set(null);

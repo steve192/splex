@@ -121,6 +121,8 @@ class FriendLedgerView(APIView):
         participant = get_or_create_user_participant(request.user)
         if participant.id not in [friendship.participant_a_id, friendship.participant_b_id]:
             return Response(status=status.HTTP_404_NOT_FOUND)
+        limit = request.query_params.get("limit")
+        offset = request.query_params.get("offset")
         expenses = list(
             Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
             .prefetch_related("payment_shares", "owed_shares")
@@ -135,6 +137,18 @@ class FriendLedgerView(APIView):
             key=lambda item: item.created_at,
             reverse=True,
         )
+        if limit is not None or offset is not None:
+            resolved_limit = min(int(limit or 50), 100)
+            resolved_offset = max(int(offset or 0), 0)
+            page = items[resolved_offset : resolved_offset + resolved_limit]
+            return Response(
+                {
+                    "results": [serialize_ledger_item(item) for item in page],
+                    "next_offset": (
+                        resolved_offset + resolved_limit if len(page) == resolved_limit else None
+                    ),
+                }
+            )
         return Response([serialize_ledger_item(item) for item in items])
 
 

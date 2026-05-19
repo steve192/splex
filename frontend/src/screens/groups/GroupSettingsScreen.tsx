@@ -19,10 +19,12 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { copyTextToClipboard } from "../../shared/lib/clipboard";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { Group, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
+import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -59,6 +61,7 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const [renameValue, setRenameValue] = useState("");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [snackbar, setSnackbar] = useState("");
+  const [manualCopyLink, setManualCopyLink] = useState("");
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
 
   async function load() {
@@ -133,7 +136,11 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   async function createInvite(targetParticipantId?: number) {
     const body = targetParticipantId ? { target_participant_id: targetParticipantId } : {};
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, body);
-    setSnackbar(response.url);
+    if (await copyTextToClipboard(response.url)) {
+      setSnackbar(t("invite.copied"));
+      return;
+    }
+    setManualCopyLink(response.url);
   }
 
   function openRename(participant: Participant) {
@@ -299,6 +306,14 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={9000}>
         {snackbar}
       </Snackbar>
+      <ManualCopyDialog
+        visible={!!manualCopyLink}
+        title={t("invite.copyManual")}
+        description={t("invite.copyManualHelp")}
+        value={manualCopyLink}
+        label={t("invite.copyLabel")}
+        onDismiss={() => setManualCopyLink("")}
+      />
       <SelectionSheet
         visible={currencySheetOpen}
         title={t("expense.currency")}

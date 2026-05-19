@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import {
   Button,
@@ -19,6 +20,16 @@ import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
+import {
+  loadCachedFriend,
+  loadCachedFriends,
+  loadCachedGroup,
+  loadCachedGroups,
+  saveCachedFriend,
+  saveCachedFriends,
+  saveCachedGroup,
+  saveCachedGroups
+} from "../../shared/lib/offlineCache";
 import { asNumber, buildParticipantsForFriend, createClientId, formatMoney, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -174,14 +185,29 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     resetForm(route?.params ?? {});
   }, [route?.params?.resetKey]);
 
-  useEffect(() => {
-    Promise.all([api.get<Group[]>("/api/groups/"), api.get<Friend[]>("/api/friends/")])
-      .then(([groupRows, friendRows]) => {
-        setGroups(groupRows);
-        setFriends(friendRows);
-      })
-      .catch(() => setMessage(t("common.error")));
+  const loadContexts = useCallback(async () => {
+    try {
+      const [groupRows, friendRows] = await Promise.all([api.get<Group[]>("/api/groups/"), api.get<Friend[]>("/api/friends/")]);
+      setGroups(groupRows);
+      setFriends(friendRows);
+      setMessage("");
+      await Promise.all([saveCachedGroups(groupRows), saveCachedFriends(friendRows)]);
+    } catch {
+      const [cachedGroups, cachedFriends] = await Promise.all([loadCachedGroups(), loadCachedFriends()]);
+      if (cachedGroups.length || cachedFriends.length) {
+        setGroups(cachedGroups);
+        setFriends(cachedFriends);
+        return;
+      }
+      setMessage(t("common.error"));
+    }
   }, [api, t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadContexts().catch(() => undefined);
+    }, [loadContexts])
+  );
 
   useEffect(() => {
     if (!expenseId) return;
@@ -268,8 +294,19 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   useEffect(() => {
     if (!contextId) return;
     async function loadContext() {
+      const activeContextId = contextId;
+      if (activeContextId == null) return;
+
       if (contextType === "group") {
-        const group = await api.get<Group>(`/api/groups/${contextId}/`);
+        let group: Group;
+        try {
+          group = await api.get<Group>(`/api/groups/${activeContextId}/`);
+          await saveCachedGroup(group);
+        } catch {
+          const cachedGroup = await loadCachedGroup(activeContextId);
+          if (!cachedGroup) throw new Error("missing cached group");
+          group = cachedGroup;
+        }
         const rows = group.participants ?? [];
         setParticipants(rows);
         setCurrentParticipantId(group.current_participant_id ?? null);
@@ -278,7 +315,15 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         if (!loadedExpense && !pendingMutationId && group.default_split_method) setSplitMethod(group.default_split_method);
         if (!loadedExpense && !pendingMutationId) setSelectedParticipantIds(rows.map((participant) => participant.id));
       } else {
-        const friend = await api.get<Friend>(`/api/friends/${contextId}/`);
+        let friend: Friend;
+        try {
+          friend = await api.get<Friend>(`/api/friends/${activeContextId}/`);
+          await saveCachedFriend(friend);
+        } catch {
+          const cachedFriend = await loadCachedFriend(activeContextId);
+          if (!cachedFriend) throw new Error("missing cached friend");
+          friend = cachedFriend;
+        }
         const rows = buildParticipantsForFriend(friend);
         setParticipants(rows);
         setCurrentParticipantId(friend.current_participant_id ?? null);
@@ -407,6 +452,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         });
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
+        navigateAfterSave();
       } else {
         setMessage(t("expense.saveFailed"));
       }
