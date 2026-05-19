@@ -2,106 +2,101 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ActivityFeedEvent, Friend, Group, GroupBalance, LedgerItem, OverviewItem } from "../types/models";
 
-const GROUPS_KEY = "splex.cache.groups";
-const FRIENDS_KEY = "splex.cache.friends";
-const OVERVIEW_KEY = "splex.cache.overview";
-const ACTIVITY_KEY = "splex.cache.activity";
+type CacheStore<T> = {
+  load(): Promise<T | null>;
+  save(value: T): Promise<void>;
+};
 
-function groupKey(id: number) {
-  return `splex.cache.group.${id}`;
+function cacheStore<T>(key: string): CacheStore<T> {
+  return {
+    async load() {
+      const raw = await AsyncStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : null;
+    },
+    async save(value: T) {
+      await AsyncStorage.setItem(key, JSON.stringify(value));
+    }
+  };
 }
 
-function friendKey(id: number) {
-  return `splex.cache.friend.${id}`;
+function keyedCacheStore<T>(prefix: string) {
+  return (id: number): CacheStore<T> => cacheStore<T>(`${prefix}.${id}`);
 }
 
-function groupDetailKey(id: number) {
-  return `splex.cache.groupDetail.${id}`;
-}
+const groupsStore = cacheStore<Group[]>("splex.cache.groups");
+const friendsStore = cacheStore<Friend[]>("splex.cache.friends");
+const overviewStore = cacheStore<OverviewItem[]>("splex.cache.overview");
+const activityStore = cacheStore<ActivityFeedEvent[]>("splex.cache.activity");
 
-function friendDetailKey(id: number) {
-  return `splex.cache.friendDetail.${id}`;
-}
+const groupStore = keyedCacheStore<Group>("splex.cache.group");
+const friendStore = keyedCacheStore<Friend>("splex.cache.friend");
 
-async function readJson<T>(key: string): Promise<T | null> {
-  const raw = await AsyncStorage.getItem(key);
-  return raw ? (JSON.parse(raw) as T) : null;
-}
+type GroupDetailCache = { detail: Group; balances: GroupBalance[]; ledger: LedgerItem[] };
+type FriendDetailCache = { detail: Friend; ledger: LedgerItem[] };
 
-async function writeJson<T>(key: string, value: T): Promise<void> {
-  await AsyncStorage.setItem(key, JSON.stringify(value));
-}
+const groupDetailStore = keyedCacheStore<GroupDetailCache>("splex.cache.groupDetail");
+const friendDetailStore = keyedCacheStore<FriendDetailCache>("splex.cache.friendDetail");
 
 export async function loadCachedGroups(): Promise<Group[]> {
-  return (await readJson<Group[]>(GROUPS_KEY)) ?? [];
+  return (await groupsStore.load()) ?? [];
 }
 
 export async function saveCachedGroups(groups: Group[]): Promise<void> {
-  await writeJson(GROUPS_KEY, groups);
+  await groupsStore.save(groups);
 }
 
 export async function loadCachedFriends(): Promise<Friend[]> {
-  return (await readJson<Friend[]>(FRIENDS_KEY)) ?? [];
+  return (await friendsStore.load()) ?? [];
 }
 
 export async function saveCachedFriends(friends: Friend[]): Promise<void> {
-  await writeJson(FRIENDS_KEY, friends);
+  await friendsStore.save(friends);
 }
 
 export async function loadCachedGroup(id: number): Promise<Group | null> {
-  return readJson<Group>(groupKey(id));
+  return groupStore(id).load();
 }
 
 export async function saveCachedGroup(group: Group): Promise<void> {
-  await writeJson(groupKey(group.id), group);
+  await groupStore(group.id).save(group);
 }
 
 export async function loadCachedFriend(id: number): Promise<Friend | null> {
-  return readJson<Friend>(friendKey(id));
+  return friendStore(id).load();
 }
 
 export async function saveCachedFriend(friend: Friend): Promise<void> {
-  await writeJson(friendKey(friend.id), friend);
+  await friendStore(friend.id).save(friend);
 }
 
 export async function loadCachedOverviewItems(): Promise<OverviewItem[]> {
-  return (await readJson<OverviewItem[]>(OVERVIEW_KEY)) ?? [];
+  return (await overviewStore.load()) ?? [];
 }
 
 export async function saveCachedOverviewItems(items: OverviewItem[]): Promise<void> {
-  await writeJson(OVERVIEW_KEY, items);
+  await overviewStore.save(items);
 }
 
 export async function loadCachedActivityEvents(): Promise<ActivityFeedEvent[]> {
-  return (await readJson<ActivityFeedEvent[]>(ACTIVITY_KEY)) ?? [];
+  return (await activityStore.load()) ?? [];
 }
 
 export async function saveCachedActivityEvents(events: ActivityFeedEvent[]): Promise<void> {
-  await writeJson(ACTIVITY_KEY, events);
+  await activityStore.save(events);
 }
 
-export async function loadCachedGroupDetail(
-  id: number
-): Promise<{ detail: Group; balances: GroupBalance[]; ledger: LedgerItem[] } | null> {
-  return readJson<{ detail: Group; balances: GroupBalance[]; ledger: LedgerItem[] }>(groupDetailKey(id));
+export async function loadCachedGroupDetail(id: number): Promise<GroupDetailCache | null> {
+  return groupDetailStore(id).load();
 }
 
-export async function saveCachedGroupDetail(
-  id: number,
-  value: { detail: Group; balances: GroupBalance[]; ledger: LedgerItem[] }
-): Promise<void> {
-  await writeJson(groupDetailKey(id), value);
+export async function saveCachedGroupDetail(id: number, value: GroupDetailCache): Promise<void> {
+  await groupDetailStore(id).save(value);
 }
 
-export async function loadCachedFriendDetail(
-  id: number
-): Promise<{ detail: Friend; ledger: LedgerItem[] } | null> {
-  return readJson<{ detail: Friend; ledger: LedgerItem[] }>(friendDetailKey(id));
+export async function loadCachedFriendDetail(id: number): Promise<FriendDetailCache | null> {
+  return friendDetailStore(id).load();
 }
 
-export async function saveCachedFriendDetail(
-  id: number,
-  value: { detail: Friend; ledger: LedgerItem[] }
-): Promise<void> {
-  await writeJson(friendDetailKey(id), value);
+export async function saveCachedFriendDetail(id: number, value: FriendDetailCache): Promise<void> {
+  await friendDetailStore(id).save(value);
 }

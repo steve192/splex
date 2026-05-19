@@ -6,6 +6,7 @@ from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 from django.views.static import serve
 from rest_framework_simplejwt.views import TokenRefreshView
+
 from splex.shared.api_views import PrivateMediaView
 
 logger = logging.getLogger(__name__)

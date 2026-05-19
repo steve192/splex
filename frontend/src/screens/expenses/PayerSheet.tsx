@@ -1,14 +1,18 @@
 import { View } from "react-native";
 import { List, Modal, Portal, Switch, Text, TextInput, Button, useTheme } from "react-native-paper";
 
+import { useI18n } from "../../shared/i18n/I18nContext";
+import { asNumber } from "../../shared/lib/money";
 import { Participant } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
+import { currencyAmount } from "./expenseFormLogic";
 
 type PayerSheetProps = {
   visible: boolean;
   participants: Participant[];
+  currentParticipantId: number | null;
   multiPayer: boolean;
   payerId: number | null;
   paymentValues: Record<number, string>;
@@ -16,12 +20,6 @@ type PayerSheetProps = {
   paymentConfigInvalid: boolean;
   totalAmount: number;
   currency: string;
-  surfaceColor: string;
-  handleColor: string;
-  t: (key: string) => string;
-  participantName: (participant: Participant) => string;
-  currencyAmount: (value: number, currency: string) => string;
-  asNumber: (value: string | number | undefined) => number;
   onDismiss: () => void;
   onMultiPayerChange: (value: boolean) => void;
   onPayerChange: (participantId: number) => void;
@@ -31,6 +29,7 @@ type PayerSheetProps = {
 export function PayerSheet({
   visible,
   participants,
+  currentParticipantId,
   multiPayer,
   payerId,
   paymentValues,
@@ -38,28 +37,28 @@ export function PayerSheet({
   paymentConfigInvalid,
   totalAmount,
   currency,
-  surfaceColor,
-  handleColor,
-  t,
-  participantName,
-  currencyAmount,
-  asNumber,
   onDismiss,
   onMultiPayerChange,
   onPayerChange,
   onPaymentValueChange
 }: PayerSheetProps) {
+  const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
+
+  function nameFor(participant: Participant) {
+    return participant.id === currentParticipantId ? t("common.you") : participant.display_name;
+  }
+
   return (
     <Portal>
       <Modal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={[styles.bottomSheet, { backgroundColor: surfaceColor }]}
+        contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
         style={styles.bottomSheetWrapper}
       >
-        <View style={[styles.bottomSheetHandle, { backgroundColor: handleColor }]} />
+        <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
         <View style={styles.rowBetween}>
           <Text variant="titleLarge">{t("expense.paidBy")}</Text>
           <Button disabled={paymentConfigInvalid} onPress={onDismiss}>
@@ -75,10 +74,10 @@ export function PayerSheet({
             <List.Item
               key={participant.id}
               style={styles.listTile}
-              title={participantName(participant)}
+              title={nameFor(participant)}
               description={currencyAmount(totalAmount, currency)}
               onPress={() => onPayerChange(participant.id)}
-              left={() => <PersonAvatar name={participantName(participant)} imageUrl={participant.avatar_url} />}
+              left={() => <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />}
               right={(props) => (
                 <List.Icon {...props} icon={payerId === participant.id ? "radiobox-marked" : "radiobox-blank"} />
               )}
@@ -87,18 +86,17 @@ export function PayerSheet({
         ) : (
           <View style={styles.gap}>
             <Text variant="bodyMedium" style={paymentConfigInvalid ? errorStyle : undefined}>
-              {t("expense.amountLeft").replace("{amount}", currencyAmount(paymentLeft, currency))}
+              {t("expense.amountLeft", { amount: currencyAmount(paymentLeft, currency) })}
             </Text>
             {participants.map((participant) => (
               <List.Item
                 key={participant.id}
                 style={styles.listTile}
-                title={participantName(participant)}
-                description={t("expense.memberPays").replace(
-                  "{amount}",
-                  currencyAmount(asNumber(paymentValues[participant.id]), currency)
-                )}
-                left={() => <PersonAvatar name={participantName(participant)} imageUrl={participant.avatar_url} />}
+                title={nameFor(participant)}
+                description={t("expense.memberPays", {
+                  amount: currencyAmount(asNumber(paymentValues[participant.id]), currency)
+                })}
+                left={() => <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />}
                 right={() => (
                   <TextInput
                     mode="outlined"

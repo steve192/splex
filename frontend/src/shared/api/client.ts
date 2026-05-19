@@ -25,10 +25,19 @@ function formatResponseError(url: string, response: Response, body: string): str
   return `${summary} (${response.status}) at ${url}`;
 }
 
+const API_DEBUG_ENABLED =
+  (process.env as Record<string, string | undefined>).EXPO_PUBLIC_API_DEBUG === "1" ||
+  (typeof __DEV__ !== "undefined" && __DEV__);
+
 function apiDebug(message: string, details?: unknown) {
+  if (!API_DEBUG_ENABLED) return;
   if (typeof window !== "undefined") {
     console.info(`[splex:api] ${message}`, details ?? "");
   }
+}
+
+function shouldLogPath(path: string): boolean {
+  return path.includes("/invitations/") || path.includes("/auth/magic");
 }
 
 export class ApiError extends Error {
@@ -83,7 +92,7 @@ export class ApiClient {
     if (this.tokens?.access) {
       headers.set("Authorization", `Bearer ${this.tokens.access}`);
     }
-    if (path.includes("/invitations/") || path.includes("/auth/magic")) {
+    if (shouldLogPath(path)) {
       apiDebug("request started", {
         method: options.method ?? "GET",
         path,
@@ -96,12 +105,12 @@ export class ApiClient {
     try {
       response = await fetch(requestUrl, { ...options, headers });
     } catch (error) {
-      if (path.includes("/invitations/") || path.includes("/auth/magic")) {
+      if (shouldLogPath(path)) {
         apiDebug("request failed before response", { path, error });
       }
       throw new ApiError("Network unavailable", { offline: true });
     }
-    if (path.includes("/invitations/") || path.includes("/auth/magic")) {
+    if (shouldLogPath(path)) {
       apiDebug("response received", { path, status: response.status, ok: response.ok });
     }
     if (response.status === 401 && this.tokens?.refresh && !retried) {
@@ -116,7 +125,7 @@ export class ApiClient {
     }
     if (!response.ok) {
       const text = await response.text();
-      if (path.includes("/invitations/") || path.includes("/auth/magic")) {
+      if (shouldLogPath(path)) {
         apiDebug("response not ok", { path, status: response.status, body: text });
       }
       throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status });

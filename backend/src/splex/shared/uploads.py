@@ -1,12 +1,11 @@
 import base64
 import binascii
-from io import BytesIO
 import uuid
+from io import BytesIO
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from PIL import Image, UnidentifiedImageError
-
 
 MAX_IMAGE_UPLOAD_BYTES = 3 * 1024 * 1024
 MAX_IMAGE_PIXELS = 12_000_000

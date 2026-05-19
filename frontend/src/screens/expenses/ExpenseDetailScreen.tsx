@@ -1,6 +1,6 @@
-import { RouteProp } from "@react-navigation/native";
+import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, Divider, IconButton, List, Portal, Text, useTheme } from "react-native-paper";
 
@@ -39,10 +39,11 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
     setExpense(await api.get<Expense>(`/api/expenses/${expenseId}/`));
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation, expenseId]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [expenseId])
+  );
 
   useEffect(() => {
     navigation.setOptions({

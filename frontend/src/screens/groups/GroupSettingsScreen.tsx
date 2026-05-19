@@ -1,5 +1,6 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import {
   Button,
@@ -74,10 +75,11 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
     setDefaultSplitMethod(row.default_split_method ?? "equal_all");
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation, groupId]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [groupId])
+  );
 
   async function save() {
     await api.patch(`/api/groups/${groupId}/`, {

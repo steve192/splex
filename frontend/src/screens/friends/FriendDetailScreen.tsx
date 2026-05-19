@@ -1,7 +1,8 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useMemo, useState } from "react";
-import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
-import { Button, Card, Portal, Text, useTheme } from "react-native-paper";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
+import { Button, Portal, Text } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
@@ -12,15 +13,16 @@ import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
+import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { loadCachedFriendDetail, saveCachedFriendDetail } from "../../shared/lib/offlineCache";
 import { asNumber, formatMoney } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Friend, LedgerItem } from "../../shared/types/models";
+import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
-import { negativeColor, positiveColor } from "../../shared/ui/colors";
 import { styles } from "../../shared/ui/styles";
 
 type FriendDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "FriendDetail">;
@@ -29,7 +31,6 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
   const { t } = useI18n();
   const { api, user } = useAuth();
   const { showSuccess } = useFeedback();
-  const theme = useTheme();
   const friendshipId = route.params.id;
   const [friend, setFriend] = useState<Friend | null>(null);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
@@ -70,10 +71,11 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
     }
   }
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => load().catch(() => undefined));
-    return unsubscribe;
-  }, [navigation, friendshipId]);
+  useFocusEffect(
+    useCallback(() => {
+      load().catch(() => undefined);
+    }, [friendshipId])
+  );
 
   useEffect(() => {
     navigation.setOptions({
@@ -122,20 +124,17 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
       receiver_display_name: currentOwesFriend ? friend.display_name : currentName,
       receiver_avatar_url: currentOwesFriend ? friend.avatar_url : user?.avatar_url,
       amount: formatMoney(friend.balance),
-      currency: friend.currency
+      currency: friend.default_currency
     });
     setSettleAmount(formatMoney(friend.balance));
-    setSettleCurrency(friend.currency);
+    setSettleCurrency(friend.default_currency);
   }
 
-  function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    if (loadingMore || nextOffset === null) return;
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const remaining = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-    if (remaining < 320) {
-      load(nextOffset).catch(() => undefined);
-    }
-  }
+  const handleScroll = useInfiniteScroll({
+    loadingMore,
+    nextOffset,
+    onLoadMore: (offset) => load(offset).catch(() => undefined)
+  });
 
   return (
     <View style={styles.flex}>
@@ -161,51 +160,33 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
         </View>
 
         {friend ? (
-          <Card mode="elevated" style={styles.card}>
-            <Card.Content style={styles.gap}>
-              {balanceSummary !== 0 ? (
-                <Text variant="titleLarge" style={{ color: theme.colors.onSurface }}>
-                  {balanceSummary > 0 ? t("balance.summaryGetting") : t("balance.summaryOweTotal")}{" "}
-                  <Text
-                    variant="titleLarge"
-                    style={{
-                      color: balanceSummary > 0 ? positiveColor(theme) : negativeColor(theme),
-                      fontWeight: "700"
-                    }}
-                  >
-                    {formatMoney(balanceSummary)} {friend.currency}
-                  </Text>
-                </Text>
-              ) : (
-                <Text variant="titleLarge" style={{ color: theme.colors.onSurfaceVariant, fontWeight: "700" }}>
-                  {t("balance.summarySettled")}
-                </Text>
-              )}
-              {balanceSummary > 0 ? (
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                  {t("balance.summaryOwesYou").replace("{person}", friend.display_name)}{" "}
-                  <Text variant="bodyMedium" style={{ color: positiveColor(theme), fontWeight: "700" }}>
-                    {formatMoney(balanceSummary)} {friend.currency}
-                  </Text>
-                </Text>
-              ) : null}
-              {balanceSummary < 0 ? (
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                  {t("balance.summaryYouOwe").replace("{person}", friend.display_name)}{" "}
-                  <Text variant="bodyMedium" style={{ color: negativeColor(theme), fontWeight: "700" }}>
-                    {formatMoney(balanceSummary)} {friend.currency}
-                  </Text>
-                </Text>
-              ) : null}
-            </Card.Content>
-          </Card>
+          <BalanceSummaryCard
+            total={balanceSummary}
+            currency={friend.default_currency}
+            detailLines={
+              balanceSummary > 0 ? (
+                <BalanceLine
+                  variant="incoming"
+                  person={friend.display_name}
+                  amount={formatMoney(balanceSummary)}
+                  currency={friend.default_currency}
+                />
+              ) : balanceSummary < 0 ? (
+                <BalanceLine
+                  variant="outgoing"
+                  person={friend.display_name}
+                  amount={formatMoney(balanceSummary)}
+                  currency={friend.default_currency}
+                />
+              ) : null
+            }
+          />
         ) : null}
 
         <Text variant="titleLarge">{t("group.expenses")}</Text>
         <PendingExpenseList
           mutations={pendingExpenses}
-          fallbackCurrency={friend?.currency}
-          t={t}
+          fallbackCurrency={friend?.default_currency}
           onOpen={(mutationId) =>
             navigation.navigate("AddExpense", {
               pendingMutationId: mutationId,
@@ -222,14 +203,12 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
               key={`expense-${item.expense.id}`}
               expense={item.expense}
               currentParticipantId={friend?.current_participant_id}
-              t={t}
               onPress={() => navigation.navigate("ExpenseDetail", { id: item.expense.id })}
             />
           ) : (
             <SettlementLedgerRow
               key={`settlement-${item.settlement.id || index}`}
               settlement={item.settlement}
-              t={t}
               onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
             />
           )
@@ -250,7 +229,6 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
           target={settleTarget}
           amount={settleAmount}
           currency={settleCurrency}
-          t={t}
           onAmountChange={setSettleAmount}
           onCurrencyChange={setSettleCurrency}
           onDismiss={() => setSettleTarget(null)}

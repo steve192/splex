@@ -89,7 +89,7 @@ export function SelectionSheet<T extends string | number>(props: SelectionSheetP
               value={query}
               onChangeText={setQuery}
               placeholder={t("common.search")}
-              style={{ marginTop: 8, marginBottom: 8 }}
+              style={styles.searchbarInSheet}
             />
           ) : null}
           <ScrollView keyboardShouldPersistTaps="handled">
@@ -125,7 +125,7 @@ export function SelectionSheet<T extends string | number>(props: SelectionSheetP
               <Text variant="bodyMedium">{props.emptyText ?? t("common.noResults")}</Text>
             )}
           </ScrollView>
-          {props.footer ? <View style={{ marginTop: 12 }}>{props.footer}</View> : null}
+          {props.footer ? <View style={styles.bottomSheetFooter}>{props.footer}</View> : null}
         </ContentWidth>
       </Modal>
     </Portal>

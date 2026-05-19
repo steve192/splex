@@ -30,7 +30,7 @@ import {
   saveCachedGroup,
   saveCachedGroups
 } from "../../shared/lib/offlineCache";
-import { asNumber, buildParticipantsForFriend, createClientId, formatMoney, moneyValue } from "../../shared/lib/money";
+import { asNumber, buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
 import { DatePickerSheet } from "../../shared/ui/DatePickerSheet";
@@ -41,10 +41,11 @@ import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet"
 import { styles } from "../../shared/ui/styles";
 import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
+  applyPaymentsToForm,
   buildPayments,
   buildSplitPayload,
-  currencyAmount,
   effectiveSplitMethod,
+  hydrateSplit,
   perMemberShare,
   splitEvenly,
   splitTabValue,
@@ -126,7 +127,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         type: "friendship" as const,
         id: friend.id,
         name: friend.display_name,
-        currency: friend.currency,
+        currency: friend.default_currency,
         image_url: friend.avatar_url
       }))
     ],
@@ -137,7 +138,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     (option) => option.type === contextType && option.id === contextId
   );
   const canRevealOptions = description.trim().length > 0 && amount.trim().length > 0;
-  const selectedAllParticipants = selectedParticipantIds.length === participants.length;
+  const selectedAllParticipants =
+    participants.length > 0 &&
+    selectedParticipantIds.length === participants.length &&
+    participants.every((participant) => selectedParticipantIds.includes(participant.id));
   const totalAmount = asNumber(amount);
   const tabValue = splitTabValue(splitMethod);
 
@@ -217,15 +221,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
         setContextId(expense.group_id ?? expense.friendship_id ?? null);
-        if (expense.payments.length > 1) {
-          setMultiPayer(true);
-          setPaymentValues(
-            Object.fromEntries(expense.payments.map((share) => [share.participant_id, share.amount]))
-          );
-        } else {
-          setMultiPayer(false);
-          setPayerId(expense.payments[0]?.participant_id ?? null);
-        }
+        applyPaymentsToForm(expense.payments, { setMultiPayer, setPaymentValues, setPayerId });
       })
       .catch(() => setMessage(t("common.error")));
   }, [api, expenseId, t]);
@@ -259,28 +255,12 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setAmount(expense.amount);
         setCurrency(expense.currency);
         setDate(expense.date ?? "");
-        setSplitMethod(expense.split_method ?? "equal_all");
-        const participantIds = ((expense.split_payload?.participant_ids as number[] | undefined) ?? []).filter(Boolean);
-        if (participantIds.length) setSelectedParticipantIds(participantIds);
-        if (expense.split_method === "exact") {
-          const shares = (expense.split_payload?.shares as any[] | undefined) ?? [];
-          setSplitValues(Object.fromEntries(shares.map((share) => [share.participant_id, String(share.amount)])));
-          setSelectedParticipantIds(shares.map((share) => share.participant_id));
-        } else if (expense.split_method === "percentage") {
-          const shares = (expense.split_payload?.shares as any[] | undefined) ?? [];
-          setSplitValues(Object.fromEntries(shares.map((share) => [share.participant_id, String(share.percentage)])));
-          setSelectedParticipantIds(shares.map((share) => share.participant_id));
-        } else if (expense.split_method === "adjusted_equal") {
-          const adjustments = (expense.split_payload?.adjustments as any[] | undefined) ?? [];
-          setSplitValues(Object.fromEntries(adjustments.map((share) => [share.participant_id, String(share.amount)])));
-        }
-        if ((expense.payments ?? []).length > 1) {
-          setMultiPayer(true);
-          setPaymentValues(Object.fromEntries((expense.payments ?? []).map((share) => [share.participant_id, share.amount])));
-        } else {
-          setMultiPayer(false);
-          setPayerId(expense.payments?.[0]?.participant_id ?? null);
-        }
+        const splitMethodFromPayload = expense.split_method ?? "equal_all";
+        setSplitMethod(splitMethodFromPayload);
+        const hydrated = hydrateSplit(splitMethodFromPayload, expense.split_payload);
+        if (hydrated.selectedParticipantIds) setSelectedParticipantIds(hydrated.selectedParticipantIds);
+        if (hydrated.splitValues) setSplitValues(hydrated.splitValues);
+        applyPaymentsToForm(expense.payments, { setMultiPayer, setPaymentValues, setPayerId });
       })
       .catch(() => setMessage(t("common.error")));
   }, [pendingMutationId, t]);
@@ -322,7 +302,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setParticipants(rows);
         setCurrentParticipantId(friend.current_participant_id ?? null);
         setPayerId((current) => current ?? friend.current_participant_id ?? rows[0]?.id ?? null);
-        if (!loadedExpense && !pendingMutationId) setCurrency(friend.currency);
+        if (!loadedExpense && !pendingMutationId) setCurrency(friend.default_currency);
         if (!loadedExpense && !pendingMutationId) setSelectedParticipantIds(rows.map((participant) => participant.id));
       }
       if (!loadedExpense && !pendingMutationId) {
@@ -336,23 +316,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   useEffect(() => {
     if (!loadedExpense || !participants.length) return;
     setSelectedParticipantIds(loadedExpense.owed.map((share) => share.participant_id));
-    if (loadedExpense.split_method === "exact") {
-      setSplitValues(
-        Object.fromEntries(loadedExpense.owed.map((share) => [share.participant_id, share.amount]))
-      );
-    } else if (loadedExpense.split_method === "percentage") {
-      const shares = (loadedExpense.split_payload?.shares as any[] | undefined) ?? [];
-      setSplitValues(
-        Object.fromEntries(shares.map((share) => [share.participant_id, String(share.percentage)]))
-      );
-    } else if (loadedExpense.split_method === "adjusted_equal") {
-      const adjustments = (loadedExpense.split_payload?.adjustments as any[] | undefined) ?? [];
-      setSplitValues(
-        Object.fromEntries(adjustments.map((share) => [share.participant_id, String(share.amount)]))
-      );
-    } else {
-      setSplitValues({});
-    }
+    // For "exact", the rendered amounts live on owed shares, not in split_payload.
+    const payloadForHydrate =
+      loadedExpense.split_method === "exact"
+        ? { shares: loadedExpense.owed }
+        : loadedExpense.split_payload;
+    const hydrated = hydrateSplit(loadedExpense.split_method, payloadForHydrate);
+    setSplitValues(hydrated.splitValues ?? {});
   }, [loadedExpense, participants]);
 
   useEffect(() => {
@@ -539,7 +509,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 onChangeText={setAmount}
                 autoFocus={!amount}
               />
-              <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={{ alignSelf: "center" }}>
+              <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={styles.selfCenter}>
                 {currency}
               </Button>
             </View>
@@ -624,6 +594,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       <PayerSheet
         visible={activeSheet === "payer"}
         participants={participants}
+        currentParticipantId={currentParticipantId}
         multiPayer={multiPayer}
         payerId={payerId}
         paymentValues={paymentValues}
@@ -631,12 +602,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         paymentConfigInvalid={paymentConfigInvalid}
         totalAmount={totalAmount}
         currency={currency}
-        surfaceColor={theme.colors.surface}
-        handleColor={theme.colors.outlineVariant}
-        t={t}
-        participantName={participantName}
-        currencyAmount={currencyAmount}
-        asNumber={asNumber}
         onDismiss={() => setActiveSheet(null)}
         onMultiPayerChange={setMultiPayer}
         onPayerChange={setPayerId}
@@ -645,6 +610,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       <SplitSheet
         visible={activeSheet === "split"}
         participants={participants}
+        currentParticipantId={currentParticipantId}
         selectedParticipantIds={selectedParticipantIds}
         splitValues={splitValues}
         tabValue={tabValue}
@@ -654,12 +620,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         adjustmentSum={adjustmentSum}
         totalAmount={totalAmount}
         currency={currency}
-        surfaceColor={theme.colors.surface}
-        handleColor={theme.colors.outlineVariant}
-        t={t}
-        participantName={participantName}
-        currencyAmount={currencyAmount}
-        formatMoney={formatMoney}
         perMemberShare={(participantId) =>
           perMemberShare({
             participantId,
@@ -697,19 +657,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         .map((participant) => participantName(participant));
       return names.length ? names.join(", ") : t("expense.multiplePayers");
     }
-    return payerId
-      ? participantName(participants.find((participant) => participant.id === payerId) ?? {
-          id: payerId,
-          display_name: t("expense.paidBy"),
-          kind: "",
-          user_id: null
-        })
-      : t("expense.paidBy");
+    if (!payerId) return t("expense.paidBy");
+    const payer = participants.find((participant) => participant.id === payerId);
+    return payer ? participantName(payer) : t("expense.paidBy");
   }
 
   function splitSummary(): string {
     if (tabValue === "equal") {
-      return t("split.selectedCountEqual").replace("{count}", String(selectedParticipantIds.length));
+      return t("split.selectedCountEqual", { count: selectedParticipantIds.length });
     }
     return `${t(`split.${splitMethod}`)} (${selectedParticipantIds.length})`;
   }

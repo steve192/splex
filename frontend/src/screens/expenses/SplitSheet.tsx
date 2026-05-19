@@ -1,29 +1,29 @@
 import { View } from "react-native";
 import { Button, Checkbox, List, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from "react-native-paper";
 
+import { useI18n } from "../../shared/i18n/I18nContext";
+import { formatMoney } from "../../shared/lib/money";
 import { Participant, SplitMethod } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
+import { currencyAmount, SPLIT_TOLERANCE } from "./expenseFormLogic";
+
+type SplitTab = "equal" | "exact" | "percentage" | "adjusted_equal";
 
 type SplitSheetProps = {
   visible: boolean;
   participants: Participant[];
+  currentParticipantId: number | null;
   selectedParticipantIds: number[];
   splitValues: Record<number, string>;
-  tabValue: "equal" | "exact" | "percentage" | "adjusted_equal";
+  tabValue: SplitTab;
   splitConfigInvalid: boolean;
   exactLeft: number;
   percentageLeft: number;
   adjustmentSum: number;
   totalAmount: number;
   currency: string;
-  surfaceColor: string;
-  handleColor: string;
-  t: (key: string) => string;
-  participantName: (participant: Participant) => string;
-  currencyAmount: (value: number, currency: string) => string;
-  formatMoney: (value: string | number | undefined) => string;
   perMemberShare: (participantId: number) => number;
   onDismiss: () => void;
   onSplitMethodChange: (method: SplitMethod) => void;
@@ -32,11 +32,10 @@ type SplitSheetProps = {
   onSplitValueChange: (participantId: number, value: string) => void;
 };
 
-const TOLERANCE = 0.005;
-
 export function SplitSheet({
   visible,
   participants,
+  currentParticipantId,
   selectedParticipantIds,
   splitValues,
   tabValue,
@@ -46,12 +45,6 @@ export function SplitSheet({
   adjustmentSum,
   totalAmount,
   currency,
-  surfaceColor,
-  handleColor,
-  t,
-  participantName,
-  currencyAmount,
-  formatMoney,
   perMemberShare,
   onDismiss,
   onSplitMethodChange,
@@ -59,32 +52,37 @@ export function SplitSheet({
   onToggleParticipant,
   onSplitValueChange
 }: SplitSheetProps) {
+  const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
+
+  function nameFor(participant: Participant) {
+    return participant.id === currentParticipantId ? t("common.you") : participant.display_name;
+  }
 
   function splitStatus() {
     if (tabValue === "equal") return null;
     if (tabValue === "exact") {
       return (
-        <Text variant="bodyMedium" style={Math.abs(exactLeft) > TOLERANCE ? errorStyle : undefined}>
-          {t("expense.amountLeft").replace("{amount}", currencyAmount(exactLeft, currency))}
+        <Text variant="bodyMedium" style={Math.abs(exactLeft) > SPLIT_TOLERANCE ? errorStyle : undefined}>
+          {t("expense.amountLeft", { amount: currencyAmount(exactLeft, currency) })}
         </Text>
       );
     }
     if (tabValue === "percentage") {
       return (
-        <Text variant="bodyMedium" style={Math.abs(percentageLeft) > TOLERANCE ? errorStyle : undefined}>
-          {t("expense.percentageLeft").replace("{amount}", `${formatMoney(percentageLeft)}%`)}
+        <Text variant="bodyMedium" style={Math.abs(percentageLeft) > SPLIT_TOLERANCE ? errorStyle : undefined}>
+          {t("expense.percentageLeft", { amount: `${formatMoney(percentageLeft)}%` })}
         </Text>
       );
     }
-    if (Math.abs(adjustmentSum) <= TOLERANCE) return null;
-    if (Math.abs(adjustmentSum) > totalAmount + TOLERANCE) {
+    if (Math.abs(adjustmentSum) <= SPLIT_TOLERANCE) return null;
+    if (Math.abs(adjustmentSum) > totalAmount + SPLIT_TOLERANCE) {
       return <Text style={errorStyle}>{t("expense.adjustmentOverTotal")}</Text>;
     }
     return (
       <Text style={errorStyle}>
-        {t("expense.adjustmentMustZero").replace("{amount}", currencyAmount(adjustmentSum, currency))}
+        {t("expense.adjustmentMustZero", { amount: currencyAmount(adjustmentSum, currency) })}
       </Text>
     );
   }
@@ -99,8 +97,8 @@ export function SplitSheet({
       <List.Item
         key={participant.id}
         style={styles.listTile}
-        title={participantName(participant)}
-        description={t("expense.memberPays").replace("{amount}", currencyAmount(memberShare, currency))}
+        title={nameFor(participant)}
+        description={t("expense.memberPays", { amount: currencyAmount(memberShare, currency) })}
         onPress={tabValue === "equal" ? () => onToggleParticipant(participant.id) : undefined}
         left={() => (
           <View style={styles.inline}>
@@ -108,7 +106,7 @@ export function SplitSheet({
               status={selected ? "checked" : "unchecked"}
               onPress={() => onToggleParticipant(participant.id)}
             />
-            <PersonAvatar name={participantName(participant)} imageUrl={participant.avatar_url} />
+            <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />
           </View>
         )}
         right={() =>
@@ -134,10 +132,10 @@ export function SplitSheet({
       <Modal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={[styles.bottomSheet, { backgroundColor: surfaceColor }]}
+        contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
         style={styles.bottomSheetWrapper}
       >
-        <View style={[styles.bottomSheetHandle, { backgroundColor: handleColor }]} />
+        <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
         <View style={styles.rowBetween}>
           <Text variant="titleLarge">{t("expense.split")}</Text>
           <Button disabled={splitConfigInvalid} onPress={onDismiss}>

@@ -26,7 +26,7 @@ class UserSerializer(serializers.Serializer):
     push_enabled = serializers.BooleanField()
 
     def get_avatar_url(self, user):
-        return signed_media_url(user.avatar_url) if user.avatar_url else ""
+        return signed_media_url(user.avatar_url)
 
 
 class UserUpdateSerializer(serializers.Serializer):

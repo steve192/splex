@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { Card, List, Text, TouchableRipple } from "react-native-paper";
 
+import { useI18n } from "../i18n/I18nContext";
 import { Settlement } from "../types/models";
 import { MoneyText } from "../ui/MoneyText";
 import { PersonAvatar } from "../ui/PersonAvatar";
@@ -8,11 +9,11 @@ import { styles } from "../ui/styles";
 
 type SettlementLedgerRowProps = {
   settlement: Settlement;
-  t: (key: string) => string;
   onPress: () => void;
 };
 
-export function SettlementLedgerRow({ settlement, t, onPress }: SettlementLedgerRowProps) {
+export function SettlementLedgerRow({ settlement, onPress }: SettlementLedgerRowProps) {
+  const { t } = useI18n();
   return (
     <Card mode="elevated" style={styles.card}>
       <TouchableRipple style={styles.clickable} onPress={onPress}>
@@ -23,10 +24,11 @@ export function SettlementLedgerRow({ settlement, t, onPress }: SettlementLedger
           <View style={styles.flex}>
             <Text variant="titleMedium">{t("settlement.title")}</Text>
             <Text variant="bodySmall">
-              {t("settlement.line")
-                .replace("{from}", settlement.payer_display_name ?? "")
-                .replace("{to}", settlement.receiver_display_name ?? "")
-                .replace("{amount}", `${settlement.amount} ${settlement.currency}`)}
+              {t("settlement.line", {
+                from: settlement.payer_display_name ?? "",
+                to: settlement.receiver_display_name ?? "",
+                amount: `${settlement.amount} ${settlement.currency}`
+              })}
             </Text>
           </View>
           <View style={styles.listTileRight}>

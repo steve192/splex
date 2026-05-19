@@ -6,16 +6,27 @@ import en from "./locales/en.json";
 
 type Locale = "en" | "de";
 type TranslationMap = Record<string, string>;
+type Params = Record<string, string | number>;
 
 const translations: Record<Locale, TranslationMap> = { en, de };
+
+export type TranslateFn = (key: string, params?: Params) => string;
 
 type I18nContextValue = {
   locale: Locale;
   setLocale(locale: Locale): void;
-  t(key: string): string;
+  t: TranslateFn;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
+
+function interpolate(template: string, params?: Params): string {
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (match, name) => {
+    const value = params[name];
+    return value === undefined ? match : String(value);
+  });
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
@@ -35,8 +46,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         setLocaleState(nextLocale);
         AsyncStorage.setItem("splex.locale", nextLocale).catch(() => undefined);
       },
-      t(key: string) {
-        return translations[locale][key] ?? translations.en[key] ?? key;
+      t(key: string, params?: Params) {
+        const template = translations[locale][key] ?? translations.en[key] ?? key;
+        return interpolate(template, params);
       }
     }),
     [locale]
@@ -52,4 +64,3 @@ export function useI18n(): I18nContextValue {
   }
   return value;
 }
-

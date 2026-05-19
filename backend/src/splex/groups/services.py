@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
 
+from splex.activity.events import EventType
 from splex.activity.services import record_activity
 from splex.expenses.models import Expense
 from splex.friends.models import Friendship
@@ -23,7 +24,7 @@ def create_group(*, actor, name: str, default_currency: str) -> Group:
     )
     event = record_activity(
         actor,
-        "group.created",
+        EventType.GROUP_CREATED,
         group=group,
         payload={"groupName": group.name},
     )
@@ -33,14 +34,14 @@ def create_group(*, actor, name: str, default_currency: str) -> Group:
 
 @transaction.atomic
 def add_unregistered_participant(*, actor, group: Group, display_name: str) -> Participant:
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     participant = Participant.objects.create(
         display_name=display_name, kind=Participant.Kind.UNREGISTERED
     )
     GroupMembership.objects.create(group=group, participant=participant)
     event = record_activity(
         actor,
-        "group.member_added",
+        EventType.GROUP_MEMBER_ADDED,
         group=group,
         payload={"groupName": group.name, "participantName": participant.display_name},
     )
@@ -50,7 +51,7 @@ def add_unregistered_participant(*, actor, group: Group, display_name: str) -> P
 
 @transaction.atomic
 def update_group(*, actor, group: Group, data: dict) -> Group:
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     if group.deleted_at:
         raise ValueError("Deleted groups cannot be changed.")
     changed = []
@@ -82,7 +83,7 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
         group.save(update_fields=[*changed, "updated_at"])
         event = record_activity(
             actor,
-            "group.updated",
+            EventType.GROUP_UPDATED,
             group=group,
             payload={"groupName": group.name, "changed": changed},
         )
@@ -92,7 +93,7 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
 
 @transaction.atomic
 def delete_group(*, actor, group: Group) -> None:
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     if group.deleted_at:
         return
     now = timezone.now()
@@ -102,7 +103,7 @@ def delete_group(*, actor, group: Group) -> None:
     group.save(update_fields=["deleted_at", "archived_at", "updated_at"])
     event = record_activity(
         actor,
-        "group.deleted",
+        EventType.GROUP_DELETED,
         group=group,
         payload={"groupName": group.name},
     )
@@ -111,7 +112,7 @@ def delete_group(*, actor, group: Group) -> None:
 
 @transaction.atomic
 def remove_group_participant(*, actor, group: Group, participant: Participant) -> None:
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     membership = GroupMembership.objects.get(
         group=group, participant=participant, removed_at__isnull=True
     )
@@ -121,7 +122,7 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
     membership.save(update_fields=["removed_at"])
     event = record_activity(
         actor,
-        "group.member_removed",
+        EventType.GROUP_MEMBER_REMOVED,
         group=group,
         payload={"groupName": group.name, "participantName": participant.display_name},
     )
@@ -132,7 +133,7 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
 def rename_unregistered_participant(
     *, actor, group: Group, participant: Participant, display_name: str
 ) -> Participant:
-    ensure_group_member(actor, group)
+    assert_group_member(actor, group)
     if participant.kind != Participant.Kind.UNREGISTERED:
         raise ValueError("Only unregistered participants can be renamed.")
     if not GroupMembership.objects.filter(group=group, participant=participant).exists():
@@ -142,7 +143,7 @@ def rename_unregistered_participant(
     participant.save(update_fields=["display_name", "updated_at"])
     event = record_activity(
         actor,
-        "group.member_renamed",
+        EventType.GROUP_MEMBER_RENAMED,
         group=group,
         payload={
             "oldName": old_name,
@@ -154,13 +155,19 @@ def rename_unregistered_participant(
     return participant
 
 
-def ensure_group_member(user, group: Group):
+def get_group_participant(user, group: Group) -> Participant:
+    """Return the user's active participant in the group; raise PermissionError otherwise."""
     participant = get_or_create_user_participant(user)
     if not GroupMembership.objects.filter(
         group=group, participant=participant, removed_at__isnull=True
     ).exists():
         raise PermissionError("You are not a member of this group.")
     return participant
+
+
+def assert_group_member(user, group: Group) -> None:
+    """Raise PermissionError if `user` is not an active member of `group`."""
+    get_group_participant(user, group)
 
 
 def ensure_friendships_for_group(group: Group):
