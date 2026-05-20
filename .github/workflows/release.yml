@@ -4,8 +4,6 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
-      GH_TOKEN:
-        required: true
       EXPO_TOKEN:
         required: false
 
@@ -27,7 +25,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -51,22 +48,20 @@ jobs:
             @semantic-release/git@10
             conventional-changelog-conventionalcommits@7
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  release:
-    name: Publish release
+  tag:
+    name: Create tag and GitHub release
     needs: semantic-preview
     if: needs.semantic-preview.outputs.published == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -79,7 +74,6 @@ jobs:
           python-version: "3.14.5"
 
       - name: Run semantic-release
-        id: semrel
         uses: cycjimmy/semantic-release-action@v6.0.0
         with:
           semantic_version: 23
@@ -89,10 +83,84 @@ jobs:
             @semantic-release/git@10
             conventional-changelog-conventionalcommits@7
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-docker:
+    name: Publish Docker
+    needs: [semantic-preview, tag]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.semantic-preview.outputs.tag }}
+
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Log into ghcr.io
-        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ needs.semantic-preview.outputs.tag }}
+            ghcr.io/${{ github.repository }}:${{ needs.semantic-preview.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+
+  publish-expo-update:
+    name: Publish Expo Update
+    needs: [semantic-preview, tag]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.semantic-preview.outputs.tag }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish Expo update
+        if: ${{ env.EXPO_TOKEN != '' }}
+        run: npx eas update --branch production --auto
+
+  apk:
+    name: Build Android APK
+    needs: [semantic-preview, publish-docker, publish-expo-update]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.semantic-preview.outputs.tag }}
+
+      - name: Log into ghcr.io
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -100,10 +168,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Android APK
-        if: steps.semrel.outputs.new_release_published == 'true'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          RELEASE_VERSION: ${{ steps.semrel.outputs.new_release_version }}
+          RELEASE_VERSION: ${{ needs.semantic-preview.outputs.version }}
         run: |
           docker run \
             -e EXPO_TOKEN="$EXPO_TOKEN" \
@@ -112,10 +179,9 @@ jobs:
             production-apk "splex-${RELEASE_VERSION}.apk"
 
       - name: Attach APK to GitHub release
-        if: steps.semrel.outputs.new_release_published == 'true'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.semrel.outputs.new_release_git_tag }}
-          files: frontend/splex-${{ steps.semrel.outputs.new_release_version }}.apk
+          tag_name: ${{ needs.semantic-preview.outputs.tag }}
+          files: frontend/splex-${{ needs.semantic-preview.outputs.version }}.apk
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

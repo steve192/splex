@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - "**"
-    tags:
-      - "v*.*.*"
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -90,75 +88,6 @@ jobs:
           push: false
           tags: splex-ci:${{ github.sha }}
 
-  publish-docker:
-    name: Publish Docker
-    needs: [frontend, backend]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log into registry ${{ env.REGISTRY }}
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=tag
-            type=sha
-            type=raw,value=latest
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-  publish-expo-update:
-    name: Publish Expo Update
-    needs: [frontend, backend]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.15.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Publish Expo update
-        if: ${{ env.EXPO_TOKEN != '' }}
-        run: npx eas update --branch production --auto
-
   renovate-release-check:
     name: Evaluate Renovate-only commits
     needs: docker
@@ -217,6 +146,10 @@ jobs:
     needs: renovate-release-check
     if: needs.renovate-release-check.outputs.should_release == 'true'
     uses: ./.github/workflows/release.yml
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      packages: write
     secrets:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
