@@ -31,6 +31,8 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
+import { canRemoveParticipant } from "./participantActions";
+import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
 const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }> = [
   { value: "equal_all", key: "split.equal_all" },
@@ -236,9 +238,11 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
                         </Button>
                       </>
                     ) : null}
-                    <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
-                      {t("common.delete")}
-                    </Button>
+                    {canRemoveParticipant(participant, group?.current_participant_id) ? (
+                      <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
+                        {t("common.delete")}
+                      </Button>
+                    ) : null}
                   </View>
                 )}
               />
@@ -269,16 +273,13 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
       </Screen>
 
       <Portal>
-        <Dialog visible={!!removeTarget} onDismiss={() => setRemoveTarget(null)}>
-          <Dialog.Title>{t("group.removeMember")}</Dialog.Title>
-          <Dialog.Content>
-            <Text>{removeTarget ? removeTarget.display_name : ""}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setRemoveTarget(null)}>{t("common.cancel")}</Button>
-            <Button onPress={removeParticipant}>{t("common.delete")}</Button>
-          </Dialog.Actions>
-        </Dialog>
+        <RemoveParticipantDialog
+          api={api}
+          groupId={groupId}
+          target={removeTarget}
+          onDismiss={() => setRemoveTarget(null)}
+          onConfirm={removeParticipant}
+        />
         <Dialog visible={!!renameTarget} onDismiss={() => setRenameTarget(null)}>
           <Dialog.Title>{t("participant.rename")}</Dialog.Title>
           <Dialog.Content>

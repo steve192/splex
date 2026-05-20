@@ -3,7 +3,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from splex.balances.selectors import group_member_balance_rows, group_pair_balances_for_user
+from splex.balances.selectors import (
+    group_member_balance_rows,
+    group_pair_balances_for_user,
+    participant_outstanding_in_group,
+)
 from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
 from splex.groups.api.serializers import (
@@ -160,6 +164,14 @@ class GroupBalancesView(APIView):
         group = get_active_group(group_id)
         assert_group_member(request.user, group)
         return Response(group_member_balance_rows(group))
+
+
+class GroupParticipantOutstandingView(APIView):
+    def get(self, request, group_id, participant_id):
+        group = get_active_group(group_id)
+        assert_group_member(request.user, group)
+        participant = get_object_or_404(Participant, id=participant_id)
+        return Response(participant_outstanding_in_group(group, participant))
 
 
 class GroupExpensesView(APIView):

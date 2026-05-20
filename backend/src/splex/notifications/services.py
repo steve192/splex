@@ -1,4 +1,5 @@
 import json
+import logging
 from base64 import urlsafe_b64encode
 from datetime import timedelta
 
@@ -9,6 +10,8 @@ from django.utils import timezone
 
 from splex.notifications.models import DeviceToken, Notification, VapidKey, WebPushSubscription
 from splex.notifications.translations import render_notification
+
+logger = logging.getLogger(__name__)
 
 
 class TerminalDispatchError(Exception):
@@ -93,18 +96,37 @@ def _dispatch_one(notification, title, body):
             send_expo_notification(device.token, notification, title, body)
             sent = True
         except TerminalDispatchError as exc:
+            logger.info("Expo push token gone, deleting (user_id=%s): %s", notification.user_id, exc)
             errors.append(f"{exc} (token deleted)")
             device.delete()
         except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
+            logger.warning(
+                "Expo push failed (user_id=%s, notification_id=%s): %s",
+                notification.user_id,
+                notification.id,
+                exc,
+            )
             errors.append(str(exc))
     for subscription in WebPushSubscription.objects.filter(user=notification.user, enabled=True):
         try:
             send_web_push_notification(subscription, notification, title, body)
             sent = True
         except TerminalDispatchError as exc:
+            logger.info(
+                "Web push subscription gone, deleting (user_id=%s): %s",
+                notification.user_id,
+                exc,
+            )
             errors.append(f"{exc} (subscription deleted)")
             subscription.delete()
         except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
+            logger.warning(
+                "Web push failed (user_id=%s, notification_id=%s, endpoint=%s): %s",
+                notification.user_id,
+                notification.id,
+                subscription.endpoint[:80],
+                exc,
+            )
             errors.append(str(exc))
     return sent, errors
 

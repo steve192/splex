@@ -80,6 +80,61 @@ def test_cannot_remove_yourself_via_remove_participant():
 
 
 @pytest.mark.django_db
+def test_remove_participant_auto_settles_outstanding_debt():
+    """When a participant with a non-zero balance is removed, the system creates
+    settlements to bring the balance to zero before marking membership removed."""
+    from splex.expenses.services import create_expense
+    from splex.settlements.models import Settlement
+
+    User = get_user_model()
+    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+
+    # Owner paid 10 EUR for both → Bob owes Owner 5 EUR.
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Pizza",
+            "amount": "10",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "10"}],
+        },
+    )
+
+    assert not Settlement.objects.filter(group=group).exists()
+    remove_group_participant(actor=owner, group=group, participant=placeholder)
+
+    settlements = list(Settlement.objects.filter(group=group))
+    assert len(settlements) == 1
+    settlement = settlements[0]
+    assert settlement.payer_participant_id == placeholder.id
+    assert settlement.receiver_participant_id == owner_p.id
+    assert str(settlement.amount) == "5.00"
+
+    event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
+    assert event.payload["autoSettled"] == 1
+
+
+@pytest.mark.django_db
+def test_remove_participant_skips_settlement_when_balance_zero():
+    from splex.settlements.models import Settlement
+
+    User = get_user_model()
+    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+
+    remove_group_participant(actor=owner, group=group, participant=placeholder)
+    assert not Settlement.objects.filter(group=group).exists()
+    event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
+    assert event.payload["autoSettled"] == 0
+
+
+@pytest.mark.django_db
 def test_delete_group_is_idempotent():
     User = get_user_model()
     user = User.objects.create_user(email="u@example.com", display_name="U")

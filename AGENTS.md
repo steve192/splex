@@ -88,3 +88,12 @@
 - When a check cannot be run, state that clearly with the reason.
 - Do not revert user changes unless explicitly asked.
 - After any refactor that touches a file, verify the file still represents your intended state — IDE diagnostics and tooling may surface stale snapshots; trust the command-line check.
+
+## Testing Requirements
+
+- **Every change ships with tests.** Bug fixes, new features, refactors, and edge-case patches all need at least one test that would fail without the change. This is required so that automatic dependency updates remain safe to merge.
+- For pure logic, add a unit test next to the file (`foo.test.ts` / `test_foo.py`).
+- For backend services, write `@pytest.mark.django_db` integration tests that exercise the full create/update/delete path including the activity event and notification side-effects where they exist.
+- For frontend logic that lives inside a screen component, extract the function to a `*Helpers.ts` module and test the pure function. Don't try to test deeply through React rendering unless a render-test harness is already in place.
+- When the change cannot be tested (e.g. third-party-only integration, infra config), say so explicitly and explain why — don't silently skip.
+- Tests are not optional. If you find yourself wanting to skip them "because the change is small", write one anyway.

@@ -11,6 +11,7 @@ import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient } from "../shared/api/client";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
+import { ensureServiceWorkerRegistration } from "../shared/lib/serviceWorker";
 import { ThemeMode } from "../shared/types/models";
 import { styles } from "../shared/ui/styles";
 import { AppNavigator } from "./AppNavigator";
@@ -30,6 +31,9 @@ export function AppShell() {
     AsyncStorage.getItem("splex.theme").then((stored) => {
       if (stored === "light" || stored === "dark" || stored === "system") setThemeModeState(stored);
     });
+    // On web, eagerly register/refresh the service worker so a deployed update
+    // takes over the existing tab without the user manually closing it.
+    ensureServiceWorkerRegistration().catch(() => undefined);
   }, []);
 
   const paperTheme = useMemo(() => createAppTheme(resolvedThemeMode), [resolvedThemeMode]);

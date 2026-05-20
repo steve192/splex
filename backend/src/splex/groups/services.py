@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
+from splex.balances.selectors import group_debts
 from splex.expenses.models import Expense
 from splex.friends.models import Friendship
 from splex.groups.models import Group, GroupMembership
@@ -10,6 +11,7 @@ from splex.notifications.services import create_notifications_for_activity
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
+from splex.shared.money import money
 from splex.shared.uploads import save_data_url_image
 
 
@@ -100,6 +102,30 @@ def delete_group(*, actor, group: Group) -> None:
     create_notifications_for_activity(event)
 
 
+def _auto_settle_participant(actor, group: Group, participant: Participant) -> int:
+    """Create settlements that bring this participant's pair-wise balances to zero.
+
+    Returns the number of settlements created. Skipped pairs (zero net) emit nothing.
+    """
+    created = 0
+    for (debtor_id, creditor_id), amount in group_debts(group).items():
+        if participant.id not in (debtor_id, creditor_id):
+            continue
+        net = money(amount)
+        if net <= 0:
+            continue
+        Settlement.objects.create(
+            group=group,
+            payer_participant_id=debtor_id,
+            receiver_participant_id=creditor_id,
+            amount=net,
+            currency=group.default_currency,
+            created_by=actor,
+        )
+        created += 1
+    return created
+
+
 @transaction.atomic
 def remove_group_participant(*, actor, group: Group, participant: Participant) -> None:
     assert_group_member(actor, group)
@@ -108,13 +134,14 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
     )
     if participant.user_id == actor.id:
         raise ValueError("You cannot remove yourself from the group here.")
+    auto_settled = _auto_settle_participant(actor, group, participant)
     membership.removed_at = timezone.now()
     membership.save(update_fields=["removed_at"])
     event = record_activity(
         actor,
         EventType.GROUP_MEMBER_REMOVED,
         group=group,
-        payload={"target_participant_id": participant.id},
+        payload={"target_participant_id": participant.id, "autoSettled": auto_settled},
     )
     create_notifications_for_activity(event)
 

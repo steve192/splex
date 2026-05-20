@@ -29,6 +29,11 @@ export function balanceText(t: (key: string) => string, amount: string, currency
   return `${label} ${formatMoney(numeric)} ${currency}`;
 }
 
+/** Just the absolute amount and the currency, no "you owe / are owed" framing. */
+export function plainAmountText(amount: string | number | undefined, currency: string): string {
+  return `${formatMoney(amount)} ${currency}`;
+}
+
 export function buildParticipantsForFriend(friend: Friend | null): Participant[] {
   if (!friend?.current_participant_id) return [];
   return [
