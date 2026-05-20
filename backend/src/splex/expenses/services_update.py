@@ -93,7 +93,11 @@ def update_expense(*, actor, expense: Expense, data: dict) -> Expense:
         group=expense.group,
         friendship=expense.friendship,
         expense=expense,
-        payload={"description": expense.description},
+        payload={
+            "description": expense.description,
+            "amount": str(expense.converted_amount),
+            "currency": expense.converted_currency,
+        },
     )
     create_notifications_for_activity(event)
     return expense
