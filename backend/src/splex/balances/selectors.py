@@ -86,7 +86,7 @@ def group_member_balance_rows(group):
         group.memberships.filter(removed_at__isnull=True).values_list("participant_id", flat=True)
     )
     participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
-    names = {participant.id: participant.display_name for participant in participants}
+    names = {participant.id: participant.effective_display_name for participant in participants}
     avatars = {participant.id: participant_avatar_url(participant) for participant in participants}
     totals: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
     details_by_participant: dict[int, list[dict]] = defaultdict(list)

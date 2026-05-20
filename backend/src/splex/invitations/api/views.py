@@ -63,7 +63,7 @@ class InvitationPreviewView(APIView):
                     token, "inviter", invitation.invited_by.avatar_url
                 ),
                 "target_participant": (
-                    invitation.target_participant.display_name
+                    invitation.target_participant.effective_display_name
                     if invitation.target_participant
                     else None
                 ),

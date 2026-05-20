@@ -14,7 +14,7 @@ def serialize_friend(
     other = other_participant(friendship, current_participant)
     payload = {
         "id": friendship.id,
-        "display_name": other.display_name,
+        "display_name": other.effective_display_name,
         "avatar_url": participant_avatar_url(other),
         "participant_id": other.id,
         "default_currency": friendship.default_currency,

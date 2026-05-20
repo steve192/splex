@@ -52,6 +52,7 @@ export type ActivityFeedEvent = {
   actor: string;
   actor_avatar_url?: string;
   payload?: Record<string, string | number | undefined>;
+  subject_name?: string;
   created_at: string;
   context_type?: "group" | "friend" | "";
   context_name?: string;

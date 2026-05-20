@@ -80,9 +80,6 @@ class MeView(APIView):
             for field in serializer.validated_data.keys()
         ]
         user.save(update_fields=update_fields)
-        if "display_name" in serializer.validated_data and hasattr(user, "participant"):
-            user.participant.display_name = user.display_name or user.email.split("@")[0]
-            user.participant.save(update_fields=["display_name", "updated_at"])
         return Response(UserSerializer(user).data)
 
 
