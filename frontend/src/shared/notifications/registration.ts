@@ -45,21 +45,44 @@ async function setLocalPushPreference(pref: DevicePushState["preference"]): Prom
   await AsyncStorage.setItem(LOCAL_PREF_KEY, pref);
 }
 
+function resolveProjectId(): string | undefined {
+  const Constants = require("expo-constants") as typeof import("expo-constants");
+  const root = (Constants as unknown as { default?: typeof Constants }).default ?? Constants;
+  return (
+    (root as any).easConfig?.projectId ||
+    (root as any).expoConfig?.extra?.eas?.projectId ||
+    (root as any).manifest2?.extra?.eas?.projectId ||
+    (root as any).manifest?.extra?.eas?.projectId
+  );
+}
+
+async function ensureAndroidChannel() {
+  if (Platform.OS !== "android") return;
+  const Notifications = require("expo-notifications") as typeof import("expo-notifications");
+  await Notifications.setNotificationChannelAsync("default", {
+    name: "Splex",
+    importance: Notifications.AndroidImportance.DEFAULT
+  });
+}
+
 async function registerExpoToken(api: ApiClient, enabled: boolean): Promise<DevicePushState> {
   const Notifications = require("expo-notifications") as typeof import("expo-notifications");
-  const Constants = require("expo-constants") as typeof import("expo-constants");
 
   if (enabled) {
     const permission = await Notifications.requestPermissionsAsync();
     if (!permission.granted) {
       return { preference: "off", lastStatus: "permission_denied" };
     }
+    await ensureAndroidChannel();
   }
 
-  const projectId =
-    Constants.default?.easConfig?.projectId ||
-    Constants.default?.expoConfig?.extra?.eas?.projectId;
-  const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+  const projectId = resolveProjectId();
+  if (!projectId) {
+    throw new Error(
+      "Could not find an EAS projectId in app config (extra.eas.projectId). Push tokens cannot be issued."
+    );
+  }
+  const token = await Notifications.getExpoPushTokenAsync({ projectId });
   await api.post("/api/notifications/device-tokens/", {
     token: token.data,
     platform: Platform.OS === "ios" ? "ios" : "android",
@@ -125,6 +148,7 @@ export async function setDevicePushEnabled(api: ApiClient, enabled: boolean): Pr
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    console.warn("[splex:push] registration failed", error);
     return { preference: "off", lastStatus: "error", lastError: message };
   }
 }

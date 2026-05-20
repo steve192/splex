@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "251717443978",
+    "project_id": "splex-8007f",
+    "storage_bucket": "splex-8007f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:251717443978:android:4ad964b6a199ec7ea3a873",
+        "android_client_info": {
+          "package_name": "com.sterul.splex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxodKDNWsewtTxrRBaqaM_OvwNAB8poy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
