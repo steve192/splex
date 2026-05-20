@@ -32,20 +32,48 @@ def users_for_context(group=None, friendship=None):
     return User.objects.none()
 
 
+def _actor_name(actor) -> str:
+    return actor.display_name or actor.email.split("@")[0]
+
+
+def _context_name_for(activity_event, recipient) -> str:
+    if activity_event.group_id:
+        return activity_event.group.name
+    if activity_event.friendship_id:
+        friendship = activity_event.friendship
+        recipient_pid = getattr(recipient, "participant", None)
+        recipient_pid = getattr(recipient_pid, "id", None)
+        other = (
+            friendship.participant_b
+            if friendship.participant_a_id == recipient_pid
+            else friendship.participant_a
+        )
+        return other.effective_display_name
+    return ""
+
+
 def create_notifications_for_activity(activity_event):
     recipients = users_for_context(activity_event.group, activity_event.friendship).exclude(
         id=activity_event.actor_id
     )
-    notifications = [
-        Notification(
-            user=user,
-            activity_event=activity_event,
-            title_key=f"activity.{activity_event.event_type}.title",
-            body_key=f"activity.{activity_event.event_type}.body",
-            payload=activity_event.payload,
+    actor_name = _actor_name(activity_event.actor)
+    base_payload = activity_event.payload or {}
+    notifications = []
+    for user in recipients:
+        payload = {
+            **base_payload,
+            "actor": actor_name,
+            "context": _context_name_for(activity_event, user),
+        }
+        notifications.append(
+            Notification(
+                user=user,
+                activity_event=activity_event,
+                title_key=f"activity.{activity_event.event_type}.title",
+                body_key=f"activity.{activity_event.event_type}.body",
+                payload=payload,
+            )
         )
-        for user in recipients
-    ]
     created = Notification.objects.bulk_create(notifications)
     transaction.on_commit(lambda: dispatch_pending_notifications([item.id for item in created]))
     return created

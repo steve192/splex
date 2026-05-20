@@ -22,12 +22,7 @@ def create_group(*, actor, name: str, default_currency: str) -> Group:
     GroupMembership.objects.create(
         group=group, participant=participant, role=GroupMembership.Role.ADMIN
     )
-    event = record_activity(
-        actor,
-        EventType.GROUP_CREATED,
-        group=group,
-        payload={"groupName": group.name},
-    )
+    event = record_activity(actor, EventType.GROUP_CREATED, group=group, payload={})
     create_notifications_for_activity(event)
     return group
 
@@ -43,7 +38,7 @@ def add_unregistered_participant(*, actor, group: Group, display_name: str) -> P
         actor,
         EventType.GROUP_MEMBER_ADDED,
         group=group,
-        payload={"groupName": group.name, "participantName": participant.display_name},
+        payload={"target_participant_id": participant.id},
     )
     create_notifications_for_activity(event)
     return participant
@@ -85,7 +80,7 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
             actor,
             EventType.GROUP_UPDATED,
             group=group,
-            payload={"groupName": group.name, "changed": changed},
+            payload={"changed": changed},
         )
         create_notifications_for_activity(event)
     return group
@@ -101,12 +96,7 @@ def delete_group(*, actor, group: Group) -> None:
     if not group.archived_at:
         group.archived_at = now
     group.save(update_fields=["deleted_at", "archived_at", "updated_at"])
-    event = record_activity(
-        actor,
-        EventType.GROUP_DELETED,
-        group=group,
-        payload={"groupName": group.name},
-    )
+    event = record_activity(actor, EventType.GROUP_DELETED, group=group, payload={})
     create_notifications_for_activity(event)
 
 
@@ -124,7 +114,7 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
         actor,
         EventType.GROUP_MEMBER_REMOVED,
         group=group,
-        payload={"groupName": group.name, "participantName": participant.display_name},
+        payload={"target_participant_id": participant.id},
     )
     create_notifications_for_activity(event)
 
@@ -146,9 +136,8 @@ def rename_unregistered_participant(
         EventType.GROUP_MEMBER_RENAMED,
         group=group,
         payload={
+            "target_participant_id": participant.id,
             "oldName": old_name,
-            "participantName": participant.display_name,
-            "groupName": group.name,
         },
     )
     create_notifications_for_activity(event)

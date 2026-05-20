@@ -6,7 +6,7 @@ from splex.shared.media import signed_media_url
 
 class ParticipantSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    display_name = serializers.CharField()
+    display_name = serializers.CharField(source="effective_display_name", read_only=True)
     kind = serializers.CharField()
     user_id = serializers.IntegerField(allow_null=True)
     avatar_url = serializers.SerializerMethodField()

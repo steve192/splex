@@ -23,9 +23,10 @@ function activityDescription(item: ActivityFeedEvent): string {
     return `${payload.description} - ${payload.amount} ${payload.currency}`;
   }
   if (payload.description) return String(payload.description);
-  if (payload.groupName && payload.participantName) return `${payload.participantName} - ${payload.groupName}`;
-  if (payload.groupName) return String(payload.groupName);
-  if (payload.friendName) return String(payload.friendName);
+  // Prefer the live subject_name from the API; fall back to legacy snapshot
+  // keys so events recorded before the rename refactor still render.
+  const subject = item.subject_name || payload.participantName || payload.friendName;
+  if (subject) return String(subject);
   if (payload.amount && payload.currency) return `${payload.amount} ${payload.currency}`;
   return "";
 }

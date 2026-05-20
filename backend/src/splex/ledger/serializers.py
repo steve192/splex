@@ -9,7 +9,9 @@ def serialize_expense(expense):
         *(share.participant_id for share in expense.owed_shares.all()),
     ]
     participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
-    participant_names = {participant.id: participant.display_name for participant in participants}
+    participant_names = {
+        participant.id: participant.effective_display_name for participant in participants
+    }
     participant_avatars = {
         participant.id: participant_avatar_url(participant)
         for participant in participants
@@ -56,8 +58,8 @@ def serialize_settlement(settlement):
         "friendship_id": settlement.friendship_id,
         "payer_participant_id": settlement.payer_participant_id,
         "receiver_participant_id": settlement.receiver_participant_id,
-        "payer_display_name": settlement.payer_participant.display_name,
-        "receiver_display_name": settlement.receiver_participant.display_name,
+        "payer_display_name": settlement.payer_participant.effective_display_name,
+        "receiver_display_name": settlement.receiver_participant.effective_display_name,
         "payer_avatar_url": participant_avatar_url(settlement.payer_participant),
         "receiver_avatar_url": participant_avatar_url(settlement.receiver_participant),
         "amount": str(settlement.amount),

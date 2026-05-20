@@ -25,12 +25,7 @@ def create_group_invitation(*, actor, group):
         group=group,
         invited_by=actor,
     )
-    event = record_activity(
-        actor,
-        EventType.GROUP_MEMBER_INVITED,
-        group=group,
-        payload={"groupName": group.name},
-    )
+    event = record_activity(actor, EventType.GROUP_MEMBER_INVITED, group=group, payload={})
     create_notifications_for_activity(event)
     return invitation, token, invitation_url(token)
 
@@ -48,7 +43,7 @@ def create_claim_invitation(*, actor, group, target_participant):
         actor,
         EventType.GROUP_MEMBER_INVITED,
         group=group,
-        payload={"participantName": target_participant.display_name, "groupName": group.name},
+        payload={"target_participant_id": target_participant.id},
     )
     create_notifications_for_activity(event)
     return invitation, token, invitation_url(token)
@@ -96,7 +91,7 @@ def accept_invitation(*, actor, token: str):
             actor,
             EventType.GROUP_MEMBER_JOINED,
             group=invitation.group,
-            payload={"groupName": invitation.group.name},
+            payload={"target_participant_id": participant.id},
         )
         create_notifications_for_activity(event)
     elif invitation.type == Invitation.Type.CLAIM_PARTICIPANT:
@@ -112,7 +107,7 @@ def accept_invitation(*, actor, token: str):
             actor,
             EventType.INVITATION_ACCEPTED,
             group=invitation.group,
-            payload={"participantName": target.display_name, "groupName": invitation.group.name},
+            payload={"target_participant_id": target.id},
         )
         create_notifications_for_activity(event)
     elif invitation.type == Invitation.Type.FRIEND_JOIN:
