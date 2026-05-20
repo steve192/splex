@@ -40,7 +40,11 @@
     },
     "plugins": [
       "expo-notifications",
-      "expo-updates"
+      "expo-updates",
+      [
+        "./plugins/withGradleJvmArgs",
+        "-Xmx4g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+      ]
     ],
     "extra": {
       "eas": {
