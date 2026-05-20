@@ -70,6 +70,11 @@ class ActivityListView(APIView):
             "friendship__participant_a__user",
             "friendship__participant_b",
             "friendship__participant_b__user",
+            "settlement",
+            "settlement__payer_participant",
+            "settlement__payer_participant__user",
+            "settlement__receiver_participant",
+            "settlement__receiver_participant__user",
         )
         page = list(query[offset : offset + limit])
         target_ids = {
@@ -85,13 +90,21 @@ class ActivityListView(APIView):
         rows = []
         for event in page:
             context = activity_context(event, request.user)
+            payload = dict(event.payload or {})
+            if event.settlement_id and event.settlement:
+                payload.setdefault(
+                    "fromName", event.settlement.payer_participant.effective_display_name
+                )
+                payload.setdefault(
+                    "toName", event.settlement.receiver_participant.effective_display_name
+                )
             rows.append(
                 {
                     "id": event.id,
                     "event_type": event.event_type,
                     "actor": str(event.actor),
                     "actor_avatar_url": signed_media_url(event.actor.avatar_url),
-                    "payload": event.payload,
+                    "payload": payload,
                     "subject_name": resolve_subject_name(event, targets),
                     "created_at": event.created_at,
                     "group_id": event.group_id,

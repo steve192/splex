@@ -10,11 +10,23 @@ from string import Formatter
 
 _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
     "en": {
-        "expense.created": ("New expense", "{actor} added \"{description}\" in {context}"),
-        "expense.updated": ("Expense updated", "{actor} updated \"{description}\" in {context}"),
+        "expense.created": (
+            "New expense",
+            "{actor} added \"{description}\" ({amount} {currency}) in {context}",
+        ),
+        "expense.updated": (
+            "Expense updated",
+            "{actor} updated \"{description}\" ({amount} {currency}) in {context}",
+        ),
         "expense.deleted": ("Expense deleted", "{actor} deleted \"{description}\" in {context}"),
-        "settlement.created": ("Settlement recorded", "{actor} settled up in {context}"),
-        "settlement.updated": ("Settlement updated", "{actor} updated a settlement in {context}"),
+        "settlement.created": (
+            "Settlement recorded",
+            "{actor} settled {amount} {currency} in {context}",
+        ),
+        "settlement.updated": (
+            "Settlement updated",
+            "{actor} updated a settlement ({amount} {currency}) in {context}",
+        ),
         "settlement.deleted": ("Settlement deleted", "{actor} removed a settlement in {context}"),
         "group.created": ("Group created", "{actor} created the group {context}"),
         "group.updated": ("Group updated", "{actor} updated the group {context}"),
@@ -29,11 +41,23 @@ _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
         "invitation.accepted": ("Invitation accepted", "{actor} joined via your invite"),
     },
     "de": {
-        "expense.created": ("Neue Ausgabe", "{actor} hat \"{description}\" in {context} hinzugefügt"),
-        "expense.updated": ("Ausgabe aktualisiert", "{actor} hat \"{description}\" in {context} aktualisiert"),
+        "expense.created": (
+            "Neue Ausgabe",
+            "{actor} hat \"{description}\" ({amount} {currency}) in {context} hinzugefügt",
+        ),
+        "expense.updated": (
+            "Ausgabe aktualisiert",
+            "{actor} hat \"{description}\" ({amount} {currency}) in {context} aktualisiert",
+        ),
         "expense.deleted": ("Ausgabe gelöscht", "{actor} hat \"{description}\" in {context} gelöscht"),
-        "settlement.created": ("Ausgleich verbucht", "{actor} hat in {context} ausgeglichen"),
-        "settlement.updated": ("Ausgleich aktualisiert", "{actor} hat einen Ausgleich in {context} aktualisiert"),
+        "settlement.created": (
+            "Ausgleich verbucht",
+            "{actor} hat {amount} {currency} in {context} ausgeglichen",
+        ),
+        "settlement.updated": (
+            "Ausgleich aktualisiert",
+            "{actor} hat einen Ausgleich ({amount} {currency}) in {context} aktualisiert",
+        ),
         "settlement.deleted": ("Ausgleich entfernt", "{actor} hat einen Ausgleich in {context} entfernt"),
         "group.created": ("Gruppe erstellt", "{actor} hat die Gruppe {context} erstellt"),
         "group.updated": ("Gruppe aktualisiert", "{actor} hat die Gruppe {context} aktualisiert"),

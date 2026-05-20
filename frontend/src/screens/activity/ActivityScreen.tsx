@@ -7,7 +7,7 @@ import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
-import { useI18n } from "../../shared/i18n/I18nContext";
+import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { loadCachedActivityEvents, loadCachedFriends, loadCachedGroups, saveCachedActivityEvents } from "../../shared/lib/offlineCache";
@@ -17,12 +17,19 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-function activityDescription(item: ActivityFeedEvent): string {
+function activityDescription(item: ActivityFeedEvent, t: TranslateFn): string {
   const payload = item.payload ?? {};
   if (payload.description && payload.amount && payload.currency) {
     return `${payload.description} - ${payload.amount} ${payload.currency}`;
   }
   if (payload.description) return String(payload.description);
+  if (item.event_type.startsWith("settlement.") && payload.fromName && payload.toName) {
+    return t("settlement.line", {
+      from: String(payload.fromName),
+      to: String(payload.toName),
+      amount: `${payload.amount ?? ""} ${payload.currency ?? ""}`.trim()
+    });
+  }
   // Prefer the live subject_name from the API; fall back to legacy snapshot
   // keys so events recorded before the rename refactor still render.
   const subject = item.subject_name || payload.participantName || payload.friendName;
@@ -31,7 +38,7 @@ function activityDescription(item: ActivityFeedEvent): string {
   return "";
 }
 
-function activityContext(item: ActivityFeedEvent, t: (key: string, values?: Record<string, string | number>) => string): string {
+function activityContext(item: ActivityFeedEvent, t: TranslateFn): string {
   if (!item.context_name) return "";
   if (item.context_type === "group") {
     return `${t("group.title")}: ${item.context_name}`;
@@ -145,7 +152,7 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
       <Text variant="headlineSmall">{t("tabs.activity")}</Text>
       {!events.length ? <EmptyState image={appImages.emptyActivity} text={t("activity.empty")} /> : null}
       {events.map((item) => {
-        const description = activityDescription(item);
+        const description = activityDescription(item, t);
         const context = activityContext(item, t);
         const pendingStatus = item.pending_mutation_id ? t("expense.pendingSync") : "";
         return (
@@ -157,7 +164,7 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
               <Card.Content>
                 <List.Item
                   style={styles.listTile}
-                  title={t(`activity.${item.event_type}`)}
+                  title={t(`activity.${item.event_type}`, { actor: item.actor })}
                   description={[context, description, pendingStatus].filter(Boolean).join("\n")}
                   left={() => <PersonAvatar name={item.actor} imageUrl={item.actor_avatar_url} />}
                   right={() => (
