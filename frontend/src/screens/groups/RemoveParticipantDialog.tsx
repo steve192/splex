@@ -27,11 +27,25 @@ type RemoveParticipantDialogProps = {
   api: ApiClient;
   groupId: number;
   target: Participant | null;
+  visible?: boolean;
+  title?: string;
+  confirmLabel?: string;
+  extraMessage?: string;
   onDismiss(): void;
   onConfirm(): Promise<void> | void;
 };
 
-export function RemoveParticipantDialog({ api, groupId, target, onDismiss, onConfirm }: RemoveParticipantDialogProps) {
+export function RemoveParticipantDialog({
+  api,
+  groupId,
+  target,
+  visible,
+  title,
+  confirmLabel,
+  extraMessage,
+  onDismiss,
+  onConfirm
+}: Readonly<RemoveParticipantDialogProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const [outstanding, setOutstanding] = useState<OutstandingResponse | null>(null);
@@ -62,10 +76,11 @@ export function RemoveParticipantDialog({ api, groupId, target, onDismiss, onCon
   const hasOutstanding = Boolean(outstanding && (outstanding.owes.length || outstanding.owed_by.length));
 
   return (
-    <Dialog visible={!!target} onDismiss={onDismiss}>
-      <Dialog.Title>{t("group.removeMember")}</Dialog.Title>
+    <Dialog visible={visible ?? !!target} onDismiss={onDismiss}>
+      <Dialog.Title>{title ?? t("group.removeMember")}</Dialog.Title>
       <Dialog.Content style={styles.gap}>
         <Text variant="titleMedium">{target?.display_name ?? ""}</Text>
+        {extraMessage ? <Text>{extraMessage}</Text> : null}
         {loading ? (
           <View style={styles.formRow}>
             <ActivityIndicator />
@@ -102,22 +117,34 @@ export function RemoveParticipantDialog({ api, groupId, target, onDismiss, onCon
       </Dialog.Content>
       <Dialog.Actions>
         <Button onPress={onDismiss}>{t("common.cancel")}</Button>
-        <Button onPress={onConfirm}>{t("common.delete")}</Button>
+        <Button onPress={onConfirm}>{confirmLabel ?? t("common.delete")}</Button>
       </Dialog.Actions>
     </Dialog>
   );
 }
 
-function OutstandingLine({ row, currency }: { row: OutstandingRow; currency: string }) {
+function OutstandingLine({ row, currency }: Readonly<{ row: OutstandingRow; currency: string }>) {
   return (
     <List.Item
       title={row.display_name}
-      left={() => <PersonAvatar name={row.display_name} imageUrl={row.avatar_url} size={36} />}
-      right={() => (
-        <View style={styles.listTileRight}>
-          <MoneyText plain amount={row.amount} currency={currency} />
-        </View>
-      )}
+      left={renderOutstandingAvatar(row.display_name, row.avatar_url)}
+      right={renderOutstandingAmount(row.amount, currency)}
     />
   );
+}
+
+function renderOutstandingAvatar(name: string, imageUrl: string) {
+  return function OutstandingAvatarRenderer() {
+    return <PersonAvatar name={name} imageUrl={imageUrl} size={36} />;
+  };
+}
+
+function renderOutstandingAmount(amount: string, currency: string) {
+  return function OutstandingAmountRenderer() {
+    return (
+      <View style={styles.listTileRight}>
+        <MoneyText plain amount={amount} currency={currency} />
+      </View>
+    );
+  };
 }
