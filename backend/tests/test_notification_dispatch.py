@@ -1,7 +1,9 @@
 from unittest.mock import patch
 
 import pytest
+from base64 import b64encode
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
@@ -11,13 +13,16 @@ from splex.notifications.services import (
     TerminalDispatchError,
     create_notifications_for_activity,
     dispatch_pending_notifications,
+    generate_vapid_key,
+    get_active_vapid_key,
+    send_web_push_notification,
 )
 
 
 def _setup_group_with_two_users():
-    User = get_user_model()
-    actor = User.objects.create_user(email="actor@example.com", display_name="Actor")
-    receiver = User.objects.create_user(email="receiver@example.com", display_name="Recv")
+    user_model = get_user_model()
+    actor = user_model.objects.create_user(email="actor@example.com", display_name="Actor")
+    receiver = user_model.objects.create_user(email="receiver@example.com", display_name="Recv")
     group = create_group(actor=actor, name="Test", default_currency="EUR")
     # Add receiver via direct membership to skip invitation flow.
     from splex.groups.models import GroupMembership
@@ -135,3 +140,85 @@ def test_dispatch_excludes_actor_from_recipients():
     # Actor must not receive their own notification.
     recipient_ids = {n.user_id for n in created}
     assert actor.id not in recipient_ids
+
+
+@pytest.mark.django_db
+def test_get_active_vapid_key_normalizes_escaped_newlines_from_settings():
+    generated = generate_vapid_key()
+    escaped_private_key = generated.private_key.replace("\n", "\\n")
+
+    with override_settings(
+        VAPID_PUBLIC_KEY=generated.public_key,
+        VAPID_PRIVATE_KEY=escaped_private_key,
+    ):
+        active_key = get_active_vapid_key()
+
+    assert active_key.public_key == generated.public_key
+    assert active_key.private_key == generated.private_key
+
+
+@pytest.mark.django_db
+def test_get_active_vapid_key_decodes_base64_pem_from_settings():
+    generated = generate_vapid_key()
+    encoded_private_key = b64encode(generated.private_key.encode("utf-8")).decode("ascii")
+
+    with override_settings(
+        VAPID_PUBLIC_KEY=generated.public_key,
+        VAPID_PRIVATE_KEY=encoded_private_key,
+    ):
+        active_key = get_active_vapid_key()
+
+    assert active_key.private_key == generated.private_key
+
+
+@pytest.mark.django_db
+def test_get_active_vapid_key_rejects_invalid_configured_private_key():
+    with override_settings(
+        VAPID_PUBLIC_KEY="public",
+        VAPID_PRIVATE_KEY="not-a-valid-private-key",
+    ):
+        with pytest.raises(ValueError, match="Configured VAPID_PRIVATE_KEY is not valid"):
+            get_active_vapid_key()
+
+
+@pytest.mark.django_db
+def test_get_active_vapid_key_rotates_invalid_persisted_key():
+    invalid_key = generate_vapid_key()
+    invalid_key.private_key = "not-a-valid-private-key"
+    invalid_key.save(update_fields=["private_key"])
+
+    with override_settings(VAPID_PUBLIC_KEY="", VAPID_PRIVATE_KEY=""):
+        active_key = get_active_vapid_key()
+
+    invalid_key.refresh_from_db()
+    assert invalid_key.active is False
+    assert active_key.id != invalid_key.id
+    assert active_key.active is True
+    assert "-----BEGIN" in active_key.private_key
+
+
+@pytest.mark.django_db
+def test_send_web_push_uses_vapid_instance_for_generated_pem_key():
+    actor, receiver, group = _setup_group_with_two_users()
+    subscription = WebPushSubscription.objects.create(
+        user=receiver,
+        endpoint="https://example.com/push",
+        p256dh="p256dh-key",
+        auth="auth-key",
+    )
+    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    notification = Notification.objects.create(
+        user=receiver,
+        activity_event=event,
+        title_key="activity.expense_created.title",
+        body_key="activity.expense_created.body",
+        payload={"description": "X"},
+    )
+    generate_vapid_key()
+
+    with patch("pywebpush.webpush") as mock_webpush:
+        send_web_push_notification(subscription, notification, "Title", "Body")
+
+    assert mock_webpush.call_count == 1
+    vapid_private_key = mock_webpush.call_args.kwargs["vapid_private_key"]
+    assert hasattr(vapid_private_key, "sign")

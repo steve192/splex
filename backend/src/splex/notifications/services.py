@@ -1,5 +1,6 @@
 import json
 import logging
+from base64 import b64decode
 from base64 import urlsafe_b64encode
 from datetime import timedelta
 
@@ -22,17 +23,17 @@ class TerminalDispatchError(Exception):
 
 
 def users_for_context(group=None, friendship=None):
-    User = get_user_model()
+    user_model = get_user_model()
     if group:
-        return User.objects.filter(
+        return user_model.objects.filter(
             participant__group_memberships__group=group,
             participant__group_memberships__removed_at__isnull=True,
             push_enabled=True,
         ).distinct()
     if friendship:
         participant_ids = [friendship.participant_a_id, friendship.participant_b_id]
-        return User.objects.filter(participant__id__in=participant_ids, push_enabled=True)
-    return User.objects.none()
+        return user_model.objects.filter(participant__id__in=participant_ids, push_enabled=True)
+    return user_model.objects.none()
 
 
 def _actor_name(actor) -> str:
@@ -150,6 +151,69 @@ def _base64url(value: bytes) -> str:
     return urlsafe_b64encode(value).decode("ascii").rstrip("=")
 
 
+def _strip_wrapping_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    return value
+
+
+def _decode_pem_base64(value: str) -> str:
+    decoded = b64decode(value, validate=True).decode("utf-8")
+    if "-----BEGIN" not in decoded:
+        raise ValueError("Decoded value is not PEM data.")
+    return decoded
+
+
+def normalize_vapid_private_key(value: str) -> str:
+    normalized = _strip_wrapping_quotes(value.strip())
+    if "\\n" in normalized:
+        normalized = normalized.replace("\\n", "\n")
+    if "-----BEGIN" in normalized:
+        return normalized
+    try:
+        return _decode_pem_base64(normalized)
+    except ValueError:
+        return normalized
+
+
+def load_vapid_private_key(value: str):
+    from py_vapid import Vapid
+
+    normalized = normalize_vapid_private_key(value)
+    if "-----BEGIN" in normalized:
+        return normalized, Vapid.from_pem(normalized.encode("utf-8"))
+    return normalized, Vapid.from_string(private_key=normalized)
+
+
+def validate_vapid_private_key(value: str) -> str:
+    try:
+        normalized, _vapid = load_vapid_private_key(value)
+    except Exception as exc:  # noqa: BLE001 - py_vapid raises cryptography errors directly.
+        raise ValueError(
+            "Configured VAPID_PRIVATE_KEY is not valid PEM key data. "
+            "Use the generated PEM value directly, or store it with escaped newlines."
+        ) from exc
+    return normalized
+
+
+def _validate_persisted_vapid_key(key: VapidKey) -> VapidKey:
+    try:
+        normalized = validate_vapid_private_key(key.private_key)
+    except ValueError:
+        logger.warning(
+            "Stored VAPID key is invalid, rotating automatically (key_id=%s)",
+            key.id,
+        )
+        key.active = False
+        key.save(update_fields=["active"])
+        return generate_vapid_key()
+
+    if normalized != key.private_key:
+        key.private_key = normalized
+        key.save(update_fields=["private_key"])
+    return key
+
+
 def generate_vapid_key(expires_at=None) -> VapidKey:
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
     from py_vapid import Vapid
@@ -172,13 +236,13 @@ def get_active_vapid_key() -> VapidKey:
     if settings.VAPID_PUBLIC_KEY and settings.VAPID_PRIVATE_KEY:
         return VapidKey(
             public_key=settings.VAPID_PUBLIC_KEY,
-            private_key=settings.VAPID_PRIVATE_KEY,
+            private_key=validate_vapid_private_key(settings.VAPID_PRIVATE_KEY),
             expires_at=timezone.now() + timedelta(days=3650),
             active=True,
         )
     key = VapidKey.objects.filter(active=True, expires_at__gt=timezone.now()).order_by("-created_at").first()
     if key:
-        return key
+        return _validate_persisted_vapid_key(key)
     VapidKey.objects.filter(active=True).update(active=False)
     return generate_vapid_key()
 
@@ -218,6 +282,7 @@ def send_web_push_notification(
     from pywebpush import WebPushException, webpush
 
     vapid_key = get_active_vapid_key()
+    _normalized_key, vapid_signer = load_vapid_private_key(vapid_key.private_key)
     try:
         webpush(
             subscription_info={
@@ -231,7 +296,7 @@ def send_web_push_notification(
                     "payload": notification.payload,
                 }
             ),
-            vapid_private_key=vapid_key.private_key,
+            vapid_private_key=vapid_signer,
             vapid_claims={"sub": settings.VAPID_SUBJECT},
         )
     except WebPushException as exc:
