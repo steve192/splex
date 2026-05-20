@@ -45,5 +45,6 @@ RUN chmod +x /usr/local/bin/build-android
 WORKDIR /builder
 
 ENV EXPO_TOKEN=""
+ENV JAVA_TOOL_OPTIONS="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
 ENTRYPOINT ["/usr/local/bin/build-android"]
