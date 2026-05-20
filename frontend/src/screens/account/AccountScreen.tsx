@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Platform, View } from "react-native";
+import { useEffect, useState } from "react";
+import { View } from "react-native";
 import { Button, Card, HelperText, List, Switch, Text, TextInput } from "react-native-paper";
 
 import { usePreferences } from "../../application/PreferencesContext";
@@ -7,16 +7,17 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
-import { ensureServiceWorkerRegistration } from "../../shared/lib/serviceWorker";
-import { urlBase64ToArrayBuffer } from "../../shared/lib/webPush";
+import {
+  DevicePushState,
+  getLocalPushPreference,
+  setDevicePushEnabled
+} from "../../shared/notifications/registration";
 import { ThemeMode } from "../../shared/types/models";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
-
-declare const require: (moduleName: string) => unknown;
 
 export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
@@ -30,8 +31,9 @@ export function AccountScreen() {
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
   const [avatarImage, setAvatarImage] = useState("");
-  const [pushEnabled, setPushEnabled] = useState(user?.push_enabled ?? true);
-  const [notificationMessage, setNotificationMessage] = useState("");
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
   const languageOptions: SelectionOption<"de" | "en">[] = [
     { value: "de", label: t("account.languageGerman") },
@@ -45,65 +47,41 @@ export function AccountScreen() {
   const selectedThemeLabel =
     themeOptions.find((option) => option.value === themeMode)?.label ?? t("account.themeSystem");
 
+  useEffect(() => {
+    getLocalPushPreference().then((pref) => setPushOn(pref === "on"));
+  }, []);
+
   async function save() {
     await api.patch("/api/me/", {
       display_name: displayName,
       default_currency: currency,
-      ...(avatarImage ? { avatar_image: avatarImage } : {}),
-      push_enabled: pushEnabled
+      locale,
+      ...(avatarImage ? { avatar_image: avatarImage } : {})
     });
     await refreshUser();
     showSuccess({ icon: "check" });
   }
 
-  async function registerPushNotifications() {
-    const config = await api.get<{ vapid_public_key: string; push_enabled: boolean }>(
-      "/api/notifications/config/"
-    );
-    if (Platform.OS === "android") {
-      const Notifications = require("expo-notifications") as typeof import("expo-notifications");
-      const Constants = require("expo-constants") as typeof import("expo-constants");
-      const permission = await Notifications.requestPermissionsAsync();
-      if (!permission.granted) {
-        setNotificationMessage(t("notifications.permissionDenied"));
-        return;
-      }
-      const projectId =
-        Constants.default?.easConfig?.projectId ||
-        Constants.default?.expoConfig?.extra?.eas?.projectId;
-      const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-      await api.post("/api/notifications/device-tokens/", {
-        token: token.data,
-        platform: "android"
-      });
-      setNotificationMessage(t("notifications.registered"));
-      return;
-    }
-    if (Platform.OS === "web") {
-      if (!config.vapid_public_key || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-        setNotificationMessage(t("notifications.webUnavailable"));
-        return;
-      }
-      const registration = await ensureServiceWorkerRegistration();
-      if (!registration) {
-        setNotificationMessage(t("notifications.webUnavailable"));
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setNotificationMessage(t("notifications.permissionDenied"));
-        return;
-      }
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToArrayBuffer(config.vapid_public_key)
-      });
-      await api.post("/api/notifications/web-push-subscriptions/", subscription.toJSON());
-      setNotificationMessage(t("notifications.registered"));
-      return;
-    }
-    setNotificationMessage(t("notifications.unsupported"));
+  async function togglePush(next: boolean) {
+    setPushBusy(true);
+    const result = await setDevicePushEnabled(api, next);
+    setPushOn(result.preference === "on");
+    setPushStatus(result.lastStatus);
+    setPushBusy(false);
   }
+
+  function handleLocaleSelect(next: "de" | "en") {
+    setLocale(next);
+    api.patch("/api/me/", { locale: next }).catch(() => undefined);
+  }
+
+  const pushHelper = (() => {
+    if (pushStatus === "permission_denied") return t("notifications.permissionDenied");
+    if (pushStatus === "unsupported") return t("notifications.unsupported");
+    if (pushStatus === "registered") return t("notifications.registered");
+    if (!pushOn) return t("notifications.disabled");
+    return "";
+  })();
 
   return (
     <Screen topInset>
@@ -137,13 +115,17 @@ export function AccountScreen() {
             {t("account.theme")}: {selectedThemeLabel}
           </Button>
           <List.Item
-            title={pushEnabled ? t("notifications.enabled") : t("notifications.disabled")}
-            right={() => <Switch value={pushEnabled} onValueChange={setPushEnabled} />}
+            title={t("notifications.deviceToggle")}
+            right={() => (
+              <Switch value={pushOn} onValueChange={togglePush} disabled={pushBusy} />
+            )}
           />
-          <Button mode="elevated" icon="bell" onPress={registerPushNotifications}>
-            {t("notifications.register")}
-          </Button>
-          {notificationMessage ? <HelperText type="info">{notificationMessage}</HelperText> : null}
+          {pushHelper ? <HelperText type="info">{pushHelper}</HelperText> : null}
+          {pushStatus === "error" || pushStatus === "permission_denied" ? (
+            <Button mode="text" icon="refresh" onPress={() => togglePush(true)} disabled={pushBusy}>
+              {t("notifications.retry")}
+            </Button>
+          ) : null}
           <Button mode="contained" onPress={save}>{t("common.save")}</Button>
           <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
         </Card.Content>
@@ -161,7 +143,7 @@ export function AccountScreen() {
         title={t("account.language")}
         options={languageOptions}
         value={locale}
-        onSelect={setLocale}
+        onSelect={handleLocaleSelect}
         onDismiss={() => setLanguageSheetOpen(false)}
       />
       <SelectionSheet

@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Localization from "expo-localization";
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 
 import de from "./locales/de.json";
@@ -8,6 +9,8 @@ type Locale = "en" | "de";
 type TranslationMap = Record<string, string>;
 type Params = Record<string, string | number>;
 
+const SUPPORTED_LOCALES: Locale[] = ["en", "de"];
+const LOCALE_STORAGE_KEY = "splex.locale";
 const translations: Record<Locale, TranslationMap> = { en, de };
 
 export type TranslateFn = (key: string, params?: Params) => string;
@@ -28,14 +31,27 @@ function interpolate(template: string, params?: Params): string {
   });
 }
 
+function detectDeviceLocale(): Locale {
+  const tags = Localization.getLocales().map((entry) => entry.languageTag || entry.languageCode || "");
+  for (const tag of tags) {
+    const base = tag.toLowerCase().split("-")[0];
+    if ((SUPPORTED_LOCALES as string[]).includes(base)) return base as Locale;
+  }
+  return "en";
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
-    AsyncStorage.getItem("splex.locale").then((stored) => {
+    AsyncStorage.getItem(LOCALE_STORAGE_KEY).then((stored) => {
       if (stored === "en" || stored === "de") {
         setLocaleState(stored);
+        return;
       }
+      const detected = detectDeviceLocale();
+      setLocaleState(detected);
+      AsyncStorage.setItem(LOCALE_STORAGE_KEY, detected).catch(() => undefined);
     });
   }, []);
 
@@ -44,7 +60,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale,
       setLocale(nextLocale: Locale) {
         setLocaleState(nextLocale);
-        AsyncStorage.setItem("splex.locale", nextLocale).catch(() => undefined);
+        AsyncStorage.setItem(LOCALE_STORAGE_KEY, nextLocale).catch(() => undefined);
       },
       t(key: string, params?: Params) {
         const template = translations[locale][key] ?? translations.en[key] ?? key;

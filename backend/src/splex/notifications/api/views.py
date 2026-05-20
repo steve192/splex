@@ -20,23 +20,25 @@ class DeviceTokenView(APIView):
     def post(self, request):
         token = request.data["token"]
         platform = request.data.get("platform", DeviceToken.Platform.ANDROID)
+        enabled = bool(request.data.get("enabled", True))
         DeviceToken.objects.update_or_create(
             user=request.user,
             token=token,
-            defaults={"platform": platform, "enabled": True},
+            defaults={"platform": platform, "enabled": enabled},
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class WebPushSubscriptionView(APIView):
     def post(self, request):
+        enabled = bool(request.data.get("enabled", True))
         WebPushSubscription.objects.update_or_create(
             user=request.user,
             endpoint=request.data["endpoint"],
             defaults={
                 "p256dh": request.data["keys"]["p256dh"],
                 "auth": request.data["keys"]["auth"],
-                "enabled": True,
+                "enabled": enabled,
             },
         )
         return Response(status=status.HTTP_204_NO_CONTENT)

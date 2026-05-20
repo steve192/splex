@@ -10,6 +10,7 @@ type User = {
   default_currency: string;
   avatar_url: string;
   push_enabled: boolean;
+  locale: string;
 };
 
 type AuthContextValue = {

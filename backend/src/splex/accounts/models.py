@@ -37,6 +37,7 @@ class User(AbstractUser):
     default_currency = models.CharField(max_length=3, default="EUR")
     avatar_url = models.URLField(blank=True)
     push_enabled = models.BooleanField(default=True)
+    locale = models.CharField(max_length=8, default="en")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

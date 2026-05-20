@@ -8,6 +8,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from splex.notifications.models import DeviceToken, Notification, VapidKey, WebPushSubscription
+from splex.notifications.translations import render_notification
+
+
+class TerminalDispatchError(Exception):
+    """Push endpoint is permanently gone (token unregistered / subscription expired).
+
+    Raised so the dispatcher can delete the dead row instead of retrying it forever.
+    """
 
 
 def users_for_context(group=None, friendship=None):
@@ -43,30 +51,48 @@ def create_notifications_for_activity(activity_event):
     return created
 
 
+def _render_for_user(notification):
+    event_type = notification.title_key.removeprefix("activity.").removesuffix(".title")
+    locale = getattr(notification.user, "locale", "en") or "en"
+    return render_notification(event_type, notification.payload or {}, locale)
+
+
+def _dispatch_one(notification, title, body):
+    errors = []
+    sent = False
+    for device in DeviceToken.objects.filter(user=notification.user, enabled=True):
+        try:
+            send_expo_notification(device.token, notification, title, body)
+            sent = True
+        except TerminalDispatchError as exc:
+            errors.append(f"{exc} (token deleted)")
+            device.delete()
+        except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
+            errors.append(str(exc))
+    for subscription in WebPushSubscription.objects.filter(user=notification.user, enabled=True):
+        try:
+            send_web_push_notification(subscription, notification, title, body)
+            sent = True
+        except TerminalDispatchError as exc:
+            errors.append(f"{exc} (subscription deleted)")
+            subscription.delete()
+        except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
+            errors.append(str(exc))
+    return sent, errors
+
+
 def dispatch_pending_notifications(notification_ids):
-    for notification in Notification.objects.filter(id__in=notification_ids):
-        errors = []
-        sent = False
-        for device in DeviceToken.objects.filter(user=notification.user, enabled=True):
-            try:
-                send_fcm_notification(device.token, notification)
-                sent = True
-            except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
-                errors.append(str(exc))
-        subscriptions = WebPushSubscription.objects.filter(
-            user=notification.user, enabled=True
-        )
-        for subscription in subscriptions:
-            try:
-                send_web_push_notification(subscription, notification)
-                sent = True
-            except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
-                errors.append(str(exc))
+    for notification in Notification.objects.filter(id__in=notification_ids).select_related("user"):
+        title, body = _render_for_user(notification)
+        sent, errors = _dispatch_one(notification, title, body)
         notification.status = Notification.Status.SENT if sent else Notification.Status.FAILED
         notification.sent_at = timezone.now() if sent else None
-        notification.error = (
-            "\n".join(errors) if errors else "" if sent else "No enabled push subscription."
-        )
+        if errors:
+            notification.error = "\n".join(errors)
+        elif sent:
+            notification.error = ""
+        else:
+            notification.error = "No enabled push subscription."
         notification.save(update_fields=["status", "sent_at", "error"])
 
 
@@ -107,19 +133,18 @@ def get_active_vapid_key() -> VapidKey:
     return generate_vapid_key()
 
 
-def send_fcm_notification(token: str, notification: Notification):
-    send_expo_notification(token, notification)
+_EXPO_TERMINAL_ERRORS = {"DeviceNotRegistered", "InvalidCredentials"}
 
 
-def send_expo_notification(token: str, notification: Notification):
+def send_expo_notification(token: str, notification: Notification, title: str, body: str):
     import requests
 
     response = requests.post(
         "https://exp.host/--/api/v2/push/send",
         json={
             "to": token,
-            "title": notification.title_key,
-            "body": notification.body_key,
+            "title": title,
+            "body": body,
             "data": notification.payload,
         },
         headers={"Accept": "application/json", "Content-Type": "application/json"},
@@ -129,25 +154,38 @@ def send_expo_notification(token: str, notification: Notification):
     payload = response.json()
     ticket = payload.get("data", {})
     if isinstance(ticket, dict) and ticket.get("status") == "error":
-        raise RuntimeError(ticket.get("message") or "Expo push rejected the notification.")
+        details = ticket.get("details") or {}
+        code = details.get("error") if isinstance(details, dict) else None
+        message = ticket.get("message") or "Expo push rejected the notification."
+        if code in _EXPO_TERMINAL_ERRORS:
+            raise TerminalDispatchError(message)
+        raise RuntimeError(message)
 
 
-def send_web_push_notification(subscription: WebPushSubscription, notification: Notification):
-    from pywebpush import webpush
+def send_web_push_notification(
+    subscription: WebPushSubscription, notification: Notification, title: str, body: str
+):
+    from pywebpush import WebPushException, webpush
 
     vapid_key = get_active_vapid_key()
-    webpush(
-        subscription_info={
-            "endpoint": subscription.endpoint,
-            "keys": {"p256dh": subscription.p256dh, "auth": subscription.auth},
-        },
-        data=json.dumps(
-            {
-                "title": notification.title_key,
-                "body": notification.body_key,
-                "payload": notification.payload,
-            }
-        ),
-        vapid_private_key=vapid_key.private_key,
-        vapid_claims={"sub": settings.VAPID_SUBJECT},
-    )
+    try:
+        webpush(
+            subscription_info={
+                "endpoint": subscription.endpoint,
+                "keys": {"p256dh": subscription.p256dh, "auth": subscription.auth},
+            },
+            data=json.dumps(
+                {
+                    "title": title,
+                    "body": body,
+                    "payload": notification.payload,
+                }
+            ),
+            vapid_private_key=vapid_key.private_key,
+            vapid_claims={"sub": settings.VAPID_SUBJECT},
+        )
+    except WebPushException as exc:
+        status_code = getattr(getattr(exc, "response", None), "status_code", None)
+        if status_code in (404, 410):
+            raise TerminalDispatchError(f"Web push subscription gone (HTTP {status_code})") from exc
+        raise

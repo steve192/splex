@@ -14,9 +14,11 @@ import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ThemeMode } from "../shared/types/models";
 import { styles } from "../shared/ui/styles";
 import { AppNavigator } from "./AppNavigator";
+import { PostLoginBootstrap } from "./PostLoginBootstrap";
 import { PreferencesContext } from "./PreferencesContext";
 import { RootStackParamList } from "./navigationTypes";
 import { createAppTheme, createNavigationTheme } from "./theme";
+import { UpdateSnackbar } from "../shared/updates/UpdateSnackbar";
 
 export function AppShell() {
   const api = useMemo(() => new ApiClient(), []);
@@ -110,6 +112,8 @@ export function AppShell() {
                   >
                     <AppNavigator />
                   </NavigationContainer>
+                  <PostLoginBootstrap />
+                  <UpdateSnackbar />
                 </View>
               </FeedbackProvider>
               <StatusBar
