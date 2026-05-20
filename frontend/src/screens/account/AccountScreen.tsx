@@ -34,6 +34,7 @@ export function AccountScreen() {
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
+  const [pushError, setPushError] = useState<string | undefined>(undefined);
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
   const languageOptions: SelectionOption<"de" | "en">[] = [
     { value: "de", label: t("account.languageGerman") },
@@ -67,6 +68,7 @@ export function AccountScreen() {
     const result = await setDevicePushEnabled(api, next);
     setPushOn(result.preference === "on");
     setPushStatus(result.lastStatus);
+    setPushError(result.lastError);
     setPushBusy(false);
   }
 
@@ -121,6 +123,9 @@ export function AccountScreen() {
             )}
           />
           {pushHelper ? <HelperText type="info">{pushHelper}</HelperText> : null}
+          {pushStatus === "error" && pushError ? (
+            <HelperText type="error">{pushError}</HelperText>
+          ) : null}
           {pushStatus === "error" || pushStatus === "permission_denied" ? (
             <Button mode="text" icon="refresh" onPress={() => togglePush(true)} disabled={pushBusy}>
               {t("notifications.retry")}
