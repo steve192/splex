@@ -7,36 +7,30 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "preview",
+      "environment": "development",
       "android": {
         "distribution": "internal",
         "withoutCredentials": true,
         "buildType": "apk"
       },
       "env": {
-        "EX_UPDATES_NATIVE_DEBUG": "1",
-        "EXPO_PUBLIC_DEFAULT_API_BASE_URL": "https://splex.sterul.com"
+        "EX_UPDATES_NATIVE_DEBUG": "1"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_DEFAULT_API_BASE_URL": "https://splex.sterul.com"
-      }
+      "environment": "preview"
     },
     "production": {
       "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_DEFAULT_API_BASE_URL": "https://splex.sterul.com"
-      }
+      "environment": "production"
     },
     "production-apk": {
       "channel": "production",
+      "environment": "production",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_DEFAULT_API_BASE_URL": "https://splex.sterul.com"
       }
     }
   },

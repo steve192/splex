@@ -11,7 +11,7 @@ export type Tokens = {
 // is the pre-filled default shown on the login screen, baked in at build time.
 const NATIVE_DEFAULT_BASE_URL =
   (process.env as Record<string, string | undefined>).EXPO_PUBLIC_DEFAULT_API_BASE_URL ??
-  "https://splex.example.com";
+  "https://splex.sterul.com";
 const API_BASE_URL_STORAGE_KEY = "splex.apiBaseUrl";
 
 function summarizeResponseBody(body: string): string {
