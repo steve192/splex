@@ -145,7 +145,7 @@ jobs:
 
       - name: Publish Expo update
         if: ${{ env.EXPO_TOKEN != '' }}
-        run: npx eas update --branch production --auto
+        run: npm run publish-expo-production
 
   apk:
     name: Build Android APK
