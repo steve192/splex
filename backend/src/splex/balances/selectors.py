@@ -117,6 +117,44 @@ def group_member_balance_rows(group):
     ]
 
 
+def participant_outstanding_in_group(group, participant: Participant) -> dict:
+    """Return the pair-wise outstanding balances involving `participant` in `group`.
+
+    Used by the "remove member" warning UI and by the auto-settle logic that runs
+    when removing a member with non-zero balance.
+    """
+    debts = group_debts(group)
+    relevant_ids: set[int] = set()
+    owes: list[dict] = []
+    owed_by: list[dict] = []
+    for (debtor_id, creditor_id), amount in debts.items():
+        if debtor_id == participant.id:
+            owes.append({"counterparty_id": creditor_id, "amount": money(amount)})
+            relevant_ids.add(creditor_id)
+        elif creditor_id == participant.id:
+            owed_by.append({"counterparty_id": debtor_id, "amount": money(amount)})
+            relevant_ids.add(debtor_id)
+    counterparties = {
+        p.id: p
+        for p in Participant.objects.filter(id__in=relevant_ids).select_related("user")
+    }
+
+    def _hydrate(row: dict) -> dict:
+        p = counterparties.get(row["counterparty_id"])
+        return {
+            "participant_id": row["counterparty_id"],
+            "display_name": p.effective_display_name if p else "",
+            "avatar_url": participant_avatar_url(p) if p else "",
+            "amount": str(row["amount"]),
+        }
+
+    return {
+        "currency": group.default_currency,
+        "owes": [_hydrate(row) for row in owes],
+        "owed_by": [_hydrate(row) for row in owed_by],
+    }
+
+
 def friendship_balance_for_participant(friendship, current_participant: Participant) -> Decimal:
     other_id = (
         friendship.participant_b_id

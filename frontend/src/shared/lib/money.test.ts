@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { asNumber, balanceText, buildParticipantsForFriend, formatMoney, moneyValue } from "./money";
+import {
+  asNumber,
+  balanceText,
+  buildParticipantsForFriend,
+  formatMoney,
+  moneyValue,
+  plainAmountText
+} from "./money";
 
 describe("money helpers", () => {
   it("parses numbers safely", () => {
@@ -24,6 +31,12 @@ describe("money helpers", () => {
     expect(balanceText(t, "0", "EUR")).toBe("Settled");
     expect(balanceText(t, "4.2", "EUR")).toBe("Owed to you 4.20 EUR");
     expect(balanceText(t, "-3", "EUR")).toBe("You owe 3.00 EUR");
+  });
+
+  it("plainAmountText returns just amount + currency without you-owe framing", () => {
+    expect(plainAmountText("4.2", "EUR")).toBe("4.20 EUR");
+    expect(plainAmountText("-3", "EUR")).toBe("3.00 EUR"); // formatMoney is abs
+    expect(plainAmountText(undefined, "EUR")).toBe("0.00 EUR");
   });
 
   it("builds friend participants with self + friend", () => {

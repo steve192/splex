@@ -1,7 +1,20 @@
+// Bump the version suffix whenever the cache schema changes so stale entries
+// (e.g. a cached /admin/ response from before admin was enabled) get evicted.
+const SHELL_CACHE = "splex-shell-v2";
+const ASSETS_CACHE = "splex-assets-v2";
+
+// Paths the service worker must NEVER intercept. The admin UI is server-rendered
+// by Django; Django collectstatic serves /static/ via whitenoise. If we cached
+// these as the SPA shell, the SPA router would later "redirect to /" because the
+// path isn't a known SPA route.
+function isServerRendered(pathname) {
+  return pathname.startsWith("/admin/") || pathname === "/admin" || pathname.startsWith("/static/");
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
-      .open("splex-shell-v1")
+      .open(SHELL_CACHE)
       .then((cache) => cache.addAll(["/", "/index.html", "/favicon.ico", "/login/magic", "/+not-found"]))
       .then(() => self.skipWaiting())
   );
@@ -12,7 +25,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => !["splex-shell-v1", "splex-assets-v1"].includes(key))
+          .filter((key) => ![SHELL_CACHE, ASSETS_CACHE].includes(key))
           .map((key) => caches.delete(key))
       ).then(() => self.clients.claim())
     )
@@ -25,13 +38,14 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (isServerRendered(url.pathname)) return;
 
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          caches.open("splex-shell-v1").then((cache) => cache.put(request, copy));
+          caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(async () => {
@@ -51,7 +65,7 @@ self.addEventListener("fetch", (event) => {
   if (!isStaticAsset) return;
 
   event.respondWith(
-    caches.open("splex-assets-v1").then(async (cache) => {
+    caches.open(ASSETS_CACHE).then(async (cache) => {
       const cached = await cache.match(request);
       const networkFetch = fetch(request)
         .then((response) => {
