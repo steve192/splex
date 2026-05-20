@@ -128,6 +128,7 @@ export type UserProfile = {
   default_currency: string;
   avatar_url: string;
   push_enabled: boolean;
+  locale: string;
 };
 
 export type BalanceDetail = {
