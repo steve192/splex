@@ -154,6 +154,10 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 8
   },
+  suggestionList: {
+    gap: 4,
+    marginTop: 8
+  },
   bottomSheetFooter: {
     marginTop: 12
   },
@@ -175,6 +179,18 @@ export const styles = StyleSheet.create({
   metricTile: {
     flexGrow: 1,
     minWidth: 140
+  },
+  memberActionRow: {
+    marginTop: 8
+  },
+  memberCardRow: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 12
+  },
+  memberContent: {
+    flex: 1,
+    gap: 4
   },
   loginBrandMark: {
     alignItems: "center",

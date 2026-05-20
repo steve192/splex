@@ -23,7 +23,7 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { copyTextToClipboard } from "../../shared/lib/clipboard";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
-import { Group, Participant, SplitMethod } from "../../shared/types/models";
+import { Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
@@ -31,6 +31,7 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
+import { buildAddParticipantPayload, getSuggestedFriends } from "./groupSettingsHelpers";
 import { canRemoveParticipant } from "./participantActions";
 import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
@@ -51,6 +52,7 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const dangerColor = negativeColor(theme);
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
@@ -66,10 +68,15 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const [snackbar, setSnackbar] = useState("");
   const [manualCopyLink, setManualCopyLink] = useState("");
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
+  const suggestedFriends = getSuggestedFriends(newParticipantName, friends, group?.participants ?? []);
 
   async function load() {
-    const row = await api.get<Group>(`/api/groups/${groupId}/`);
+    const [row, friendRows] = await Promise.all([
+      api.get<Group>(`/api/groups/${groupId}/`),
+      api.get<Friend[]>("/api/friends/")
+    ]);
     setGroup(row);
+    setFriends(friendRows);
     setName(row.name);
     setCurrency(row.default_currency);
     setIconUrl(row.icon_url ?? "");
@@ -116,11 +123,12 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
     await load();
   }
 
-  async function addParticipant() {
-    if (!newParticipantName.trim()) return;
-    await api.post(`/api/groups/${groupId}/participants/`, {
-      display_name: newParticipantName.trim()
-    });
+  async function addParticipant(friend?: Friend) {
+    const payload = friend
+      ? { friend_participant_id: friend.participant_id }
+      : buildAddParticipantPayload(newParticipantName, friends, group?.participants ?? []);
+    if (!payload) return;
+    await api.post(`/api/groups/${groupId}/participants/`, payload);
     setNewParticipantName("");
     showSuccess({ icon: "account-check-outline" });
     await load();
@@ -205,29 +213,43 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>
             <Text variant="titleMedium">{t("participant.add")}</Text>
-            <View style={styles.formRow}>
-              <TextInput
-                mode="outlined"
-                label={t("participant.name")}
-                value={newParticipantName}
-                onChangeText={setNewParticipantName}
-                style={styles.flex}
-              />
-              <Button mode="contained" disabled={!newParticipantName.trim()} onPress={addParticipant}>
-                {t("common.save")}
-              </Button>
-            </View>
+            <TextInput
+              mode="outlined"
+              label={t("participant.name")}
+              value={newParticipantName}
+              onChangeText={setNewParticipantName}
+            />
+            {suggestedFriends.length ? (
+              <View style={styles.suggestionList}>
+                {suggestedFriends.map((friend) => (
+                  <List.Item
+                    key={friend.id}
+                    style={styles.listItemDense}
+                    title={friend.display_name}
+                    description={t("participant.registered")}
+                    left={() => <PersonAvatar name={friend.display_name} imageUrl={friend.avatar_url} />}
+                    right={(props) => <List.Icon {...props} icon="account-plus" />}
+                    onPress={() => addParticipant(friend)}
+                  />
+                ))}
+              </View>
+            ) : null}
+            <Button mode="contained" disabled={!newParticipantName.trim()} onPress={() => addParticipant()}>
+              {t("common.save")}
+            </Button>
           </Card.Content>
         </Card>
         {group?.participants?.map((participant) => (
           <Card key={participant.id} mode="elevated" style={styles.card}>
             <Card.Content>
-              <List.Item
-                title={participant.display_name}
-                description={participant.kind === "unregistered" ? t("participant.unregistered") : t("participant.registered")}
-                left={() => <PersonAvatar name={participant.display_name} imageUrl={participant.avatar_url} />}
-                right={() => (
-                  <View style={styles.rowActions}>
+              <View style={styles.memberCardRow}>
+                <PersonAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
+                <View style={styles.memberContent}>
+                  <Text variant="titleMedium">{participant.display_name}</Text>
+                  <Text variant="bodyMedium">
+                    {participant.kind === "unregistered" ? t("participant.unregistered") : t("participant.registered")}
+                  </Text>
+                  <View style={[styles.rowActions, styles.memberActionRow]}>
                     {participant.kind === "unregistered" ? (
                       <>
                         <Button mode="text" onPress={() => openRename(participant)}>
@@ -244,8 +266,8 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
                       </Button>
                     ) : null}
                   </View>
-                )}
-              />
+                </View>
+              </View>
             </Card.Content>
           </Card>
         ))}

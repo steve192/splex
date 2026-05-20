@@ -23,6 +23,7 @@ from splex.groups.api.serializers import (
 )
 from splex.groups.models import Group
 from splex.groups.services import (
+    add_registered_participant,
     add_unregistered_participant,
     assert_group_member,
     create_group,
@@ -126,9 +127,26 @@ class GroupParticipantsView(APIView):
         group = get_active_group(group_id)
         serializer = AddParticipantSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        participant = add_unregistered_participant(
-            actor=request.user, group=group, **serializer.validated_data
-        )
+        if "friend_participant_id" in serializer.validated_data:
+            friend_participant = get_object_or_404(
+                Participant,
+                id=serializer.validated_data["friend_participant_id"],
+                user__isnull=False,
+            )
+            try:
+                participant = add_registered_participant(
+                    actor=request.user,
+                    group=group,
+                    participant=friend_participant,
+                )
+            except ValueError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            participant = add_unregistered_participant(
+                actor=request.user,
+                group=group,
+                display_name=serializer.validated_data["display_name"],
+            )
         return Response(ParticipantSerializer(participant).data, status=status.HTTP_201_CREATED)
 
 
