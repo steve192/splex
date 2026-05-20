@@ -7,7 +7,7 @@ import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
-import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
+import { useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { loadCachedActivityEvents, loadCachedFriends, loadCachedGroups, saveCachedActivityEvents } from "../../shared/lib/offlineCache";
@@ -16,46 +16,7 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
-
-function activityDescription(item: ActivityFeedEvent, t: TranslateFn): string {
-  const payload = item.payload ?? {};
-  if (payload.description && payload.amount && payload.currency) {
-    return `${payload.description} - ${payload.amount} ${payload.currency}`;
-  }
-  if (payload.description) return String(payload.description);
-  if (item.event_type.startsWith("settlement.") && payload.fromName && payload.toName) {
-    return t("settlement.line", {
-      from: String(payload.fromName),
-      to: String(payload.toName),
-      amount: `${payload.amount ?? ""} ${payload.currency ?? ""}`.trim()
-    });
-  }
-  // Prefer the live subject_name from the API; fall back to legacy snapshot
-  // keys so events recorded before the rename refactor still render.
-  const subject = item.subject_name || payload.participantName || payload.friendName;
-  if (subject) return String(subject);
-  if (payload.amount && payload.currency) return `${payload.amount} ${payload.currency}`;
-  return "";
-}
-
-function activityContext(item: ActivityFeedEvent, t: TranslateFn): string {
-  if (!item.context_name) return "";
-  if (item.context_type === "group") {
-    return `${t("group.title")}: ${item.context_name}`;
-  }
-  if (item.context_type === "friend") {
-    return `${t("friend.title")}: ${item.context_name}`;
-  }
-  return item.context_name;
-}
-
-function activityIcon(eventType: string): string {
-  if (eventType.startsWith("expense.")) return "receipt";
-  if (eventType.startsWith("settlement.")) return "cash-check";
-  if (eventType.startsWith("friend.")) return "account";
-  if (eventType.startsWith("group.")) return "account-group";
-  return "history";
-}
+import { activityContext, activityDescription, activityIcon } from "./activityHelpers";
 
 type ActivityScreenProps = NativeStackScreenProps<ActivityStackParamList, "ActivityHome">;
 
