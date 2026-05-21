@@ -42,7 +42,7 @@ export function LocationTrackingToggle({ enabled, onChange }: LocationTrackingTo
   let statusText = "";
   let statusColor = theme.colors.onSurface;
 
-  if (permissionStatus === "denied" || (enabled && permissionStatus === "denied")) {
+  if (permissionStatus === "denied") {
     statusText = "Permission denied. Open settings to enable location access.";
     statusColor = dangerColor;
   } else if (enabled && permissionStatus === "granted") {
