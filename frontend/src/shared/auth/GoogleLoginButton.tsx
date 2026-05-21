@@ -1,19 +1,20 @@
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { Button, Divider } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
+import { startGoogleOAuthRedirect } from "./googleOAuthWeb";
 
-// Required so the browser tab that handled the OAuth redirect closes itself
-// and hands control back to the app.
+// Closes the in-app browser tab after the OAuth flow on native.
 WebBrowser.maybeCompleteAuthSession();
 
 interface GoogleLoginButtonProps {
-  /** Web OAuth client ID - must be defined; parent only renders this when available. */
+  /** Web OAuth client ID — must be defined; parent only renders this when available. */
   clientId: string;
-  /** Android native client ID; optional, only needed for native Android builds. */
+  /** Android native client ID; only used on Android when a dedicated client exists. */
   androidClientId?: string;
   onError(message: string): void;
 }
@@ -21,10 +22,29 @@ interface GoogleLoginButtonProps {
 /**
  * "Sign in with Google" button.
  *
- * Rendered only when the parent has received a non-empty clientId from the
- * backend, so `useIdTokenAuthRequest` is always called with a valid client ID.
+ * Web uses a full-page redirect; LoginScreen consumes the OAuth response on
+ * mount.  Native Android uses `expo-auth-session`'s popup/in-app-browser flow.
  */
-export function GoogleLoginButton({ clientId, androidClientId, onError }: GoogleLoginButtonProps) {
+export function GoogleLoginButton(props: GoogleLoginButtonProps) {
+  if (Platform.OS === "web") {
+    return <GoogleLoginButtonWeb {...props} />;
+  }
+  return <GoogleLoginButtonNative {...props} />;
+}
+
+function GoogleLoginButtonWeb({ clientId }: GoogleLoginButtonProps) {
+  const { t } = useI18n();
+  return (
+    <>
+      <Divider />
+      <Button mode="outlined" icon="google" onPress={() => startGoogleOAuthRedirect(clientId)}>
+        {t("auth.googleLogin")}
+      </Button>
+    </>
+  );
+}
+
+function GoogleLoginButtonNative({ clientId, androidClientId, onError }: GoogleLoginButtonProps) {
   const { t } = useI18n();
   const { loginWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);
