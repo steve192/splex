@@ -74,6 +74,9 @@ class ExpenseCreateSerializer(serializers.Serializer):
     split_method = serializers.CharField(required=False)
     split_payload = serializers.JSONField(required=False)
     payments = serializers.ListField(child=serializers.DictField(), required=False)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    approximate_location = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
 
 class SettlementCreateSerializer(serializers.Serializer):

@@ -46,6 +46,12 @@
       "expo-notifications",
       "expo-updates",
       [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Splex to use your location to suggest expenses from nearby locations."
+        }
+      ],
+      [
         "./plugins/withGradleJvmArgs",
         "-Xmx4g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
       ]

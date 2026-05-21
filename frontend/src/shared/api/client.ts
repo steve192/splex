@@ -46,11 +46,13 @@ function shouldLogPath(path: string): boolean {
 export class ApiError extends Error {
   status?: number;
   offline: boolean;
+  data?: Record<string, unknown>;
 
-  constructor(message: string, options: { status?: number; offline?: boolean } = {}) {
+  constructor(message: string, options: { status?: number; offline?: boolean; data?: Record<string, unknown> } = {}) {
     super(message);
     this.status = options.status;
     this.offline = options.offline ?? false;
+    this.data = options.data;
   }
 }
 
@@ -131,7 +133,13 @@ export class ApiClient {
       if (shouldLogPath(path)) {
         apiDebug("response not ok", { path, status: response.status, body: text });
       }
-      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status });
+      let errorData: Record<string, unknown> | undefined;
+      try {
+        errorData = JSON.parse(text) as Record<string, unknown>;
+      } catch {
+        // Text might not be JSON, that's ok
+      }
+      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status, data: errorData });
     }
     if (response.status === 204) {
       return undefined as T;

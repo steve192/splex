@@ -20,6 +20,7 @@ import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
+import { useLocationForm } from "../../shared/location/useLocationForm";
 import {
   loadCachedFriend,
   loadCachedFriends,
@@ -53,6 +54,7 @@ import {
 } from "./expenseFormLogic";
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
+import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
 
 type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
 
@@ -63,7 +65,7 @@ type AddScreenProps =
 
 export function AddScreen({ route, navigation }: AddScreenProps) {
   const { t } = useI18n();
-  const { api } = useAuth();
+  const { api, user } = useAuth();
   const { showSuccess } = useFeedback();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
@@ -91,6 +93,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadedExpense, setLoadedExpense] = useState<Expense | null>(null);
+
+  const locationForm = useLocationForm(user?.location_tracking_enabled ?? false);
 
   function resetForm(params = route?.params ?? {}) {
     const nextContextType = params.contextType ?? "group";
@@ -372,7 +376,11 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         selectedParticipantIds,
         splitValues
       }),
-      payments: buildPayments({ multiPayer, participants, paymentValues, payerId, amount })
+      payments: buildPayments({ multiPayer, participants, paymentValues, payerId, amount }),
+      ...(locationForm.latitude && locationForm.longitude ? {
+        latitude: Math.round(locationForm.latitude * 1000000) / 1000000,
+        longitude: Math.round(locationForm.longitude * 1000000) / 1000000
+      } : {})
     };
     const payload = { context_type: contextType, context_id: contextId, expense };
     try {
@@ -416,6 +424,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
         navigateAfterSave();
+      } else if (error instanceof ApiError && error.data) {
+        // Extract field-specific validation errors
+        const fieldErrors = Object.entries(error.data)
+          .filter(([, value]) => Array.isArray(value))
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(", ")}`)
+          .join(" | ");
+        setMessage(fieldErrors || t("expense.saveFailed"));
       } else {
         setMessage(t("expense.saveFailed"));
       }
@@ -513,11 +528,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 {currency}
               </Button>
             </View>
-            <TextInput
-              mode="outlined"
-              label={t("expense.description")}
+            <LocationSuggestionsInput
               value={description}
               onChangeText={setDescription}
+              suggestions={locationForm.suggestions}
+              loading={locationForm.loadingSuggestions}
+              label={t("expense.description")}
+              maxLength={240}
             />
           </Card.Content>
         </Card>

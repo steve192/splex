@@ -89,6 +89,9 @@ export type Expense = {
   converted_currency: string;
   split_method: SplitMethod;
   split_payload?: Record<string, unknown>;
+  latitude?: number | null;
+  longitude?: number | null;
+  approximate_location?: string | null;
   deleted_at?: string | null;
   payments: ExpenseShare[];
   owed: ExpenseShare[];
@@ -130,6 +133,7 @@ export type UserProfile = {
   avatar_url: string;
   push_enabled: boolean;
   locale: string;
+  location_tracking_enabled: boolean;
 };
 
 export type BalanceDetail = {

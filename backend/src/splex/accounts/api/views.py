@@ -33,7 +33,12 @@ class AuthProvidersView(APIView):
                 "google": {
                     "client_id": settings.GOOGLE_CLIENT_ID or None,
                     "android_client_id": settings.GOOGLE_ANDROID_CLIENT_ID or None,
-                }
+                },
+                "map_tile_url": getattr(
+                    settings,
+                    "MAP_TILE_URL",
+                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                )
             }
         )
 

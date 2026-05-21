@@ -9,6 +9,7 @@ import { ActivityStackParamList, OverviewStackParamList } from "../../applicatio
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { Expense } from "../../shared/types/models";
+import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
@@ -78,6 +79,13 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
         {expense ? (
           <>
             <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
+            {expense.latitude && expense.longitude ? (
+              <Card mode="elevated" style={styles.gap}>
+                <Card.Content>
+                  <LocationMap latitude={expense.latitude} longitude={expense.longitude} height={200} />
+                </Card.Content>
+              </Card>
+            ) : null}
             <View style={styles.metricGrid}>
               <Card mode="elevated" style={styles.metricTile}>
                 <Card.Content>

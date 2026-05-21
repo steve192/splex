@@ -29,6 +29,9 @@ def serialize_expense(expense):
         "converted_currency": expense.converted_currency,
         "split_method": expense.split_method,
         "split_payload": expense.split_metadata,
+        "latitude": float(expense.latitude) if expense.latitude else None,
+        "longitude": float(expense.longitude) if expense.longitude else None,
+        "approximate_location": expense.approximate_location or None,
         "deleted_at": expense.deleted_at,
         "payments": [
             {

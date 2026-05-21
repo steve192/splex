@@ -163,6 +163,9 @@ def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense
         exchange_rate_source=rate.source,
         split_method=method,
         split_metadata=data.get("split_payload") or {},
+        latitude=data.get("latitude") if actor.location_tracking_enabled else None,
+        longitude=data.get("longitude") if actor.location_tracking_enabled else None,
+        approximate_location=data.get("approximate_location", "") if actor.location_tracking_enabled else "",
         created_by=actor,
     )
     _replace_expense_shares(

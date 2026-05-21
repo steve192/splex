@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -35,3 +38,42 @@ class ExpenseDetailView(APIView):
         expense = Expense.objects.get(id=expense_id, deleted_at__isnull=True)
         soft_delete_expense(actor=request.user, expense=expense)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LocationSuggestionsView(APIView):
+    def get(self, request):
+        latitude = request.query_params.get("latitude")
+        longitude = request.query_params.get("longitude")
+        radius = request.query_params.get("radius", 100)
+
+        if not latitude or not longitude:
+            return Response(
+                {"error": "latitude and longitude are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            latitude = Decimal(latitude)
+            longitude = Decimal(longitude)
+            radius = float(radius)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Invalid latitude, longitude, or radius"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Simple bounding box query (good approximation for small radii)
+        # 0.009 degrees ≈ 1 km at equator
+        lat_delta = Decimal(str(radius / 111000))  # ~111 km per degree
+        lon_delta = Decimal(str(radius / (111000 * 1)))  # Simplified, doesn't account for latitude
+
+        expenses = Expense.objects.filter(
+            Q(deleted_at__isnull=True) & Q(created_by=request.user) &
+            Q(latitude__isnull=False) & Q(longitude__isnull=False) &
+            Q(latitude__gte=latitude - lat_delta) &
+            Q(latitude__lte=latitude + lat_delta) &
+            Q(longitude__gte=longitude - lon_delta) &
+            Q(longitude__lte=longitude + lon_delta)
+        ).values_list("description", flat=True).distinct().order_by("-id")[:10]
+
+        return Response({"suggestions": list(expenses)})
