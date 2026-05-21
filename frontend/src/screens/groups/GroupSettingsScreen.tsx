@@ -40,10 +40,10 @@ import { canRemoveParticipant } from "./participantActions";
 import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
 const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }> = [
-  { value: "equal_all", key: "split.equal_all" },
-  { value: "exact", key: "split.exact" },
-  { value: "percentage", key: "split.percentage" },
-  { value: "adjusted_equal", key: "split.adjusted_equal" }
+  { value: "equal_all", key: "split.shortEqual" },
+  { value: "exact", key: "split.shortExact" },
+  { value: "percentage", key: "split.shortPercentage" },
+  { value: "adjusted_equal", key: "split.shortAdjusted" }
 ];
 
 type GroupSettingsScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupSettings">;
