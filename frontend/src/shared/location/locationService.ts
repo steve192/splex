@@ -1,8 +1,11 @@
 import * as Location from "expo-location";
 import { Platform } from "react-native";
 
+import { ApiClient } from "../api/client";
+
 let lastLocation: { latitude: number; longitude: number; timestamp: number } | null = null;
 const LOCATION_CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const LOCATION_REQUEST_TIMEOUT = 8000; // 8s before falling back to last-known
 
 export async function requestLocationPermission(): Promise<"granted" | "denied" | "undetermined"> {
   if (Platform.OS === "web") {
@@ -20,9 +23,6 @@ export async function requestLocationPermission(): Promise<"granted" | "denied" 
   const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
   if (existingStatus === Location.PermissionStatus.GRANTED) {
     return "granted";
-  }
-  if (existingStatus === Location.PermissionStatus.DENIED) {
-    return "denied";
   }
 
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -57,12 +57,19 @@ export async function getCurrentLocation(): Promise<{ latitude: number; longitud
     return null;
   }
 
+  // Android `getCurrentPositionAsync` can hang on cold GPS. Race against a timeout
+  // and fall back to the last known fix so the expense form gets a coordinate.
   try {
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 5000,
-      distanceInterval: 10,
-    });
+    const fresh = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const timeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), LOCATION_REQUEST_TIMEOUT)
+    );
+    const winner = await Promise.race([fresh, timeout]);
+
+    const location = winner ?? (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000 }));
+    if (!location) {
+      return null;
+    }
 
     lastLocation = {
       latitude: location.coords.latitude,
@@ -105,19 +112,33 @@ function getWebLocation(): Promise<{ latitude: number; longitude: number } | nul
 
 /**
  * Bootstrap location permission on app startup.
- * If the user has location tracking enabled and we don't have permission yet,
- * request it. Similar to push notification bootstrap.
+ * If the user has location tracking enabled, request permission (like push notifications).
+ * If permission is not granted, disable the server-side setting so UI and reality match.
  */
-export async function bootstrapLocationOnStartup(locationTrackingEnabled: boolean): Promise<void> {
+export async function bootstrapLocationOnStartup(
+  locationTrackingEnabled: boolean,
+  api: ApiClient
+): Promise<void> {
   if (!locationTrackingEnabled) {
     return;
   }
 
-  const enabled = await isLocationEnabled();
-  if (enabled) {
-    // Already have permission, pre-fetch location
-    await getCurrentLocation();
+  // Web: browser prompts on demand at first geolocation call, nothing to bootstrap.
+  if (Platform.OS === "web") {
+    return;
   }
-  // Don't auto-request permission. Let user explicitly enable it in settings.
-  // The requestLocationPermission will be called when they toggle the setting.
+
+  const status = await requestLocationPermission();
+  if (status === "granted") {
+    await getCurrentLocation();
+    return;
+  }
+
+  // Permission was not granted - user setting is stale. Disable it server-side
+  // so the UI reflects reality and we don't keep prompting.
+  try {
+    await api.patch("/api/me/", { location_tracking_enabled: false });
+  } catch {
+    // Best-effort; next bootstrap will retry.
+  }
 }
