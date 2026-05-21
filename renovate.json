@@ -47,7 +47,7 @@
       "groupName": "expo-and-react-native"
     },
     {
-      "description": "Frontend: other npm minor/patch updates",
+      "description": "Frontend: other npm minor/patch updates — one PR per package so a single failure doesn't block the rest",
       "matchManagers": [
         "npm"
       ],
@@ -58,7 +58,6 @@
         "minor",
         "patch"
       ],
-      "groupName": "frontend-dependencies",
       "automerge": true
     },
     {
