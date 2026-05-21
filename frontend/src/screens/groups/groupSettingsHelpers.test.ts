@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { Friend, Participant } from "../../shared/types/models";
-import { buildAddParticipantPayload, getSuggestedFriends } from "./groupSettingsHelpers";
+import {
+  buildAddParticipantPayload,
+  getSuggestedFriends,
+  shouldDeleteGroupOnLeave
+} from "./groupSettingsHelpers";
 
 const friends: Friend[] = [
   {
@@ -39,5 +43,30 @@ describe("groupSettingsHelpers", () => {
     expect(buildAddParticipantPayload("Charlie", friends, participants)).toEqual({
       display_name: "Charlie"
     });
+  });
+
+  it("treats groups with only unregistered members besides you as delete-on-leave", () => {
+    expect(
+      shouldDeleteGroupOnLeave(
+        [
+          { id: 10, display_name: "You", kind: "registered", user_id: 10 },
+          { id: 20, display_name: "Ghost", kind: "unregistered", user_id: null }
+        ],
+        10
+      )
+    ).toBe(true);
+  });
+
+  it("does not treat groups with another registered member as delete-on-leave", () => {
+    expect(
+      shouldDeleteGroupOnLeave(
+        [
+          { id: 10, display_name: "You", kind: "registered", user_id: 10 },
+          { id: 30, display_name: "Other", kind: "registered", user_id: 30 },
+          { id: 20, display_name: "Ghost", kind: "unregistered", user_id: null }
+        ],
+        10
+      )
+    ).toBe(false);
   });
 });

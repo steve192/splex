@@ -8,6 +8,7 @@ from splex.groups.services import (
     add_unregistered_participant,
     create_group,
     delete_group,
+    leave_group,
     remove_group_participant,
     rename_unregistered_participant,
     update_group,
@@ -164,6 +165,49 @@ def test_delete_group_is_idempotent():
     delete_group(actor=user, group=group)
     group.refresh_from_db()
     assert group.deleted_at == first_deletion  # unchanged
+
+
+@pytest.mark.django_db
+def test_leave_group_marks_membership_removed_when_others_remain():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    other_participant = get_or_create_user_participant(other)
+    GroupMembership.objects.create(group=group, participant=other_participant)
+
+    leave_group(actor=owner, group=group)
+
+    membership = GroupMembership.objects.get(group=group, participant=get_or_create_user_participant(owner))
+    assert membership.removed_at is not None
+    assert GroupMembership.objects.get(group=group, participant=other_participant).removed_at is None
+    event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
+    assert event.payload["target_participant_id"] == get_or_create_user_participant(owner).id
+
+
+@pytest.mark.django_db
+def test_leave_group_deletes_group_for_last_member():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+
+    leave_group(actor=owner, group=group)
+
+    group.refresh_from_db()
+    assert group.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_leave_group_deletes_group_when_only_unregistered_members_remain():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    add_unregistered_participant(actor=owner, group=group, display_name="Ghost")
+
+    leave_group(actor=owner, group=group)
+
+    group.refresh_from_db()
+    assert group.deleted_at is not None
 
 
 @pytest.mark.django_db

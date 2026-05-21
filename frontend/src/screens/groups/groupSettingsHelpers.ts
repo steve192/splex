@@ -36,3 +36,13 @@ export function buildAddParticipantPayload(
   }
   return { display_name: trimmed };
 }
+
+export function shouldDeleteGroupOnLeave(
+  participants: Participant[],
+  currentParticipantId?: number
+): boolean {
+  if (!currentParticipantId) return false;
+  return !participants.some(
+    (participant) => participant.id !== currentParticipantId && participant.user_id !== null
+  );
+}

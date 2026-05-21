@@ -183,6 +183,33 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
 
 
 @transaction.atomic
+def leave_group(*, actor, group: Group) -> None:
+    participant = get_group_participant(actor, group)
+    active_memberships = GroupMembership.objects.select_for_update().filter(
+        group=group,
+        removed_at__isnull=True,
+    )
+    has_other_registered_members = active_memberships.exclude(participant=participant).filter(
+        participant__user__isnull=False,
+    ).exists()
+    if not has_other_registered_members:
+        delete_group(actor=actor, group=group)
+        return
+
+    membership = active_memberships.get(participant=participant)
+    auto_settled = _auto_settle_participant(actor, group, participant)
+    membership.removed_at = timezone.now()
+    membership.save(update_fields=["removed_at"])
+    event = record_activity(
+        actor,
+        EventType.GROUP_MEMBER_REMOVED,
+        group=group,
+        payload={"target_participant_id": participant.id, "autoSettled": auto_settled},
+    )
+    create_notifications_for_activity(event)
+
+
+@transaction.atomic
 def rename_unregistered_participant(
     *, actor, group: Group, participant: Participant, display_name: str
 ) -> Participant:

@@ -28,6 +28,7 @@ from splex.groups.services import (
     assert_group_member,
     create_group,
     delete_group,
+    leave_group,
     remove_group_participant,
     rename_unregistered_participant,
     update_group,
@@ -117,6 +118,16 @@ class GroupDetailView(APIView):
         group = get_active_group(group_id)
         try:
             delete_group(actor=request.user, group=group)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupLeaveView(APIView):
+    def post(self, request, group_id):
+        group = get_active_group(group_id)
+        try:
+            leave_group(actor=request.user, group=group)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)

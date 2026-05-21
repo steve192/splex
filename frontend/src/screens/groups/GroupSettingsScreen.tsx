@@ -31,7 +31,11 @@ import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
-import { buildAddParticipantPayload, getSuggestedFriends } from "./groupSettingsHelpers";
+import {
+  buildAddParticipantPayload,
+  getSuggestedFriends,
+  shouldDeleteGroupOnLeave
+} from "./groupSettingsHelpers";
 import { canRemoveParticipant } from "./participantActions";
 import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
@@ -44,7 +48,7 @@ const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }
 
 type GroupSettingsScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupSettings">;
 
-export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenProps) {
+export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSettingsScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
@@ -63,12 +67,22 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   const [removeTarget, setRemoveTarget] = useState<Participant | null>(null);
   const [renameTarget, setRenameTarget] = useState<Participant | null>(null);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [leaveConfirmVisible, setLeaveConfirmVisible] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [newParticipantName, setNewParticipantName] = useState("");
   const [snackbar, setSnackbar] = useState("");
   const [manualCopyLink, setManualCopyLink] = useState("");
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
   const suggestedFriends = getSuggestedFriends(newParticipantName, friends, group?.participants ?? []);
+  const currentParticipant =
+    group?.participants?.find((participant) => participant.id === group.current_participant_id) ?? null;
+  const isLastActiveMember = shouldDeleteGroupOnLeave(
+    group?.participants ?? [],
+    group?.current_participant_id
+  );
+  const deleteGroupName = group?.name ?? "";
+  const deleteGroupEnabled = deleteConfirmName.trim() === deleteGroupName.trim();
 
   async function load() {
     const [row, friendRows] = await Promise.all([
@@ -111,8 +125,16 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
   }
 
   async function deleteCurrentGroup() {
+    if (!deleteGroupEnabled) return;
     await api.delete(`/api/groups/${groupId}/`);
+    setDeleteConfirmName("");
     setDeleteConfirmVisible(false);
+    navigation.navigate("OverviewHome");
+  }
+
+  async function leaveCurrentGroup() {
+    await api.post(`/api/groups/${groupId}/leave/`, {});
+    setLeaveConfirmVisible(false);
     navigation.navigate("OverviewHome");
   }
 
@@ -222,13 +244,10 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
             {suggestedFriends.length ? (
               <View style={styles.suggestionList}>
                 {suggestedFriends.map((friend) => (
-                  <List.Item
+                  <FriendSuggestionItem
                     key={friend.id}
-                    style={styles.listItemDense}
-                    title={friend.display_name}
+                    friend={friend}
                     description={t("participant.registered")}
-                    left={() => <PersonAvatar name={friend.display_name} imageUrl={friend.avatar_url} />}
-                    right={(props) => <List.Icon {...props} icon="account-plus" />}
                     onPress={() => addParticipant(friend)}
                   />
                 ))}
@@ -242,32 +261,37 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
         {group?.participants?.map((participant) => (
           <Card key={participant.id} mode="elevated" style={styles.card}>
             <Card.Content>
-              <View style={styles.memberCardRow}>
-                <PersonAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
-                <View style={styles.memberContent}>
-                  <Text variant="titleMedium">{participant.display_name}</Text>
-                  <Text variant="bodyMedium">
-                    {participant.kind === "unregistered" ? t("participant.unregistered") : t("participant.registered")}
-                  </Text>
-                  <View style={[styles.rowActions, styles.memberActionRow]}>
-                    {participant.kind === "unregistered" ? (
-                      <>
-                        <Button mode="text" onPress={() => openRename(participant)}>
-                          {t("common.edit")}
-                        </Button>
-                        <Button mode="text" onPress={() => createInvite(participant.id)}>
-                          {t("invite.targeted")}
-                        </Button>
-                      </>
-                    ) : null}
-                    {canRemoveParticipant(participant, group?.current_participant_id) ? (
-                      <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
-                        {t("common.delete")}
+              {participant.kind === "unregistered" ? (
+                <View style={styles.memberCardRow}>
+                  <PersonAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
+                  <View style={styles.memberContent}>
+                    <Text variant="titleMedium">{participant.display_name}</Text>
+                    <Text variant="bodyMedium">{t("participant.unregistered")}</Text>
+                    <View style={[styles.rowActions, styles.memberActionRow]}>
+                      <Button mode="text" onPress={() => openRename(participant)}>
+                        {t("common.edit")}
                       </Button>
-                    ) : null}
+                      <Button mode="text" onPress={() => createInvite(participant.id)}>
+                        {t("invite.targeted")}
+                      </Button>
+                      {canRemoveParticipant(participant, group?.current_participant_id) ? (
+                        <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
+                          {t("common.delete")}
+                        </Button>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
-              </View>
+              ) : (
+                <RegisteredParticipantItem
+                  participant={participant}
+                  description={t("participant.registered")}
+                  dangerColor={dangerColor}
+                  deleteLabel={t("common.delete")}
+                  removable={canRemoveParticipant(participant, group?.current_participant_id)}
+                  onRemove={() => setRemoveTarget(participant)}
+                />
+              )}
             </Card.Content>
           </Card>
         ))}
@@ -277,16 +301,22 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
             <Text variant="titleMedium">{t("group.management")}</Text>
             <List.Item
               title={t("group.archived")}
-              right={() => <Switch value={archived} onValueChange={setArchived} />}
+              right={renderArchiveSwitch(archived, setArchived)}
             />
             <Button mode="elevated" onPress={saveArchive}>
               {t("group.saveArchive")}
+            </Button>
+            <Button mode="contained-tonal" icon="logout" onPress={() => setLeaveConfirmVisible(true)}>
+              {t("group.leave")}
             </Button>
             <Button
               mode="contained-tonal"
               icon="delete-outline"
               textColor={dangerColor}
-              onPress={() => setDeleteConfirmVisible(true)}
+              onPress={() => {
+                setDeleteConfirmName("");
+                setDeleteConfirmVisible(true);
+              }}
             >
               {t("group.delete")}
             </Button>
@@ -301,6 +331,17 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
           target={removeTarget}
           onDismiss={() => setRemoveTarget(null)}
           onConfirm={removeParticipant}
+        />
+        <RemoveParticipantDialog
+          api={api}
+          groupId={groupId}
+          target={currentParticipant}
+          visible={leaveConfirmVisible && !!currentParticipant}
+          title={t("group.leave")}
+          confirmLabel={t("group.leave")}
+          extraMessage={isLastActiveMember ? t("group.leaveLastMember") : t("group.leaveConfirm")}
+          onDismiss={() => setLeaveConfirmVisible(false)}
+          onConfirm={leaveCurrentGroup}
         />
         <Dialog visible={!!renameTarget} onDismiss={() => setRenameTarget(null)}>
           <Dialog.Title>{t("participant.rename")}</Dialog.Title>
@@ -317,14 +358,39 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
             <Button onPress={renameParticipant} disabled={!renameValue.trim()}>{t("common.save")}</Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog visible={deleteConfirmVisible} onDismiss={() => setDeleteConfirmVisible(false)}>
+        <Dialog
+          visible={deleteConfirmVisible}
+          onDismiss={() => {
+            setDeleteConfirmVisible(false);
+            setDeleteConfirmName("");
+          }}
+        >
           <Dialog.Title>{t("group.delete")}</Dialog.Title>
           <Dialog.Content>
-            <Text>{t("group.deleteConfirm")}</Text>
+            <View style={styles.gap}>
+              <Text>{t("group.deleteConfirm")}</Text>
+              <Text>{t("group.deleteTypeName", { name: deleteGroupName })}</Text>
+              <TextInput
+                mode="outlined"
+                label={t("group.deleteTypeNameLabel")}
+                value={deleteConfirmName}
+                onChangeText={setDeleteConfirmName}
+                autoCapitalize="none"
+              />
+            </View>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteConfirmVisible(false)}>{t("common.cancel")}</Button>
-            <Button textColor={dangerColor} onPress={deleteCurrentGroup}>{t("common.delete")}</Button>
+            <Button
+              onPress={() => {
+                setDeleteConfirmVisible(false);
+                setDeleteConfirmName("");
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button textColor={dangerColor} onPress={deleteCurrentGroup} disabled={!deleteGroupEnabled}>
+              {t("common.delete")}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -349,4 +415,94 @@ export function GroupSettingsScreen({ route, navigation }: GroupSettingsScreenPr
       />
     </View>
   );
+}
+
+function FriendSuggestionItem({
+  friend,
+  description,
+  onPress
+}: Readonly<{
+  friend: Friend;
+  description: string;
+  onPress: () => void;
+}>) {
+  return (
+    <List.Item
+      style={styles.listItemDense}
+      title={friend.display_name}
+      description={description}
+      left={renderPersonAvatar(friend.display_name, friend.avatar_url)}
+      right={renderListIcon("account-plus")}
+      onPress={onPress}
+    />
+  );
+}
+
+function RegisteredParticipantItem({
+  participant,
+  description,
+  dangerColor,
+  deleteLabel,
+  removable,
+  onRemove
+}: Readonly<{
+  participant: Participant;
+  description: string;
+  dangerColor: string;
+  deleteLabel: string;
+  removable: boolean;
+  onRemove: () => void;
+}>) {
+  return (
+    <List.Item
+      title={participant.display_name}
+      description={description}
+      left={renderPersonAvatar(participant.display_name, participant.avatar_url)}
+      right={renderDeleteAction(removable, dangerColor, deleteLabel, onRemove)}
+    />
+  );
+}
+
+function ArchiveSwitch({
+  value,
+  onValueChange
+}: Readonly<{
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}>) {
+  return <Switch value={value} onValueChange={onValueChange} />;
+}
+
+function renderArchiveSwitch(value: boolean, onValueChange: (value: boolean) => void) {
+  return function ArchiveSwitchRenderer() {
+    return <ArchiveSwitch value={value} onValueChange={onValueChange} />;
+  };
+}
+
+function renderPersonAvatar(name: string, imageUrl?: string) {
+  return function PersonAvatarRenderer() {
+    return <PersonAvatar name={name} imageUrl={imageUrl} />;
+  };
+}
+
+function renderListIcon(icon: string) {
+  return function ListIconRenderer(props: { color: string; style?: any }) {
+    return <List.Icon {...props} icon={icon} />;
+  };
+}
+
+function renderDeleteAction(
+  removable: boolean,
+  dangerColor: string,
+  deleteLabel: string,
+  onRemove: () => void
+) {
+  return function DeleteActionRenderer() {
+    if (!removable) return null;
+    return (
+      <Button mode="text" textColor={dangerColor} onPress={onRemove}>
+        {deleteLabel}
+      </Button>
+    );
+  };
 }
