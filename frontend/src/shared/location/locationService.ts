@@ -9,14 +9,35 @@ const LOCATION_REQUEST_TIMEOUT = 8000; // 8s before falling back to last-known
 
 export async function requestLocationPermission(): Promise<"granted" | "denied" | "undetermined"> {
   if (Platform.OS === "web") {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve("denied");
-        return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return "denied";
+    }
+    // Browsers expose permission state via the Permissions API where available; this lets us
+    // skip the prompt when the user has already granted/denied location for this origin.
+    if (typeof navigator.permissions?.query === "function") {
+      try {
+        const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+        if (status.state === "granted") return "granted";
+        if (status.state === "denied") return "denied";
+      } catch {
+        // Some browsers (older Safari, Firefox in private mode) reject — fall through to prompt.
       }
-      // Web doesn't need explicit permission request, it's handled by the browser
-      // We just return undetermined and let the browser prompt when needed
-      resolve("undetermined");
+    }
+    // Actively trigger the browser prompt by requesting a position. Resolves "granted" on
+    // success, "denied" when the user blocks the prompt, "undetermined" on timeout or
+    // hardware error so the caller doesn't lock the user out.
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        () => resolve("granted"),
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            resolve("denied");
+          } else {
+            resolve("undetermined");
+          }
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
     });
   }
 
