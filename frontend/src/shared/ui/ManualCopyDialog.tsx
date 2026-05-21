@@ -1,4 +1,5 @@
 import { Button, Dialog, Portal, Text, TextInput } from "react-native-paper";
+import { useI18n } from "../i18n/I18nContext";
 
 type ManualCopyDialogProps = {
   visible: boolean;
@@ -17,6 +18,7 @@ export function ManualCopyDialog({
   label,
   onDismiss
 }: ManualCopyDialogProps) {
+  const { t } = useI18n();
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss}>
@@ -33,7 +35,7 @@ export function ManualCopyDialog({
           />
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>OK</Button>
+          <Button onPress={onDismiss}>{t("common.ok")}</Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

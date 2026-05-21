@@ -4,6 +4,7 @@ import { Button, Card, Text } from "react-native-paper";
 import { WebView } from "react-native-webview";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext";
 import { openLocationInMaps } from "../location/mapsIntegration";
 import { styles } from "./styles";
 import { LEAFLET_CSS, LEAFLET_JS } from "./leafletAssets.generated";
@@ -62,6 +63,7 @@ function buildHtml(latitude: number, longitude: number, tileUrl: string): string
 
 export function LocationMap({ latitude, longitude, height = 250 }: Readonly<LocationMapProps>) {
   const { api } = useAuth();
+  const { t } = useI18n();
   const [tileUrl, setTileUrl] = useState<string>(DEFAULT_TILE_URL);
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export function LocationMap({ latitude, longitude, height = 250 }: Readonly<Loca
           </Text>
         </View>
         <Button mode="contained" onPress={() => openLocationInMaps(latitude, longitude)}>
-          Open in Maps
+          {t("map.openInMaps")}
         </Button>
       </Card.Content>
     </Card>

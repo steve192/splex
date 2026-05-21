@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { List, Switch, Text, useTheme } from "react-native-paper";
+import { useI18n } from "../i18n/I18nContext";
 import { requestLocationPermission } from "../location/locationService";
 import { styles } from "./styles";
 import { negativeColor } from "./colors";
@@ -14,6 +15,7 @@ type PermissionStatus = "granted" | "denied" | "undetermined";
 
 export function LocationTrackingToggle({ enabled, onChange }: LocationTrackingToggleProps) {
   const theme = useTheme();
+  const { t } = useI18n();
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus | null>(null);
   const [requestingPermission, setRequestingPermission] = useState(false);
 
@@ -43,22 +45,22 @@ export function LocationTrackingToggle({ enabled, onChange }: LocationTrackingTo
   let statusColor = theme.colors.onSurface;
 
   if (permissionStatus === "denied") {
-    statusText = "Permission denied. Open settings to enable location access.";
+    statusText = t("location.permissionDenied");
     statusColor = dangerColor;
   } else if (enabled && permissionStatus === "granted") {
-    statusText = "Location tracking enabled";
+    statusText = t("location.enabled");
     statusColor = theme.colors.primary;
   } else if (enabled) {
-    statusText = "Requesting permission...";
+    statusText = t("location.requesting");
   } else {
-    statusText = "Disabled";
+    statusText = t("location.disabled");
   }
 
   return (
     <View style={styles.gap}>
       <List.Item
-        title="Location Tracking"
-        description="Suggest expenses based on nearby locations"
+        title={t("location.title")}
+        description={t("location.description")}
         right={() => (
           <Switch
             value={enabled}

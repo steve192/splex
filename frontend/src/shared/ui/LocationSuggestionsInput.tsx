@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FlatList, Pressable, View } from "react-native";
 import { Chip, Text, TextInput } from "react-native-paper";
+import { useI18n } from "../i18n/I18nContext";
 import { styles } from "./styles";
 
 interface LocationSuggestionsInputProps {
@@ -20,6 +21,7 @@ export function LocationSuggestionsInput({
   maxLength = 240,
   label = "Description"
 }: LocationSuggestionsInputProps) {
+  const { t } = useI18n();
   const [showSuggestions, setShowSuggestions] = useState(true);
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -43,7 +45,7 @@ export function LocationSuggestionsInput({
       {shouldShowSuggestions && (
         <View style={{ marginVertical: 8 }}>
           <Text variant="labelSmall" style={{ marginBottom: 8 }}>
-            Suggested from nearby:
+            {t("expense.suggestedNearby")}
           </Text>
           <FlatList
             data={suggestions}
