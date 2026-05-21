@@ -13,6 +13,7 @@ from splex.accounts.api.serializers import (
 from splex.accounts.services import (
     authenticate_magic_code,
     authenticate_magic_token,
+    delete_account,
     request_magic_login,
 )
 from splex.shared.uploads import save_data_url_image
@@ -81,6 +82,12 @@ class MeView(APIView):
         ]
         user.save(update_fields=update_fields)
         return Response(UserSerializer(user).data)
+
+
+class MeDeleteView(APIView):
+    def delete(self, request):
+        delete_account(actor=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LogoutView(APIView):

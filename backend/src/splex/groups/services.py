@@ -4,15 +4,14 @@ from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
-from splex.balances.selectors import group_debts
-from splex.expenses.models import Expense
+from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.friends.models import Friendship
 from splex.groups.models import Group, GroupMembership
+from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
-from splex.shared.money import money
 from splex.shared.uploads import save_data_url_image
 
 
@@ -138,46 +137,67 @@ def delete_group(*, actor, group: Group) -> None:
     create_notifications_for_activity(event)
 
 
-def _auto_settle_participant(actor, group: Group, participant: Participant) -> int:
-    """Create settlements that bring this participant's pair-wise balances to zero.
+def _convert_participant_in_group(*, group: Group, participant: Participant) -> Participant:
+    """Replace a registered participant's presence in a group with an unregistered placeholder.
 
-    Returns the number of settlements created. Skipped pairs (zero net) emit nothing.
+    Creates a new UNREGISTERED Participant whose display_name is a snapshot of the
+    current effective name, then re-points all group-scoped expense shares, settlements,
+    invitations, and the group membership to the new placeholder.  The original
+    participant's membership is *transferred* (not removed) so the placeholder remains
+    an active member and balances keep working correctly without any auto-settlement.
+    Returns the new placeholder participant.
     """
-    created = 0
-    for (debtor_id, creditor_id), amount in group_debts(group).items():
-        if participant.id not in (debtor_id, creditor_id):
-            continue
-        net = money(amount)
-        if net <= 0:
-            continue
-        Settlement.objects.create(
-            group=group,
-            payer_participant_id=debtor_id,
-            receiver_participant_id=creditor_id,
-            amount=net,
-            currency=group.default_currency,
-            created_by=actor,
-        )
-        created += 1
-    return created
+    display_name = participant.effective_display_name
+    placeholder = Participant.objects.create(
+        kind=Participant.Kind.UNREGISTERED,
+        display_name=display_name,
+    )
+
+    expense_ids = list(
+        Expense.objects.filter(group=group).values_list("id", flat=True)
+    )
+    if expense_ids:
+        ExpensePaymentShare.objects.filter(
+            expense_id__in=expense_ids, participant=participant
+        ).update(participant=placeholder)
+        ExpenseOwedShare.objects.filter(
+            expense_id__in=expense_ids, participant=participant
+        ).update(participant=placeholder)
+
+    Settlement.objects.filter(group=group, payer_participant=participant).update(
+        payer_participant=placeholder
+    )
+    Settlement.objects.filter(group=group, receiver_participant=participant).update(
+        receiver_participant=placeholder
+    )
+
+    Invitation.objects.filter(group=group, target_participant=participant).update(
+        target_participant=placeholder
+    )
+
+    # Transfer the membership to the placeholder so it stays an active group member.
+    GroupMembership.objects.filter(
+        group=group, participant=participant
+    ).update(participant=placeholder)
+
+    return placeholder
 
 
 @transaction.atomic
 def remove_group_participant(*, actor, group: Group, participant: Participant) -> None:
     assert_group_member(actor, group)
-    membership = GroupMembership.objects.get(
+    if not GroupMembership.objects.filter(
         group=group, participant=participant, removed_at__isnull=True
-    )
+    ).exists():
+        raise ValueError("Participant is not an active member of this group.")
     if participant.user_id == actor.id:
         raise ValueError("You cannot remove yourself from the group here.")
-    auto_settled = _auto_settle_participant(actor, group, participant)
-    membership.removed_at = timezone.now()
-    membership.save(update_fields=["removed_at"])
+    placeholder = _convert_participant_in_group(group=group, participant=participant)
     event = record_activity(
         actor,
         EventType.GROUP_MEMBER_REMOVED,
         group=group,
-        payload={"target_participant_id": participant.id, "autoSettled": auto_settled},
+        payload={"target_participant_id": placeholder.id},
     )
     create_notifications_for_activity(event)
 
@@ -196,15 +216,12 @@ def leave_group(*, actor, group: Group) -> None:
         delete_group(actor=actor, group=group)
         return
 
-    membership = active_memberships.get(participant=participant)
-    auto_settled = _auto_settle_participant(actor, group, participant)
-    membership.removed_at = timezone.now()
-    membership.save(update_fields=["removed_at"])
+    placeholder = _convert_participant_in_group(group=group, participant=participant)
     event = record_activity(
         actor,
         EventType.GROUP_MEMBER_REMOVED,
         group=group,
-        payload={"target_participant_id": participant.id, "autoSettled": auto_settled},
+        payload={"target_participant_id": placeholder.id},
     )
     create_notifications_for_activity(event)
 

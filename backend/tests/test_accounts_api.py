@@ -67,3 +67,84 @@ def test_me_patch_updates_push_enabled():
     _auth_client(user).patch("/api/me/", {"push_enabled": False}, format="json")
     user.refresh_from_db()
     assert user.push_enabled is False
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/me/delete/ — account deletion
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_delete_account_removes_user_and_solo_group():
+    """Deleting an account soft-deletes groups where the user is the only member."""
+    from django.contrib.auth import get_user_model
+    from splex.groups.services import create_group
+    from splex.groups.models import Group
+
+    User = get_user_model()
+    user = User.objects.create_user(email="solo@example.com", display_name="Solo")
+    group = create_group(actor=user, name="Solo Trip", default_currency="EUR")
+
+    response = _auth_client(user).delete("/api/me/delete/")
+    assert response.status_code == 204
+
+    # User is gone.
+    assert not User.objects.filter(email="solo@example.com").exists()
+    # Solo group was soft-deleted.
+    group.refresh_from_db()
+    assert group.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_delete_account_converts_participant_to_placeholder_in_shared_group():
+    """In a group with other registered members the leaving user becomes an
+    unregistered placeholder; no data is lost."""
+    from django.contrib.auth import get_user_model
+    from splex.groups.models import GroupMembership
+    from splex.groups.services import create_group
+    from splex.participants.models import Participant
+    from splex.participants.services import get_or_create_user_participant
+
+    User = get_user_model()
+    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    other = User.objects.create_user(email="other@example.com", display_name="Other")
+    group = create_group(actor=owner, name="Shared Trip", default_currency="EUR")
+    other_p = get_or_create_user_participant(other)
+    GroupMembership.objects.create(group=group, participant=other_p)
+
+    response = _auth_client(owner).delete("/api/me/delete/")
+    assert response.status_code == 204
+
+    # Owner's user row is gone.
+    assert not User.objects.filter(email="owner@example.com").exists()
+
+    # Group still exists.
+    from splex.groups.models import Group
+    group.refresh_from_db()
+    assert group.deleted_at is None
+
+    # An unregistered placeholder replaced the owner in the group.
+    placeholder = Participant.objects.filter(
+        kind=Participant.Kind.UNREGISTERED,
+        group_memberships__group=group,
+        group_memberships__removed_at__isnull=True,
+    ).exclude(id=other_p.id).first()
+    assert placeholder is not None
+    assert placeholder.display_name == "Owner"
+
+
+@pytest.mark.django_db
+def test_delete_account_removes_push_tokens():
+    """Push tokens and web-push subscriptions are cleaned up on deletion."""
+    from django.contrib.auth import get_user_model
+    from splex.notifications.models import DeviceToken, WebPushSubscription
+
+    User = get_user_model()
+    user = User.objects.create_user(email="u@example.com", display_name="U")
+    DeviceToken.objects.create(user=user, platform="android", token="tok")
+    WebPushSubscription.objects.create(user=user, endpoint="https://ep", p256dh="pk", auth="auth")
+
+    response = _auth_client(user).delete("/api/me/delete/")
+    assert response.status_code == 204
+
+    assert not DeviceToken.objects.filter(token="tok").exists()
+    assert not WebPushSubscription.objects.filter(endpoint="https://ep").exists()

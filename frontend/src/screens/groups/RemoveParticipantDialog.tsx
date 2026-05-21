@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { ActivityIndicator, Button, Dialog, HelperText, List, Text, useTheme } from "react-native-paper";
+import { ActivityIndicator, Button, Dialog, HelperText, List, Text } from "react-native-paper";
 
 import { ApiClient } from "../../shared/api/client";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Participant } from "../../shared/types/models";
-import { negativeColor } from "../../shared/ui/colors";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
@@ -47,7 +46,6 @@ export function RemoveParticipantDialog({
   onConfirm
 }: Readonly<RemoveParticipantDialogProps>) {
   const { t } = useI18n();
-  const theme = useTheme();
   const [outstanding, setOutstanding] = useState<OutstandingResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -89,8 +87,8 @@ export function RemoveParticipantDialog({
         ) : null}
         {hasOutstanding && outstanding ? (
           <>
-            <HelperText type="error" visible style={{ color: negativeColor(theme) }}>
-              {t("group.removeMember.outstandingWarning", { name: target?.display_name ?? "" })}
+            <HelperText type="info" visible>
+              {t("group.removeMember.convertWarning", { name: target?.display_name ?? "" })}
             </HelperText>
             {outstanding.owes.length ? (
               <View style={styles.gap}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, HelperText, List, Switch, Text, TextInput } from "react-native-paper";
+import { Button, Card, Dialog, HelperText, List, Portal, Switch, Text, TextInput, useTheme } from "react-native-paper";
 
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
@@ -24,6 +24,7 @@ export function AccountScreen() {
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
   const { showSuccess } = useFeedback();
+  const theme = useTheme();
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
@@ -35,6 +36,10 @@ export function AccountScreen() {
   const [pushBusy, setPushBusy] = useState(false);
   const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
   const [pushError, setPushError] = useState<string | undefined>(undefined);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const deleteKeyword = t("account.deleteAccountKeyword");
+  const deleteEnabled = deleteConfirm.trim().toUpperCase() === deleteKeyword.toUpperCase();
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
   const languageOptions: SelectionOption<"de" | "en">[] = [
     { value: "de", label: t("account.languageGerman") },
@@ -75,6 +80,13 @@ export function AccountScreen() {
   function handleLocaleSelect(next: "de" | "en") {
     setLocale(next);
     api.patch("/api/me/", { locale: next }).catch(() => undefined);
+  }
+
+  async function handleDeleteAccount() {
+    if (!deleteEnabled) return;
+    await api.delete("/api/me/delete/");
+    setDeleteDialogVisible(false);
+    logout();
   }
 
   const pushHelper = (() => {
@@ -133,8 +145,47 @@ export function AccountScreen() {
           ) : null}
           <Button mode="contained" onPress={save}>{t("common.save")}</Button>
           <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
+          <Button
+            mode="text"
+            textColor={theme.colors.error}
+            onPress={() => {
+              setDeleteConfirm("");
+              setDeleteDialogVisible(true);
+            }}
+          >
+            {t("account.deleteAccount")}
+          </Button>
         </Card.Content>
       </Card>
+      <Portal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>{t("account.deleteAccount")}</Dialog.Title>
+          <Dialog.Content style={styles.gap}>
+            <Text>{t("account.deleteAccountConfirm")}</Text>
+            <Text>{t("account.deleteAccountType")}</Text>
+            <TextInput
+              mode="outlined"
+              label={t("account.deleteAccountTypeLabel")}
+              value={deleteConfirm}
+              onChangeText={setDeleteConfirm}
+              autoCapitalize="characters"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>{t("common.cancel")}</Button>
+            <Button
+              textColor={theme.colors.error}
+              disabled={!deleteEnabled}
+              onPress={handleDeleteAccount}
+            >
+              {t("common.delete")}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
       <SelectionSheet
         visible={currencySheetOpen}
         title={t("account.defaultCurrency")}
