@@ -1,6 +1,7 @@
 FROM node:24.15.0-bookworm AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
+COPY frontend/scripts ./scripts
 RUN npm install
 COPY frontend ./
 RUN npm run build:web
