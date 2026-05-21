@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button, Card, Text } from "react-native-paper";
 import { View } from "react-native";
+import { useI18n } from "../i18n/I18nContext";
 import { openLocationInMaps } from "../location/mapsIntegration";
 import { styles } from "./styles";
 
@@ -23,6 +24,7 @@ export interface LocationMapProps {
 }
 
 export function LocationMap({ latitude, longitude, height = 250 }: Readonly<LocationMapProps>) {
+  const { t } = useI18n();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const [tileUrl, setTileUrl] = useState<string>("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
@@ -87,7 +89,7 @@ export function LocationMap({ latitude, longitude, height = 250 }: Readonly<Loca
           </Text>
         </View>
         <Button mode="contained" onPress={() => openLocationInMaps(latitude, longitude)}>
-          Open in Maps
+          {t("map.openInMaps")}
         </Button>
       </Card.Content>
     </Card>
