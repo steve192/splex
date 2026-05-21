@@ -10,7 +10,10 @@
       "android",
       "web"
     ],
-    "scheme": "splex",
+    "scheme": [
+      "splex",
+      "com.sterul.splex"
+    ],
     "splash": {
       "image": "./assets/images/splash-screen.png",
       "resizeMode": "cover",
