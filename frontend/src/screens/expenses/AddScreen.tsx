@@ -533,7 +533,15 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 label={t("expense.amount")}
                 keyboardType="decimal-pad"
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => {
+                  // Allow only digits and decimal separators (. or ,)
+                  const filtered = text.replace(/[^0-9.,]/g, "");
+                  // Normalize: replace , with . and remove extra decimal separators
+                  const normalized = filtered.replace(/,/g, ".");
+                  const parts = normalized.split(".");
+                  const valid = parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
+                  setAmount(valid);
+                }}
                 autoFocus={!amount}
               />
               <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={styles.selfCenter}>
