@@ -56,14 +56,14 @@ function GoogleLoginButtonNative({ clientId, androidClientId, onError }: GoogleL
 
   useEffect(() => {
     if (response?.type !== "success") return;
-    const idToken = response.params.id_token;
+    const idToken = response.params?.id_token;
     if (!idToken) {
-      onError(t("auth.googleFailed"));
+      onError(`No id_token in response. Available params: ${Object.keys(response.params || {}).join(", ")}`);
       return;
     }
     setBusy(true);
     loginWithGoogle(idToken)
-      .catch(() => onError(t("auth.googleFailed")))
+      .catch((error) => onError(`Login failed: ${error instanceof Error ? error.message : String(error)}`))
       .finally(() => setBusy(false));
   }, [response]);
 
