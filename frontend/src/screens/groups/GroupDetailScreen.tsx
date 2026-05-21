@@ -1,8 +1,8 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
-import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
+import { Image, View } from "react-native";
+import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
@@ -47,6 +47,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [settleCurrency, setSettleCurrency] = useState("EUR");
   const [snackbar, setSnackbar] = useState("");
   const [manualCopyLink, setManualCopyLink] = useState("");
+  const [groupImageVisible, setGroupImageVisible] = useState(false);
   const balanceSummary = useMemo(
     () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
     [balances, group?.current_participant_id, group?.default_currency]
@@ -97,15 +98,20 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   useEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <View style={styles.inline}>
-          <PersonAvatar
-            name={group?.name ?? t("group.title")}
-            imageUrl={group?.icon_url}
-            imageSource={defaultGroupAvatar(group?.name)}
-            size={30}
-          />
-          <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
-        </View>
+        <TouchableRipple
+          borderless
+          onPress={() => group?.icon_url && setGroupImageVisible(true)}
+        >
+          <View style={styles.inline}>
+            <PersonAvatar
+              name={group?.name ?? t("group.title")}
+              imageUrl={group?.icon_url}
+              imageSource={defaultGroupAvatar(group?.name)}
+              size={30}
+            />
+            <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
+          </View>
+        </TouchableRipple>
       ),
       headerRight: () => (
         <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
@@ -342,6 +348,21 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
       </Screen>
 
       <Portal>
+        <Dialog visible={groupImageVisible} onDismiss={() => setGroupImageVisible(false)}>
+          <Dialog.Title>{group?.name ?? ""}</Dialog.Title>
+          <Dialog.Content>
+            {group?.icon_url ? (
+              <Image
+                source={{ uri: group.icon_url }}
+                style={{ width: "100%", aspectRatio: 1, borderRadius: 8 }}
+                resizeMode="cover"
+              />
+            ) : null}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setGroupImageVisible(false)}>{t("common.done")}</Button>
+          </Dialog.Actions>
+        </Dialog>
         <SettlementDialog
           visible={!!settleTarget}
           target={settleTarget}

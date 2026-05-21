@@ -100,19 +100,22 @@ def test_cannot_remove_yourself_via_remove_participant():
 
 
 @pytest.mark.django_db
-def test_remove_participant_auto_settles_outstanding_debt():
-    """When a participant with a non-zero balance is removed, the system creates
-    settlements to bring the balance to zero before marking membership removed."""
+def test_remove_participant_converts_to_unregistered_placeholder():
+    """Removing a participant creates an unregistered placeholder that inherits
+    the membership and all expense shares in the group.  No settlement is created."""
     from splex.expenses.services import create_expense
+    from splex.expenses.models import ExpenseOwedShare, ExpensePaymentShare
     from splex.settlements.models import Settlement
 
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
-    placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    other_participant = get_or_create_user_participant(other)
+    GroupMembership.objects.create(group=group, participant=other_participant)
     owner_p = get_or_create_user_participant(owner)
 
-    # Owner paid 10 EUR for both → Bob owes Owner 5 EUR.
+    # Owner paid 10 EUR for both → other owes owner 5 EUR.
     create_expense(
         actor=owner,
         group=group,
@@ -125,33 +128,54 @@ def test_remove_participant_auto_settles_outstanding_debt():
         },
     )
 
+    remove_group_participant(actor=owner, group=group, participant=other_participant)
+
+    # No settlements should have been created.
     assert not Settlement.objects.filter(group=group).exists()
-    remove_group_participant(actor=owner, group=group, participant=placeholder)
 
-    settlements = list(Settlement.objects.filter(group=group))
-    assert len(settlements) == 1
-    settlement = settlements[0]
-    assert settlement.payer_participant_id == placeholder.id
-    assert settlement.receiver_participant_id == owner_p.id
-    assert str(settlement.amount) == "5.00"
+    # A new unregistered placeholder should exist in the group.
+    placeholder = Participant.objects.filter(
+        kind=Participant.Kind.UNREGISTERED,
+        group_memberships__group=group,
+        group_memberships__removed_at__isnull=True,
+    ).exclude(id=owner_p.id).first()
+    assert placeholder is not None
+    assert placeholder.display_name == "Other"
 
-    event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
-    assert event.payload["autoSettled"] == 1
+    # The original participant's membership should be transferred (not removed separately).
+    assert not GroupMembership.objects.filter(
+        group=group, participant=other_participant, removed_at__isnull=True
+    ).exists()
+
+    # Expense shares should now belong to the placeholder.
+    assert not ExpenseOwedShare.objects.filter(participant=other_participant).exists()
+    assert ExpenseOwedShare.objects.filter(participant=placeholder).exists()
 
 
 @pytest.mark.django_db
-def test_remove_participant_skips_settlement_when_balance_zero():
-    from splex.settlements.models import Settlement
-
+def test_remove_participant_without_balance_still_converts_to_placeholder():
+    """Even with no outstanding balance the participant is converted to an
+    unregistered placeholder (not simply removed)."""
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
-    placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    other_participant = get_or_create_user_participant(other)
+    GroupMembership.objects.create(group=group, participant=other_participant)
 
-    remove_group_participant(actor=owner, group=group, participant=placeholder)
-    assert not Settlement.objects.filter(group=group).exists()
+    remove_group_participant(actor=owner, group=group, participant=other_participant)
+
+    # Placeholder exists in group.
+    placeholder_qs = Participant.objects.filter(
+        kind=Participant.Kind.UNREGISTERED,
+        group_memberships__group=group,
+        group_memberships__removed_at__isnull=True,
+    )
+    assert placeholder_qs.exists()
+    assert placeholder_qs.first().display_name == "Other"
+
     event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
-    assert event.payload["autoSettled"] == 0
+    assert "target_participant_id" in event.payload
 
 
 @pytest.mark.django_db
@@ -168,7 +192,9 @@ def test_delete_group_is_idempotent():
 
 
 @pytest.mark.django_db
-def test_leave_group_marks_membership_removed_when_others_remain():
+def test_leave_group_converts_to_placeholder_when_others_remain():
+    """Leaving a group converts the leaver to an unregistered placeholder; the
+    other registered member's membership stays active."""
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     other = user_model.objects.create_user(email="other@example.com", display_name="Other")
@@ -178,11 +204,23 @@ def test_leave_group_marks_membership_removed_when_others_remain():
 
     leave_group(actor=owner, group=group)
 
-    membership = GroupMembership.objects.get(group=group, participant=get_or_create_user_participant(owner))
-    assert membership.removed_at is not None
+    # Owner's original participant no longer has an active membership in this group.
+    owner_participant = get_or_create_user_participant(owner)
+    assert not GroupMembership.objects.filter(
+        group=group, participant=owner_participant, removed_at__isnull=True
+    ).exists()
+
+    # A placeholder was created and is an active member.
+    placeholder_qs = Participant.objects.filter(
+        kind=Participant.Kind.UNREGISTERED,
+        group_memberships__group=group,
+        group_memberships__removed_at__isnull=True,
+    )
+    assert placeholder_qs.exists()
+    assert placeholder_qs.first().display_name == "Owner"
+
+    # The other member is unaffected.
     assert GroupMembership.objects.get(group=group, participant=other_participant).removed_at is None
-    event = ActivityEvent.objects.get(event_type="group.member_removed", group=group)
-    assert event.payload["target_participant_id"] == get_or_create_user_participant(owner).id
 
 
 @pytest.mark.django_db

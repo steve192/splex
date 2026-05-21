@@ -5,6 +5,7 @@ from splex.accounts.api.views import (
     MagicCodeVerifyView,
     MagicLinkRequestView,
     MagicTokenVerifyView,
+    MeDeleteView,
     MeView,
 )
 
@@ -14,5 +15,6 @@ urlpatterns = [
     path("auth/magic-token/", MagicTokenVerifyView.as_view()),
     path("auth/logout/", LogoutView.as_view()),
     path("me/", MeView.as_view()),
+    path("me/delete/", MeDeleteView.as_view()),
 ]
 

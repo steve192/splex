@@ -3,7 +3,9 @@ from django.db import models
 
 
 class ActivityEvent(models.Model):
-    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     event_type = models.CharField(max_length=80)
     group = models.ForeignKey("groups.Group", null=True, blank=True, on_delete=models.CASCADE)
     friendship = models.ForeignKey(

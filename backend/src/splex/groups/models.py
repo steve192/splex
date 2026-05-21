@@ -12,7 +12,9 @@ class Group(TimeStampedModel):
     default_split_payload = models.JSONField(default=dict, blank=True)
     archived_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
 
     def __str__(self) -> str:
         return self.name

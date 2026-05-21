@@ -27,7 +27,9 @@ class Expense(TimeStampedModel):
     exchange_rate_source = models.CharField(max_length=80, default="identity")
     split_method = models.CharField(max_length=32, choices=SplitMethod.choices)
     split_metadata = models.JSONField(default=dict, blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     deleted_at = models.DateTimeField(null=True, blank=True)
 
 

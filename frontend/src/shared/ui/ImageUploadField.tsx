@@ -1,5 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, View } from "react-native";
 import { Button, Dialog, HelperText, Portal, Text } from "react-native-paper";
 
@@ -23,6 +23,12 @@ export function ImageUploadField({ label, name, imageUrl, onChange }: ImageUploa
   const { t } = useI18n();
   const [previewUrl, setPreviewUrl] = useState(imageUrl ?? "");
   const [error, setError] = useState("");
+
+  // Sync when the parent loads the real URL asynchronously (e.g. GroupSettings
+  // starts with an empty iconUrl then loads it from the API).
+  useEffect(() => {
+    setPreviewUrl((prev) => (prev === "" ? (imageUrl ?? "") : prev));
+  }, [imageUrl]);
   const [cropSource, setCropSource] = useState("");
   const [cropZoom, setCropZoom] = useState(1);
   const [cropX, setCropX] = useState(50);

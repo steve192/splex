@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from splex.accounts.models import MagicLoginChallenge
+from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.services import get_or_create_user_participant
 
 
@@ -66,3 +67,60 @@ def consume_challenge(challenge):
     challenge.save(update_fields=["consumed_at"])
     refresh = RefreshToken.for_user(user)
     return user, {"access": str(refresh.access_token), "refresh": str(refresh), "created": created}
+
+
+@transaction.atomic
+def delete_account(*, actor) -> None:
+    """Permanently delete a user account.
+
+    For each group the actor belongs to:
+    - If the actor is the only registered active member → soft-delete the group.
+    - Otherwise → convert the actor's participant to an unregistered placeholder
+      inside that group (expenses and balances are preserved, account link removed).
+
+    Push tokens and web-push subscriptions are removed before the user is deleted.
+    The actor's Participant record is left in place (it now holds friend-context
+    expense shares that are not group-scoped); its user link is severed by the
+    Django CASCADE/SET_NULL when the User row is deleted.
+    """
+    from splex.groups.models import GroupMembership
+    from splex.groups.services import _convert_participant_in_group, delete_group
+
+    participant = get_or_create_user_participant(actor)
+
+    # Snapshot the name now, before we sever the user link.
+    display_name = participant.effective_display_name
+
+    active_memberships = list(
+        GroupMembership.objects.filter(
+            participant=participant,
+            removed_at__isnull=True,
+        ).select_related("group")
+    )
+
+    for membership in active_memberships:
+        group = membership.group
+        if group.deleted_at:
+            continue
+        other_registered_exists = GroupMembership.objects.filter(
+            group=group,
+            removed_at__isnull=True,
+            participant__user__isnull=False,
+        ).exclude(participant=participant).exists()
+
+        if other_registered_exists:
+            _convert_participant_in_group(group=group, participant=participant)
+        else:
+            delete_group(actor=actor, group=group)
+
+    # Snapshot name on the original participant so friend-context data stays readable.
+    participant.display_name = display_name
+    participant.kind = participant.Kind.UNREGISTERED
+    participant.user = None
+    participant.save(update_fields=["display_name", "kind", "user", "updated_at"])
+
+    # Remove push credentials so no stale tokens survive.
+    DeviceToken.objects.filter(user=actor).delete()
+    WebPushSubscription.objects.filter(user=actor).delete()
+
+    actor.delete()
