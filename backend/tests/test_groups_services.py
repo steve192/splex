@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from splex.activity.models import ActivityEvent
 from splex.groups.models import GroupMembership
 from splex.groups.services import (
+    add_registered_participant,
     add_unregistered_participant,
     create_group,
     delete_group,
@@ -11,14 +12,15 @@ from splex.groups.services import (
     rename_unregistered_participant,
     update_group,
 )
+from splex.friends.services import create_friendship
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 
 
 @pytest.mark.django_db
 def test_create_group_records_activity_and_makes_actor_admin():
-    User = get_user_model()
-    user = User.objects.create_user(email="creator@example.com", display_name="Creator")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="creator@example.com", display_name="Creator")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
 
     assert group.default_currency == "EUR"
@@ -30,8 +32,8 @@ def test_create_group_records_activity_and_makes_actor_admin():
 
 @pytest.mark.django_db
 def test_add_unregistered_participant_stores_target_id_in_payload():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     participant = add_unregistered_participant(actor=user, group=group, display_name="Ghost")
 
@@ -41,9 +43,26 @@ def test_add_unregistered_participant_stores_target_id_in_payload():
 
 
 @pytest.mark.django_db
+def test_add_registered_participant_adds_existing_friend_to_group():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    friend_user = user_model.objects.create_user(email="friend@example.com", display_name="Friend")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    friend_participant = get_or_create_user_participant(friend_user)
+    create_friendship(owner, friend_participant)
+
+    participant = add_registered_participant(actor=owner, group=group, participant=friend_participant)
+
+    membership = GroupMembership.objects.get(group=group, participant=participant)
+    assert membership.removed_at is None
+    event = ActivityEvent.objects.get(event_type="group.member_added", group=group)
+    assert event.payload == {"target_participant_id": participant.id}
+
+
+@pytest.mark.django_db
 def test_rename_only_works_for_unregistered_participants():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     registered = get_or_create_user_participant(user)
 
@@ -55,8 +74,8 @@ def test_rename_only_works_for_unregistered_participants():
 
 @pytest.mark.django_db
 def test_rename_unregistered_participant_keeps_old_name_in_payload():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     p = add_unregistered_participant(actor=user, group=group, display_name="Bob")
 
@@ -71,8 +90,8 @@ def test_rename_unregistered_participant_keeps_old_name_in_payload():
 
 @pytest.mark.django_db
 def test_cannot_remove_yourself_via_remove_participant():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     p = get_or_create_user_participant(user)
     with pytest.raises(ValueError, match="cannot remove yourself"):
@@ -86,8 +105,8 @@ def test_remove_participant_auto_settles_outstanding_debt():
     from splex.expenses.services import create_expense
     from splex.settlements.models import Settlement
 
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
     owner_p = get_or_create_user_participant(owner)
@@ -123,8 +142,8 @@ def test_remove_participant_auto_settles_outstanding_debt():
 def test_remove_participant_skips_settlement_when_balance_zero():
     from splex.settlements.models import Settlement
 
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
 
@@ -136,8 +155,8 @@ def test_remove_participant_skips_settlement_when_balance_zero():
 
 @pytest.mark.django_db
 def test_delete_group_is_idempotent():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     delete_group(actor=user, group=group)
     group.refresh_from_db()
@@ -149,8 +168,8 @@ def test_delete_group_is_idempotent():
 
 @pytest.mark.django_db
 def test_update_group_blocks_currency_change_when_ledger_exists():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     group = create_group(actor=user, name="Trip", default_currency="EUR")
     add_unregistered_participant(actor=user, group=group, display_name="Bob")
 

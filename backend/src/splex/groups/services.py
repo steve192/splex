@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from splex.activity.events import EventType
@@ -43,6 +44,41 @@ def add_unregistered_participant(*, actor, group: Group, display_name: str) -> P
         payload={"target_participant_id": participant.id},
     )
     create_notifications_for_activity(event)
+    return participant
+
+
+def _record_participant_added(actor, group: Group, participant: Participant) -> None:
+    event = record_activity(
+        actor,
+        EventType.GROUP_MEMBER_ADDED,
+        group=group,
+        payload={"target_participant_id": participant.id},
+    )
+    create_notifications_for_activity(event)
+
+
+def add_registered_participant(*, actor, group: Group, participant: Participant) -> Participant:
+    assert_group_member(actor, group)
+    actor_participant = get_or_create_user_participant(actor)
+    if participant.id == actor_participant.id:
+        raise ValueError("You are already a member of this group.")
+    if not Friendship.objects.filter(
+        Q(participant_a=actor_participant, participant_b=participant)
+        | Q(participant_a=participant, participant_b=actor_participant),
+        ended_at__isnull=True,
+    ).exists():
+        raise ValueError("Only existing friends can be added as registered members.")
+
+    membership, created = GroupMembership.objects.get_or_create(group=group, participant=participant)
+    if not created and membership.removed_at is None:
+        raise ValueError("Participant is already a member of this group.")
+
+    if membership.removed_at is not None:
+        membership.removed_at = None
+        membership.save(update_fields=["removed_at"])
+
+    ensure_friendships_for_group(group)
+    _record_participant_added(actor, group, participant)
     return participant
 
 

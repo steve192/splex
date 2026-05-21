@@ -46,7 +46,19 @@ class GroupUpdateSerializer(serializers.Serializer):
 
 
 class AddParticipantSerializer(serializers.Serializer):
-    display_name = serializers.CharField(max_length=150)
+    display_name = serializers.CharField(max_length=150, required=False)
+    friend_participant_id = serializers.IntegerField(required=False)
+
+    def validate(self, attrs):
+        has_display_name = bool((attrs.get("display_name") or "").strip())
+        has_friend_participant_id = attrs.get("friend_participant_id") is not None
+        if has_display_name == has_friend_participant_id:
+            raise serializers.ValidationError(
+                "Provide exactly one of display_name or friend_participant_id."
+            )
+        if has_display_name:
+            attrs["display_name"] = attrs["display_name"].strip()
+        return attrs
 
 
 class RenameParticipantSerializer(serializers.Serializer):
