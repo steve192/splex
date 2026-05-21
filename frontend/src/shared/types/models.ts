@@ -23,6 +23,7 @@ export type Group = {
   updated_at?: string;
   current_participant_id?: number;
   participants?: Participant[];
+  last_expense_date?: string | null;
 };
 
 export type Friend = {
@@ -33,6 +34,7 @@ export type Friend = {
   current_participant_id?: number;
   default_currency: string;
   balance: string;
+  last_expense_date?: string | null;
 };
 
 export type OverviewItem = {
@@ -67,6 +69,7 @@ export type ContextOption = {
   name: string;
   currency: string;
   image_url?: string;
+  last_expense_date?: string | null;
 };
 
 export type ExpenseShare = {

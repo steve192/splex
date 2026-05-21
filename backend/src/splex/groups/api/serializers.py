@@ -26,9 +26,15 @@ class GroupSerializer(serializers.Serializer):
     deleted_at = serializers.DateTimeField(allow_null=True)
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+    last_expense_date = serializers.SerializerMethodField()
 
     def get_icon_url(self, group):
         return signed_media_url(group.icon_url)
+
+    def get_last_expense_date(self, group):
+        from splex.expenses.models import Expense
+        latest = Expense.objects.filter(group=group, deleted_at__isnull=True).order_by("-date").first()
+        return latest.date if latest else None
 
 
 class GroupCreateSerializer(serializers.Serializer):

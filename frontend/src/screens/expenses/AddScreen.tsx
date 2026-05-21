@@ -119,22 +119,34 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   }
 
   const contextOptions = useMemo<ContextOption[]>(
-    () => [
-      ...groups.map((group) => ({
-        type: "group" as const,
-        id: group.id,
-        name: group.name,
-        currency: group.default_currency,
-        image_url: group.icon_url
-      })),
-      ...friends.map((friend) => ({
-        type: "friendship" as const,
-        id: friend.id,
-        name: friend.display_name,
-        currency: friend.default_currency,
-        image_url: friend.avatar_url
-      }))
-    ],
+    () => {
+      const options = [
+        ...groups.map((group) => ({
+          type: "group" as const,
+          id: group.id,
+          name: group.name,
+          currency: group.default_currency,
+          image_url: group.icon_url,
+          last_expense_date: group.last_expense_date
+        })),
+        ...friends.map((friend) => ({
+          type: "friendship" as const,
+          id: friend.id,
+          name: friend.display_name,
+          currency: friend.default_currency,
+          image_url: friend.avatar_url,
+          last_expense_date: friend.last_expense_date
+        }))
+      ];
+
+      // Sort by recently used (most recent expense first), then by name for those without expenses
+      return options.sort((a, b) => {
+        const aDate = a.last_expense_date ? new Date(a.last_expense_date).getTime() : 0;
+        const bDate = b.last_expense_date ? new Date(b.last_expense_date).getTime() : 0;
+        if (aDate !== bDate) return bDate - aDate;
+        return a.name.localeCompare(b.name);
+      });
+    },
     [groups, friends]
   );
 
