@@ -50,6 +50,8 @@
   "auth.verify": "Verify code",
   "auth.magicToken": "Magic link token",
   "auth.verifyLink": "Verify magic link",
+  "auth.googleLogin": "Sign in with Google",
+  "auth.googleFailed": "Google sign-in failed.",
   "balance.settled": "Settled",
   "balance.title": "Balances",
   "balance.owedToYou": "You are owed",

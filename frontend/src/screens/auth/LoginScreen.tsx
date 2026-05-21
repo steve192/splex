@@ -6,9 +6,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
+import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
+
+type AuthProviders = {
+  google: { client_id: string | null; android_client_id: string | null };
+};
 
 export function LoginScreen() {
   const { t } = useI18n();
@@ -22,11 +27,21 @@ export function LoginScreen() {
   const [loginRequested, setLoginRequested] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
   const [backendSettingsOpen, setBackendSettingsOpen] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [googleAndroidClientId, setGoogleAndroidClientId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (Platform.OS === "android") {
       api.getBaseUrl().then(setBackendUrl).catch(() => undefined);
     }
+    // Fetch which optional login methods are configured on this backend.
+    api
+      .get<AuthProviders>("/api/auth/providers/")
+      .then((data) => {
+        setGoogleClientId(data.google?.client_id ?? null);
+        setGoogleAndroidClientId(data.google?.android_client_id ?? undefined);
+      })
+      .catch(() => undefined); // Silently skip — Google button just won't appear.
     inviteDebug("login screen mounted");
     const inviteToken = inviteTokenFromCurrentUrl();
     if (inviteToken) {
@@ -124,6 +139,13 @@ export function LoginScreen() {
             {t("auth.verify")}
           </Button>
         </>
+      ) : null}
+      {googleClientId ? (
+        <GoogleLoginButton
+          clientId={googleClientId}
+          androidClientId={googleAndroidClientId}
+          onError={setMessage}
+        />
       ) : null}
       {Platform.OS === "android" ? (
         <>

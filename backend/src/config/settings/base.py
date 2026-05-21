@@ -244,6 +244,13 @@ CURRENCY_RATE_API_KEY = env("CURRENCY_RATE_API_KEY", "")
 
 FCM_PROJECT_ID = env("FCM_PROJECT_ID", "")
 FCM_CREDENTIALS_JSON = env("FCM_CREDENTIALS_JSON", "")
+
+# Google OAuth2 / OIDC login.
+# Leave empty to disable the Google login option entirely.
+# GOOGLE_CLIENT_ID      — the Web or iOS OAuth client ID used to verify tokens on the backend.
+# GOOGLE_ANDROID_CLIENT_ID — Android OAuth client ID; also accepted as a valid token audience.
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", "")
+GOOGLE_ANDROID_CLIENT_ID = env("GOOGLE_ANDROID_CLIENT_ID", "")
 VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = env("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")

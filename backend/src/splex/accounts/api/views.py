@@ -13,10 +13,43 @@ from splex.accounts.api.serializers import (
 from splex.accounts.services import (
     authenticate_magic_code,
     authenticate_magic_token,
+    authenticate_with_google,
     delete_account,
     request_magic_login,
 )
 from splex.shared.uploads import save_data_url_image
+
+
+class AuthProvidersView(APIView):
+    """Public endpoint — returns which optional login methods are configured."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from django.conf import settings
+
+        return Response(
+            {
+                "google": {
+                    "client_id": settings.GOOGLE_CLIENT_ID or None,
+                    "android_client_id": settings.GOOGLE_ANDROID_CLIENT_ID or None,
+                }
+            }
+        )
+
+
+class GoogleAuthView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        id_token = request.data.get("id_token", "")
+        if not id_token:
+            return Response({"detail": "id_token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user, tokens = authenticate_with_google(id_token=id_token)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"user": UserSerializer(user).data, "tokens": tokens})
 
 
 class MagicLinkRequestView(APIView):
