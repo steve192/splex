@@ -51,14 +51,6 @@ if settings.SERVE_PWA:
             {"document_root": settings.PWA_ROOT},
         ),
         re_path(
-            r"^invite/[^/]+/?$",
-            PwaRouteView.as_view(template_name="invite/[token].html", route_name="invite"),
-        ),
-        re_path(
-            r"^login/magic/?$",
-            PwaRouteView.as_view(template_name="login/magic.html", route_name="login_magic"),
-        ),
-        re_path(
             r"^(?!api/|admin/).*$",
             PwaRouteView.as_view(template_name="index.html", route_name="fallback"),
         ),
