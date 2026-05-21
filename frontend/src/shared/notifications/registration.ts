@@ -160,7 +160,7 @@ export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePush
     return { preference: "off", lastStatus: "idle" };
   }
   // "unset" (first launch) and "on" both attempt registration, but only "unset" should be
-  // *silent* — we don't want to surprise the user with a permission prompt on first launch.
+  // *silent* - we don't want to surprise the user with a permission prompt on first launch.
   const silent = preference === "unset";
   try {
     if (silent) {

@@ -33,7 +33,7 @@ Copy the environment template and fill it in:
 
 ```sh
 curl -o .env https://raw.githubusercontent.com/steve192/splex/main/.env.example
-# Edit .env — at minimum set SECRET_KEY, FRONTEND_PUBLIC_URL, BACKEND_PUBLIC_URL,
+# Edit .env - at minimum set SECRET_KEY, FRONTEND_PUBLIC_URL, BACKEND_PUBLIC_URL,
 # and the email settings.
 ```
 
@@ -48,7 +48,7 @@ Database migrations are applied automatically on every container start.
 
 ### Updating
 
-1. **Check for new settings** — compare your `.env` against the latest template.
+1. **Check for new settings** - compare your `.env` against the latest template.
    New variables are occasionally added; the app will log errors or behave
    incorrectly if a required one is missing.
    ```sh
@@ -61,11 +61,11 @@ Database migrations are applied automatically on every container start.
    docker compose pull
    docker compose up -d
    ```
-   Migrations are applied automatically during startup — no manual `migrate` step needed.
+   Migrations are applied automatically during startup - no manual `migrate` step needed.
 
 ### Admin console
 
-> ⚠️ **Security warning** — the Django admin UI provides full read/write access to
+> ⚠️ **Security warning** - the Django admin UI provides full read/write access to
 > all data in the database. Never expose `/admin/` to the public internet without
 > additional protection such as a firewall rule, VPN, or a reverse-proxy IP allowlist.
 > A compromised admin account is a full database compromise.
@@ -108,13 +108,13 @@ docker compose exec app python manage.py cleanup_links
 
 By default the app needs a working SMTP server to deliver magic login links and
 codes.  For local development you can skip that entirely by switching to Django's
-console email backend — it writes every email to stdout so the login code and link
+console email backend - it writes every email to stdout so the login code and link
 show up directly in the container logs:
 
 1. Open your `.env` file.
 2. Replace the `EMAIL_BACKEND` line (and optionally remove the `EMAIL_HOST` /
    `EMAIL_PORT` / `EMAIL_USE_TLS` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD`
-   lines — they are ignored by the console backend):
+   lines - they are ignored by the console backend):
    ```env
    EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
    ```
