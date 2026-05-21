@@ -7,6 +7,7 @@ from splex.expenses.services import create_expense
 from splex.friends.serializers import serialize_friend
 from splex.friends.services import accessible_friendships, ensure_friendship_member
 from splex.groups.api.serializers import ExpenseCreateSerializer, SettlementCreateSerializer
+from splex.groups.statistics import friendship_statistics
 from splex.invitations.services import create_friend_invitation
 from splex.ledger.selectors import paginated_ledger_response
 from splex.ledger.serializers import serialize_expense, serialize_settlement
@@ -34,6 +35,12 @@ class FriendDetailView(APIView):
         return Response(
             serialize_friend(friendship, current_participant=participant, include_current=True)
         )
+
+
+class FriendStatisticsView(APIView):
+    def get(self, request, friendship_id):
+        friendship, _ = ensure_friendship_member(request.user, friendship_id)
+        return Response(friendship_statistics(friendship))
 
 
 class FriendInvitationsView(APIView):

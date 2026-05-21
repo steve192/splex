@@ -114,7 +114,10 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         </TouchableRipple>
       ),
       headerRight: () => (
-        <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
+        <View style={{ flexDirection: "row" }}>
+          <IconButton icon="chart-bar" onPress={() => navigation.navigate("GroupStatistics", { id: groupId })} />
+          <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
+        </View>
       )
     });
   }, [group, groupId, navigation, t]);

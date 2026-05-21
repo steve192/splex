@@ -2,7 +2,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Portal, Text } from "react-native-paper";
+import { Button, IconButton, Portal, Text } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
@@ -84,9 +84,15 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
           <PersonAvatar name={friend?.display_name ?? t("friend.title")} imageUrl={friend?.avatar_url} size={30} />
           <Text variant="titleMedium">{friend?.display_name ?? t("friend.title")}</Text>
         </View>
+      ),
+      headerRight: () => (
+        <IconButton
+          icon="chart-bar"
+          onPress={() => navigation.navigate("FriendStatistics", { id: friendshipId })}
+        />
       )
     });
-  }, [friend, navigation, t]);
+  }, [friend, friendshipId, navigation, t]);
 
   async function settle() {
     if (!friend || !settleTarget) return;

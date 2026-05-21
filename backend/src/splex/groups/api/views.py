@@ -195,6 +195,15 @@ class GroupBalancesView(APIView):
         return Response(group_member_balance_rows(group))
 
 
+class GroupStatisticsView(APIView):
+    def get(self, request, group_id):
+        from splex.groups.statistics import group_statistics
+
+        group = get_active_group(group_id)
+        assert_group_member(request.user, group)
+        return Response(group_statistics(group))
+
+
 class GroupParticipantOutstandingView(APIView):
     def get(self, request, group_id, participant_id):
         group = get_active_group(group_id)

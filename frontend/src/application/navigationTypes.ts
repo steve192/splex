@@ -11,7 +11,9 @@ export type OverviewStackParamList = {
   CreateGroup: undefined;
   GroupDetail: { id: number };
   GroupSettings: { id: number };
+  GroupStatistics: { id: number };
   FriendDetail: { id: number };
+  FriendStatistics: { id: number };
   AddExpense:
     | {
         contextType?: ContextType;
