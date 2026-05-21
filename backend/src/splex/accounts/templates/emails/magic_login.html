@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+{% block title %}Your Splex login code{% endblock %}
+{% block preheader %}Sign in to Splex with code {{ code }} (valid for {{ minutes_valid }} minutes).{% endblock %}
+{% block footer_reason %}requested a Splex login link for this address{% endblock %}
+
+{% block content %}
+<h1 style="margin:0 0 16px 0; font-size:22px; line-height:28px; color:#111827; font-weight:600;">
+  Sign in to Splex
+</h1>
+<p style="margin:0 0 24px 0; font-size:15px; line-height:22px; color:#374151;">
+  Tap the button below to finish signing in. If you opened the app on a different
+  device, you can also enter the 6-digit code there.
+</p>
+
+<!-- CTA button -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px 0;">
+  <tr>
+    <td bgcolor="#006A60" style="border-radius:8px;">
+      <a href="{{ magic_url }}"
+         style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:8px;">
+        Sign in to Splex
+      </a>
+    </td>
+  </tr>
+</table>
+
+<!-- Code box -->
+<p style="margin:0 0 8px 0; font-size:13px; line-height:18px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px;">
+  Or use this code
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+  <tr>
+    <td style="background-color:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; padding:14px 22px;">
+      <span style="font-family: 'SFMono-Regular', Menlo, Consolas, monospace; font-size:26px; font-weight:700; color:#111827; letter-spacing:6px;">
+        {{ code }}
+      </span>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 8px 0; font-size:13px; line-height:20px; color:#6b7280;">
+  This code and link expire in {{ minutes_valid }} minutes.
+</p>
+<p style="margin:0; font-size:13px; line-height:20px; color:#6b7280; word-break:break-all;">
+  Button not working? Paste this link into your browser:<br />
+  <a href="{{ magic_url }}" style="color:#006A60; text-decoration:underline;">{{ magic_url }}</a>
+</p>
+{% endblock %}

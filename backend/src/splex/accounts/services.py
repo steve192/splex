@@ -3,14 +3,31 @@ from urllib.parse import urlencode
 import requests as http_requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
+from django.template.loader import render_to_string
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from splex.accounts.models import MagicLoginChallenge
 from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.services import get_or_create_user_participant
+
+MAGIC_LOGIN_VALID_MINUTES = 15
+
+
+def _send_template_email(*, subject, recipient, template_base, context):
+    """Render a paired .txt + .html template and dispatch as a multipart email."""
+    text_body = render_to_string(f"emails/{template_base}.txt", context)
+    html_body = render_to_string(f"emails/{template_base}.html", context)
+    message = EmailMultiAlternatives(
+        subject=subject,
+        body=text_body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipient],
+    )
+    message.attach_alternative(html_body, "text/html")
+    message.send(fail_silently=False)
 
 
 def request_magic_login(email: str, invite_token: str = ""):
@@ -25,12 +42,15 @@ def request_magic_login(email: str, invite_token: str = ""):
     if invite_token:
         query["inviteToken"] = invite_token
     magic_url = f"{settings.FRONTEND_PUBLIC_URL}/login/magic?{urlencode(query)}"
-    send_mail(
+    _send_template_email(
         subject="Your Splex login code",
-        message=f"Use code {code} or open {magic_url}",
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        fail_silently=False,
+        recipient=email,
+        template_base="magic_login",
+        context={
+            "code": code,
+            "magic_url": magic_url,
+            "minutes_valid": MAGIC_LOGIN_VALID_MINUTES,
+        },
     )
     return challenge
 
@@ -131,8 +151,31 @@ def consume_challenge(challenge):
     return user, {"access": str(refresh.access_token), "refresh": str(refresh), "created": created}
 
 
-@transaction.atomic
 def delete_account(*, actor) -> None:
+    """Delete the account and notify the user by email afterwards."""
+    # Capture identity before _delete_account_atomic severs the user row.
+    email = actor.email
+    display_name = (actor.display_name or "").strip()
+    _delete_account_atomic(actor=actor)
+    if email:
+        try:
+            _send_template_email(
+                subject="Your Splex account has been deleted",
+                recipient=email,
+                template_base="account_deleted",
+                context={
+                    "email": email,
+                    "display_name": display_name,
+                    "frontend_url": settings.FRONTEND_PUBLIC_URL,
+                },
+            )
+        except Exception:
+            # Best-effort: account is already gone; don't surface mail errors to the API.
+            pass
+
+
+@transaction.atomic
+def _delete_account_atomic(*, actor) -> None:
     """Permanently delete a user account.
 
     For each group the actor belongs to:
