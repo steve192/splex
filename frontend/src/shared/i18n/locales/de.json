@@ -50,6 +50,8 @@
   "auth.verify": "Code prüfen",
   "auth.magicToken": "Magic-Link-Token",
   "auth.verifyLink": "Magic Link prüfen",
+  "auth.googleLogin": "Mit Google anmelden",
+  "auth.googleFailed": "Google-Anmeldung fehlgeschlagen.",
   "balance.settled": "Ausgeglichen",
   "balance.title": "Salden",
   "balance.owedToYou": "Du bekommst",

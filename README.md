@@ -4,6 +4,8 @@ Self-hosted expense opensource alternative to splitwise.
 
 Split your expenses with friends and keep track who paid for what and who owes money to whom.
 
+Available as Web App (PWA) that allows installation on mobile devices without downloading an app, but also as Android App.
+
 
 ## Deployment
 

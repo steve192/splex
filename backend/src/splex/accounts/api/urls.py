@@ -1,6 +1,8 @@
 from django.urls import path
 
 from splex.accounts.api.views import (
+    AuthProvidersView,
+    GoogleAuthView,
     LogoutView,
     MagicCodeVerifyView,
     MagicLinkRequestView,
@@ -10,6 +12,8 @@ from splex.accounts.api.views import (
 )
 
 urlpatterns = [
+    path("auth/providers/", AuthProvidersView.as_view()),
+    path("auth/google/", GoogleAuthView.as_view()),
     path("auth/magic-link/", MagicLinkRequestView.as_view()),
     path("auth/magic-code/", MagicCodeVerifyView.as_view()),
     path("auth/magic-token/", MagicTokenVerifyView.as_view()),
