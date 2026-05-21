@@ -179,6 +179,49 @@ def test_auth_providers_returns_null_when_not_configured(settings):
 
 
 def test_auth_providers_requires_no_authentication():
-    """The endpoint must be publicly accessible — unauthenticated callers need it."""
+    """The endpoint must be publicly accessible - unauthenticated callers need it."""
     response = APIClient().get("/api/auth/providers/")
     assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# ALLOW_REGISTRATION gate (Google login path)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_google_login_rejects_new_user_when_registration_disabled(settings):
+    settings.GOOGLE_CLIENT_ID = "web-client-id"
+    settings.ALLOW_REGISTRATION = False
+
+    with _mock_get_ok(_google_tokeninfo(email="newcomer@example.com")):
+        response = APIClient().post(
+            "/api/auth/google/",
+            {"id_token": "fake-token"},
+            format="json",
+        )
+
+    assert response.status_code == 400
+    assert "Registration is disabled" in response.data["detail"]
+
+    user_model = get_user_model()
+    assert not user_model.objects.filter(email="newcomer@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_google_login_allows_existing_user_when_registration_disabled(settings):
+    settings.GOOGLE_CLIENT_ID = "web-client-id"
+    settings.ALLOW_REGISTRATION = False
+
+    user_model = get_user_model()
+    user_model.objects.create_user(email="existing@example.com", display_name="Existing")
+
+    with _mock_get_ok(_google_tokeninfo(email="existing@example.com")):
+        response = APIClient().post(
+            "/api/auth/google/",
+            {"id_token": "fake-token"},
+            format="json",
+        )
+
+    assert response.status_code == 200
+    assert response.data["tokens"]["created"] is False

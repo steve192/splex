@@ -41,7 +41,7 @@ export function LoginScreen() {
         setGoogleClientId(data.google?.client_id ?? null);
         setGoogleAndroidClientId(data.google?.android_client_id ?? undefined);
       })
-      .catch(() => undefined); // Silently skip — Google button just won't appear.
+      .catch(() => undefined); // Silently skip - Google button just won't appear.
     inviteDebug("login screen mounted");
     const inviteToken = inviteTokenFromCurrentUrl();
     if (inviteToken) {

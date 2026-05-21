@@ -1,6 +1,7 @@
 import re
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core import mail
 
 from splex.accounts.models import MagicLoginChallenge
@@ -58,3 +59,37 @@ def test_requesting_new_magic_login_invalidates_previous_pair():
 
     authenticate_magic_code("alice@example.com", second_code)
     assert MagicLoginChallenge.objects.filter(email="alice@example.com", consumed_at__isnull=True).count() == 0
+
+
+@pytest.mark.django_db
+def test_magic_code_rejects_new_user_when_registration_disabled(settings):
+    settings.ALLOW_REGISTRATION = False
+    request_magic_login("newcomer@example.com")
+    code = re.search(r"code (\d+)", mail.outbox[-1].body).group(1)
+
+    with pytest.raises(ValueError, match="Registration is disabled"):
+        authenticate_magic_code("newcomer@example.com", code)
+
+    assert not get_user_model().objects.filter(email="newcomer@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_magic_code_allows_existing_user_when_registration_disabled(settings):
+    settings.ALLOW_REGISTRATION = False
+    get_user_model().objects.create_user(email="existing@example.com", display_name="Existing")
+    request_magic_login("existing@example.com")
+    code = re.search(r"code (\d+)", mail.outbox[-1].body).group(1)
+
+    user, tokens = authenticate_magic_code("existing@example.com", code)
+    assert user.email == "existing@example.com"
+    assert tokens["created"] is False
+
+
+@pytest.mark.django_db
+def test_magic_token_rejects_new_user_when_registration_disabled(settings):
+    settings.ALLOW_REGISTRATION = False
+    request_magic_login("newcomer@example.com")
+    token = re.search(r"token=([^&\s]+)", mail.outbox[-1].body).group(1)
+
+    with pytest.raises(ValueError, match="Registration is disabled"):
+        authenticate_magic_token(token)

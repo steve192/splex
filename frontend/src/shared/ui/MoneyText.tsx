@@ -11,7 +11,7 @@ type MoneyTextProps = Omit<TextProps<never>, "children"> & {
   /**
    * When true, render just `<amount> <currency>` (e.g. "10.00 EUR") in neutral
    * text colour. Use this in contexts where the surrounding UI already tells
-   * the user whether they owe or are owed — settlement rows, "X owes" lists,
+   * the user whether they owe or are owed - settlement rows, "X owes" lists,
    * expense breakdown shares.
    */
   plain?: boolean;

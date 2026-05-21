@@ -95,10 +95,17 @@ def authenticate_with_google(*, id_token: str):
         raise ValueError("No email address in Google token.")
 
     User = get_user_model()
-    user, created = User.objects.get_or_create(
-        email=email,
-        defaults={"display_name": payload.get("name", email.split("@")[0])},
-    )
+    if not settings.ALLOW_REGISTRATION:
+        try:
+            user = User.objects.get(email=email)
+            created = False
+        except User.DoesNotExist:
+            raise ValueError("Registration is disabled on this server.")
+    else:
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={"display_name": payload.get("name", email.split("@")[0])},
+        )
     get_or_create_user_participant(user)
     refresh = RefreshToken.for_user(user)
     return user, {"access": str(refresh.access_token), "refresh": str(refresh), "created": created}
@@ -106,10 +113,17 @@ def authenticate_with_google(*, id_token: str):
 
 def consume_challenge(challenge):
     User = get_user_model()
-    user, created = User.objects.get_or_create(
-        email=challenge.email,
-        defaults={"display_name": challenge.email.split("@")[0]},
-    )
+    if not settings.ALLOW_REGISTRATION:
+        try:
+            user = User.objects.get(email=challenge.email)
+            created = False
+        except User.DoesNotExist:
+            raise ValueError("Registration is disabled on this server.")
+    else:
+        user, created = User.objects.get_or_create(
+            email=challenge.email,
+            defaults={"display_name": challenge.email.split("@")[0]},
+        )
     get_or_create_user_participant(user)
     challenge.consumed_at = timezone.now()
     challenge.save(update_fields=["consumed_at"])

@@ -21,7 +21,7 @@ from splex.shared.uploads import save_data_url_image
 
 
 class AuthProvidersView(APIView):
-    """Public endpoint — returns which optional login methods are configured."""
+    """Public endpoint - returns which optional login methods are configured."""
 
     permission_classes = [permissions.AllowAny]
 

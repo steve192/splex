@@ -40,7 +40,7 @@ def test_unknown_event_type_returns_event_type_as_title():
 
 
 def test_missing_placeholders_render_literally_without_crashing():
-    # No `amount` in payload — the template keeps the placeholder rather than raising.
+    # No `amount` in payload - the template keeps the placeholder rather than raising.
     _, body = render_notification(
         "expense.created",
         {"actor": "Alice", "context": "Trip", "description": "Pizza"},

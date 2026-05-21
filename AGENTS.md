@@ -9,7 +9,7 @@
 - When two functions or views diverge only by a parameter or context, extract a shared helper rather than maintaining near-twins.
 - When a switch over the same enum/discriminator appears in multiple places, build a strategy registry (a map of cases to handlers). Adding a new case should be one entry, not edits in five files.
 - Match field names across DB, API, and frontend types. A field renamed in one layer must be renamed in the others in the same change.
-- Use constants (Python class or TS literal-union module) for stable string identifiers — event names, route keys, error codes. No bare string literals at call sites.
+- Use constants (Python class or TS literal-union module) for stable string identifiers - event names, route keys, error codes. No bare string literals at call sites.
 - Separate assertion helpers (`assert_X` that raise) from getter helpers (`get_X` that return). A single function should not both raise on failure and return a meaningful value via the same call shape.
 - Helpers should handle their own `None`/empty inputs. Don't make every caller write `helper(x) if x else ""`.
 - Preserve existing project conventions before adding new patterns.
@@ -29,7 +29,7 @@
 - Lean toward domain-driven naming and workflows.
 - Validate permissions and domain invariants in backend services, not only in the frontend.
 - Permission checks belong in one helper per resource (e.g. `assert_group_member`, `ensure_friendship_member`) applied at the view boundary. Don't reimplement the membership predicate inline in every view.
-- Use `get_object_or_404` (or equivalent) for primary-key lookups. Avoid raw `.get(id=...)` in views — it surfaces as a 500.
+- Use `get_object_or_404` (or equivalent) for primary-key lookups. Avoid raw `.get(id=...)` in views - it surfaces as a 500.
 - Pagination logic (limit/offset clamping, ordering, slicing) belongs in selectors. Views should pass query-params through, not implement the clamping themselves. Magic limits live as named constants.
 - Don't reimplement the same algorithm for adjacent contexts (e.g. group vs friendship). Factor the shared shape into a helper that takes a queryset filter.
 - Create/update flows for the same entity share a helper (e.g. `_replace_expense_shares`). Don't duplicate the share-rebuild logic between `create_*` and `update_*` services.
@@ -43,12 +43,12 @@
 - Use React, Expo, and TypeScript with strict typing.
 - Build both PWA and Android-compatible UI unless a feature is explicitly platform-specific.
 - Keep screens focused. Extract shared UI and reusable behavior when components grow large.
-- Leaf components, sheets, and dialogs should self-resolve cross-cutting utilities (`useI18n`, `useTheme`, formatters, theme colors) from context or imports. Don't prop-drill `t`, `formatMoney`, `surfaceColor`, etc. — a sheet's props should describe its data and callbacks, nothing else.
+- Leaf components, sheets, and dialogs should self-resolve cross-cutting utilities (`useI18n`, `useTheme`, formatters, theme colors) from context or imports. Don't prop-drill `t`, `formatMoney`, `surfaceColor`, etc. - a sheet's props should describe its data and callbacks, nothing else.
 - Use `t(key, params)` interpolation for placeholders. Never chain `.replace("{name}", value)` at call sites.
-- Use `useFocusEffect(useCallback(…))` for on-focus reloading. Do not subscribe manually to `navigation.addListener("focus", …)` — pick the framework primitive once and use it everywhere.
+- Use `useFocusEffect(useCallback(…))` for on-focus reloading. Do not subscribe manually to `navigation.addListener("focus", …)` - pick the framework primitive once and use it everywhere.
 - Repeated inline styles (`{ fontWeight: "700" }`, `{ marginTop: 8 }`, `{ alignSelf: "center" }`) belong in `shared/ui/styles.ts`. Inline styles in JSX are reserved for genuinely one-off values.
 - When extending an enum-like discriminator (`SplitMethod`, `ActiveSheet`, payment kind), the change should land in one strategy/registry, not as scattered `if/else` branches across components.
-- Caching, pagination, and infinite scroll have shared primitives (`cacheStore<T>`, `useInfiniteScroll`, `paginated_ledger_response` on the backend). Use them — don't re-implement.
+- Caching, pagination, and infinite scroll have shared primitives (`cacheStore<T>`, `useInfiniteScroll`, `paginated_ledger_response` on the backend). Use them - don't re-implement.
 - Don't construct synthetic objects to satisfy a function signature (e.g. fake `Participant` to call `participantName`). Guard at the boundary and return the literal fallback.
 - For set-equality, test both length and membership (`a.length === b.length && a.every(x => b.includes(x))`). Length-only is a bug waiting to surface.
 - Prioritize fast, low-friction UX for frequent workflows.
@@ -87,7 +87,7 @@
 - Fix type errors and obvious runtime errors before handing work back.
 - When a check cannot be run, state that clearly with the reason.
 - Do not revert user changes unless explicitly asked.
-- After any refactor that touches a file, verify the file still represents your intended state — IDE diagnostics and tooling may surface stale snapshots; trust the command-line check.
+- After any refactor that touches a file, verify the file still represents your intended state - IDE diagnostics and tooling may surface stale snapshots; trust the command-line check.
 
 ## Testing Requirements
 
@@ -95,5 +95,5 @@
 - For pure logic, add a unit test next to the file (`foo.test.ts` / `test_foo.py`).
 - For backend services, write `@pytest.mark.django_db` integration tests that exercise the full create/update/delete path including the activity event and notification side-effects where they exist.
 - For frontend logic that lives inside a screen component, extract the function to a `*Helpers.ts` module and test the pure function. Don't try to test deeply through React rendering unless a render-test harness is already in place.
-- When the change cannot be tested (e.g. third-party-only integration, infra config), say so explicitly and explain why — don't silently skip.
+- When the change cannot be tested (e.g. third-party-only integration, infra config), say so explicitly and explain why - don't silently skip.
 - Tests are not optional. If you find yourself wanting to skip them "because the change is small", write one anyway.

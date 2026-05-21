@@ -70,7 +70,7 @@ def test_me_patch_updates_push_enabled():
 
 
 # ---------------------------------------------------------------------------
-# DELETE /api/me/delete/ — account deletion
+# DELETE /api/me/delete/ - account deletion
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db

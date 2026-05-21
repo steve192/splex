@@ -11,7 +11,7 @@ import { useI18n } from "../i18n/I18nContext";
 WebBrowser.maybeCompleteAuthSession();
 
 interface GoogleLoginButtonProps {
-  /** Web OAuth client ID — must be defined; parent only renders this when available. */
+  /** Web OAuth client ID - must be defined; parent only renders this when available. */
   clientId: string;
   /** Android native client ID; optional, only needed for native Android builds. */
   androidClientId?: string;
