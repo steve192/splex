@@ -13,7 +13,7 @@ import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses a
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
-import { copyTextToClipboard } from "../../shared/lib/clipboard";
+import { shareLink } from "../../shared/lib/shareLink";
 import { loadCachedGroupDetail, saveCachedGroupDetail } from "../../shared/lib/offlineCache";
 import { asNumber } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
@@ -121,11 +121,12 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
 
   async function invite() {
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, {});
-    if (await copyTextToClipboard(response.url)) {
+    const result = await shareLink(response.url, { title: t("invite.shareTitle") });
+    if (result === "copied") {
       setSnackbar(t("invite.copied"));
-      return;
+    } else if (result === "failed") {
+      setManualCopyLink(response.url);
     }
-    setManualCopyLink(response.url);
   }
 
   async function settle() {

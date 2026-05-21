@@ -8,7 +8,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
-import { copyTextToClipboard } from "../../shared/lib/clipboard";
+import { shareLink } from "../../shared/lib/shareLink";
 import { countPendingExpensesByContext, pendingExpenseContextKey } from "../../shared/ledger/pendingExpenses";
 import { loadCachedFriends, loadCachedOverviewItems, saveCachedFriends, saveCachedOverviewItems } from "../../shared/lib/offlineCache";
 import { Friend, OverviewItem } from "../../shared/types/models";
@@ -81,11 +81,12 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
 
   async function createFriendInvite() {
     const invitation = await api.post<{ url: string }>("/api/friends/invitations/");
-    if (await copyTextToClipboard(invitation.url)) {
+    const result = await shareLink(invitation.url, { title: t("invite.shareTitle") });
+    if (result === "copied") {
       setSnackbar(t("invite.copied"));
-      return;
+    } else if (result === "failed") {
+      setManualCopyLink(invitation.url);
     }
-    setManualCopyLink(invitation.url);
   }
 
   function renderItem(item: OverviewItem) {

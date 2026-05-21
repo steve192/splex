@@ -161,6 +161,7 @@
   "invite.acceptFailed": "Could not accept this invitation.",
   "invite.accepted": "Invitation accepted.",
   "invite.copied": "Invitation link copied to clipboard.",
+  "invite.shareTitle": "Splex invitation link",
   "invite.copyLabel": "Invitation link",
   "invite.copyManual": "Copy invitation link",
   "invite.copyManualHelp": "Clipboard access is not available here. Copy the link manually.",

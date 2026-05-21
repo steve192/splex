@@ -20,7 +20,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { copyTextToClipboard } from "../../shared/lib/clipboard";
+import { shareLink } from "../../shared/lib/shareLink";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -170,11 +170,12 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
   async function createInvite(targetParticipantId?: number) {
     const body = targetParticipantId ? { target_participant_id: targetParticipantId } : {};
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, body);
-    if (await copyTextToClipboard(response.url)) {
+    const result = await shareLink(response.url, { title: t("invite.shareTitle") });
+    if (result === "copied") {
       setSnackbar(t("invite.copied"));
-      return;
+    } else if (result === "failed") {
+      setManualCopyLink(response.url);
     }
-    setManualCopyLink(response.url);
   }
 
   function openRename(participant: Participant) {

@@ -161,6 +161,7 @@
   "invite.acceptFailed": "Diese Einladung konnte nicht angenommen werden.",
   "invite.accepted": "Einladung angenommen.",
   "invite.copied": "Einladungslink wurde in die Zwischenablage kopiert.",
+  "invite.shareTitle": "Splex-Einladungslink",
   "invite.copyLabel": "Einladungslink",
   "invite.copyManual": "Einladungslink kopieren",
   "invite.copyManualHelp": "Auf die Zwischenablage kann hier nicht zugegriffen werden. Kopiere den Link manuell.",
