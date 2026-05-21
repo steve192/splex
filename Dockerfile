@@ -1,4 +1,4 @@
-FROM node:24.15.0-bookworm AS frontend-build
+FROM node:24.16.0-bookworm AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 COPY frontend/scripts ./scripts
@@ -6,7 +6,7 @@ RUN npm install
 COPY frontend ./
 RUN npm run build:web
 
-FROM python:3.12-slim AS backend
+FROM python:3.14-slim AS backend
 LABEL org.opencontainers.image.source=https://github.com/steve192/splex
 
 ENV PYTHONDONTWRITEBYTECODE=1
