@@ -16,7 +16,7 @@ import { bootstrapPushOnStartup } from "../shared/notifications/registration";
 import { bootstrapLocationOnStartup } from "../shared/location/locationService";
 
 export function PostLoginBootstrap() {
-  const { api, user, initialized } = useAuth();
+  const { api, user, initialized, refreshUser } = useAuth();
   const { locale } = useI18n();
   const didBootstrap = useRef(false);
 
@@ -26,12 +26,14 @@ export function PostLoginBootstrap() {
     didBootstrap.current = true;
 
     bootstrapPushOnStartup(api).catch(() => undefined);
-    bootstrapLocationOnStartup(user.location_tracking_enabled).catch(() => undefined);
+    bootstrapLocationOnStartup(user.location_tracking_enabled, api)
+      .then(() => refreshUser().catch(() => undefined))
+      .catch(() => undefined);
 
     if (user.locale !== locale) {
       api.patch("/api/me/", { locale }).catch(() => undefined);
     }
-  }, [api, initialized, user, locale]);
+  }, [api, initialized, user, locale, refreshUser]);
 
   return null;
 }
