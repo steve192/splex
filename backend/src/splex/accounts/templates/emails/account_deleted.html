@@ -1,0 +1,44 @@
+{% extends "emails/base.html" %}
+{% block title %}Your Splex account has been deleted{% endblock %}
+{% block preheader %}Your Splex account and personal data have been permanently removed.{% endblock %}
+{% block footer_reason %}deleted a Splex account associated with this address{% endblock %}
+
+{% block content %}
+<h1 style="margin:0 0 16px 0; font-size:22px; line-height:28px; color:#111827; font-weight:600;">
+  Your account has been deleted
+</h1>
+
+<p style="margin:0 0 16px 0; font-size:15px; line-height:22px; color:#374151;">
+  {% if display_name %}Hi {{ display_name }},{% else %}Hi,{% endif %}
+</p>
+
+<p style="margin:0 0 16px 0; font-size:15px; line-height:22px; color:#374151;">
+  Your Splex account for <strong style="color:#111827;">{{ email }}</strong> has been
+  permanently deleted. Your profile, login credentials, and devices have been removed
+  and you won't receive further notifications.
+</p>
+
+<p style="margin:0 0 24px 0; font-size:15px; line-height:22px; color:#374151;">
+  To keep group balances readable for the people you split expenses with, your past
+  expense entries remain in the groups you were a member of, but they are no longer
+  linked to a Splex account.
+</p>
+
+<!-- Info box -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px 0;">
+  <tr>
+    <td style="background-color:#f3f4f6; border-left:4px solid #006A60; padding:14px 18px; border-radius:4px;">
+      <p style="margin:0; font-size:14px; line-height:20px; color:#374151;">
+        Changed your mind? You can create a new account at any time at
+        <a href="{{ frontend_url }}" style="color:#006A60; text-decoration:underline;">{{ frontend_url }}</a>.
+        It will not be linked to the data from your previous account.
+      </p>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0; font-size:13px; line-height:20px; color:#6b7280;">
+  If you did not request this deletion, please contact the administrator of your
+  Splex instance immediately.
+</p>
+{% endblock %}
