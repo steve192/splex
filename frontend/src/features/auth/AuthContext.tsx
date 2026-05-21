@@ -11,6 +11,7 @@ type User = {
   avatar_url: string;
   push_enabled: boolean;
   locale: string;
+  location_tracking_enabled: boolean;
 };
 
 type AuthContextValue = {

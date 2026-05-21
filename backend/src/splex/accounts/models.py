@@ -38,6 +38,7 @@ class User(AbstractUser):
     avatar_url = models.URLField(blank=True)
     push_enabled = models.BooleanField(default=True)
     locale = models.CharField(max_length=8, default="en")
+    location_tracking_enabled = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

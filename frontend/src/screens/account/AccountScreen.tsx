@@ -13,6 +13,7 @@ import {
   setDevicePushEnabled
 } from "../../shared/notifications/registration";
 import { ThemeMode } from "../../shared/types/models";
+import { LocationTrackingToggle } from "../../shared/ui/LocationTrackingToggle";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
@@ -36,6 +37,7 @@ export function AccountScreen() {
   const [pushBusy, setPushBusy] = useState(false);
   const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
   const [pushError, setPushError] = useState<string | undefined>(undefined);
+  const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(user?.location_tracking_enabled ?? true);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const deleteKeyword = t("account.deleteAccountKeyword");
@@ -75,6 +77,12 @@ export function AccountScreen() {
     setPushStatus(result.lastStatus);
     setPushError(result.lastError);
     setPushBusy(false);
+  }
+
+  async function handleLocationTrackingToggle(enabled: boolean) {
+    setLocationTrackingEnabled(enabled);
+    await api.patch("/api/me/", { location_tracking_enabled: enabled });
+    await refreshUser();
   }
 
   function handleLocaleSelect(next: "de" | "en") {
@@ -143,6 +151,7 @@ export function AccountScreen() {
               {t("notifications.retry")}
             </Button>
           ) : null}
+          <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
           <Button mode="contained" onPress={save}>{t("common.save")}</Button>
           <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
           <Button

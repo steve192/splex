@@ -25,6 +25,7 @@ class UserSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
     push_enabled = serializers.BooleanField()
     locale = serializers.CharField()
+    location_tracking_enabled = serializers.BooleanField()
 
     def get_avatar_url(self, user):
         return signed_media_url(user.avatar_url)
@@ -36,3 +37,4 @@ class UserUpdateSerializer(serializers.Serializer):
     avatar_image = serializers.CharField(required=False, allow_blank=True)
     push_enabled = serializers.BooleanField(required=False)
     locale = serializers.CharField(max_length=8, required=False)
+    location_tracking_enabled = serializers.BooleanField(required=False)
