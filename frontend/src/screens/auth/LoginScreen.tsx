@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
 import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
+import { consumeGoogleOAuthResponse } from "../../shared/auth/googleOAuthWeb";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
@@ -19,7 +20,7 @@ export function LoginScreen() {
   const { t } = useI18n();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { api, loginWithCode, loginWithToken, requestMagicLink } = useAuth();
+  const { api, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
@@ -42,6 +43,16 @@ export function LoginScreen() {
         setGoogleAndroidClientId(data.google?.android_client_id ?? undefined);
       })
       .catch(() => undefined); // Silently skip - Google button just won't appear.
+    // If we returned from a Google OAuth redirect, finish the login here.
+    if (Platform.OS === "web") {
+      const googleResponse = consumeGoogleOAuthResponse();
+      if (googleResponse) {
+        setLoading(true);
+        loginWithGoogle(googleResponse.idToken)
+          .catch(() => setMessage(t("auth.googleFailed")))
+          .finally(() => setLoading(false));
+      }
+    }
     inviteDebug("login screen mounted");
     const inviteToken = inviteTokenFromCurrentUrl();
     if (inviteToken) {
