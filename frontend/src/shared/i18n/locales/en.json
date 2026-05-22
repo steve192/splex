@@ -61,6 +61,7 @@
   "common.cancel": "Cancel",
   "common.back": "Back",
   "common.error": "Something went wrong.",
+  "common.dismiss": "Dismiss",
   "common.done": "Done",
   "common.noResults": "No results.",
   "common.ok": "OK",

@@ -7,7 +7,38 @@ let lastLocation: { latitude: number; longitude: number; timestamp: number } | n
 const LOCATION_CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const LOCATION_REQUEST_TIMEOUT = 8000; // 8s before falling back to last-known
 
-export async function requestLocationPermission(): Promise<"granted" | "denied" | "undetermined"> {
+export type LocationPermissionState = "granted" | "denied" | "undetermined";
+
+/**
+ * Read the current location permission without prompting the user.
+ *
+ * Use this when you want to *show* the current state in the UI (e.g. the
+ * settings toggle helper text on mount). Use `requestLocationPermission`
+ * when the user has just performed an action that warrants asking.
+ */
+export async function getLocationPermissionStatus(): Promise<LocationPermissionState> {
+  if (Platform.OS === "web") {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return "denied";
+    }
+    if (typeof navigator.permissions?.query === "function") {
+      try {
+        const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+        if (status.state === "granted") return "granted";
+        if (status.state === "denied") return "denied";
+      } catch {
+        // Permissions API unavailable — we can't know without prompting.
+      }
+    }
+    return "undetermined";
+  }
+  const { status } = await Location.getForegroundPermissionsAsync();
+  if (status === Location.PermissionStatus.GRANTED) return "granted";
+  if (status === Location.PermissionStatus.DENIED) return "denied";
+  return "undetermined";
+}
+
+export async function requestLocationPermission(): Promise<LocationPermissionState> {
   if (Platform.OS === "web") {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       return "denied";

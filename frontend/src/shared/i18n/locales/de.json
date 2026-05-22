@@ -61,6 +61,7 @@
   "common.cancel": "Abbrechen",
   "common.back": "Zurück",
   "common.error": "Etwas ist schiefgelaufen.",
+  "common.dismiss": "Schließen",
   "common.done": "Fertig",
   "common.noResults": "Keine Ergebnisse.",
   "common.ok": "OK",
