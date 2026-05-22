@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import date as date_cls
 from decimal import Decimal
-from typing import Iterable
 
 from django.db.models import Count, Max, Min, Sum
 from django.db.models.functions import TruncMonth

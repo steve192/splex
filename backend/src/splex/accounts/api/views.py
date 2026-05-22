@@ -22,8 +22,8 @@ from splex.shared.tos import render_terms_of_service_document
 from splex.shared.uploads import save_data_url_image
 
 
-class AuthProvidersView(APIView):
-    """Public endpoint - returns which optional login methods are configured."""
+class LoginConfigView(APIView):
+    """Public endpoint - returns login screen configuration and app-level feature flags."""
 
     permission_classes = [permissions.AllowAny]
 
@@ -36,6 +36,7 @@ class AuthProvidersView(APIView):
                     "client_id": settings.GOOGLE_CLIENT_ID or None,
                     "android_client_id": settings.GOOGLE_ANDROID_CLIENT_ID or None,
                 },
+                "demo_mode_enabled": bool(getattr(settings, "DEMO_MODE_ENABLED", False)),
                 "map_tile_url": getattr(
                     settings,
                     "MAP_TILE_URL",

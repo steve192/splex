@@ -250,6 +250,13 @@ export const styles = StyleSheet.create({
   loginSubtitle: {
     maxWidth: 440
   },
+  loginDemoSection: {
+    gap: 10,
+    marginTop: 8
+  },
+  loginDemoHint: {
+    textAlign: "center"
+  },
   loginTitle: {
     fontWeight: "700",
     marginBottom: 8

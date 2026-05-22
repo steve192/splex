@@ -49,7 +49,10 @@ _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
             "Ausgabe aktualisiert",
             "{actor} hat \"{description}\" ({amount} {currency}) in {context} aktualisiert",
         ),
-        "expense.deleted": ("Ausgabe gelöscht", "{actor} hat \"{description}\" in {context} gelöscht"),
+        "expense.deleted": (
+            "Ausgabe gelöscht",
+            "{actor} hat \"{description}\" in {context} gelöscht",
+        ),
         "settlement.created": (
             "Ausgleich verbucht",
             "{actor} hat {amount} {currency} in {context} ausgeglichen",
@@ -58,17 +61,35 @@ _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
             "Ausgleich aktualisiert",
             "{actor} hat einen Ausgleich ({amount} {currency}) in {context} aktualisiert",
         ),
-        "settlement.deleted": ("Ausgleich entfernt", "{actor} hat einen Ausgleich in {context} entfernt"),
+        "settlement.deleted": (
+            "Ausgleich entfernt",
+            "{actor} hat einen Ausgleich in {context} entfernt",
+        ),
         "group.created": ("Gruppe erstellt", "{actor} hat die Gruppe {context} erstellt"),
         "group.updated": ("Gruppe aktualisiert", "{actor} hat die Gruppe {context} aktualisiert"),
         "group.deleted": ("Gruppe gelöscht", "{actor} hat die Gruppe {context} gelöscht"),
-        "group.member_added": ("Mitglied hinzugefügt", "{actor} hat ein Mitglied zu {context} hinzugefügt"),
-        "group.member_removed": ("Mitglied entfernt", "{actor} hat ein Mitglied aus {context} entfernt"),
-        "group.member_invited": ("Einladung verschickt", "{actor} hat jemanden zu {context} eingeladen"),
+        "group.member_added": (
+            "Mitglied hinzugefügt",
+            "{actor} hat ein Mitglied zu {context} hinzugefügt",
+        ),
+        "group.member_removed": (
+            "Mitglied entfernt",
+            "{actor} hat ein Mitglied aus {context} entfernt",
+        ),
+        "group.member_invited": (
+            "Einladung verschickt",
+            "{actor} hat jemanden zu {context} eingeladen",
+        ),
         "group.member_joined": ("Mitglied beigetreten", "Jemand ist {context} beigetreten"),
-        "group.member_renamed": ("Mitglied umbenannt", "{actor} hat ein Mitglied in {context} umbenannt"),
+        "group.member_renamed": (
+            "Mitglied umbenannt",
+            "{actor} hat ein Mitglied in {context} umbenannt",
+        ),
         "friend.invited": ("Freund eingeladen", "{actor} möchte mit dir befreundet sein"),
-        "friend.accepted": ("Freundschaft bestätigt", "{actor} hat deine Freundschaftsanfrage angenommen"),
+        "friend.accepted": (
+            "Freundschaft bestätigt",
+            "{actor} hat deine Freundschaftsanfrage angenommen",
+        ),
         "invitation.accepted": ("Einladung angenommen", "{actor} ist über deinen Link beigetreten"),
     },
 }

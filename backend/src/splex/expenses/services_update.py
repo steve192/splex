@@ -69,7 +69,9 @@ def update_expense(*, actor, expense: Expense, data: dict) -> Expense:
     if actor.location_tracking_enabled:
         expense.latitude = data.get("latitude", expense.latitude)
         expense.longitude = data.get("longitude", expense.longitude)
-        expense.approximate_location = data.get("approximate_location", expense.approximate_location)
+        expense.approximate_location = data.get(
+            "approximate_location", expense.approximate_location
+        )
     expense.save(
         update_fields=[
             "description",

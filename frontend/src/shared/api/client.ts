@@ -1,6 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
+import { handleDemoRequest } from "../demo/demoBackend";
+import { persistDemoMode } from "../demo/demoMode";
+
 export type Tokens = {
   access: string;
   refresh: string;
@@ -62,6 +65,7 @@ export class ApiClient {
   private tokenChangeHandler: ((tokens: Tokens | null) => void) | null = null;
   private baseUrl: string | null = Platform.OS === "web" ? "" : null;
   private baseUrlPromise: Promise<string> | null = null;
+  private demoMode = false;
 
   setTokens(tokens: Tokens | null) {
     this.tokens = tokens;
@@ -70,6 +74,15 @@ export class ApiClient {
 
   setTokenChangeHandler(handler: (tokens: Tokens | null) => void) {
     this.tokenChangeHandler = handler;
+  }
+
+  isDemoMode(): boolean {
+    return this.demoMode;
+  }
+
+  async setDemoMode(enabled: boolean): Promise<void> {
+    this.demoMode = enabled;
+    await persistDemoMode(enabled);
   }
 
   async getBaseUrl(): Promise<string> {
@@ -91,6 +104,14 @@ export class ApiClient {
   }
 
   async request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
+    if (this.demoMode) {
+      const method = (options.method ?? "GET").toUpperCase() as
+        | "GET"
+        | "POST"
+        | "PATCH"
+        | "DELETE";
+      return handleDemoRequest<T>(method, path);
+    }
     const headers = new Headers(options.headers);
     headers.set("Accept", "application/json");
     headers.set("Content-Type", "application/json");

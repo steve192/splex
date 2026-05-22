@@ -60,7 +60,11 @@ if (
 FRONTEND_PUBLIC_URL = env("FRONTEND_PUBLIC_URL", "http://localhost:8000")
 BACKEND_PUBLIC_URL = env("BACKEND_PUBLIC_URL", "http://localhost:8000")
 PUBLIC_ORIGINS = sorted(
-    {origin for origin in [public_origin(FRONTEND_PUBLIC_URL), public_origin(BACKEND_PUBLIC_URL)] if origin}
+    {
+        origin
+        for origin in [public_origin(FRONTEND_PUBLIC_URL), public_origin(BACKEND_PUBLIC_URL)]
+        if origin
+    }
 )
 PUBLIC_HOSTS = sorted(
     {host for host in [public_host(FRONTEND_PUBLIC_URL), public_host(BACKEND_PUBLIC_URL)] if host}
@@ -257,6 +261,10 @@ ALLOW_REGISTRATION = env_bool("ALLOW_REGISTRATION", True)
 # GOOGLE_ANDROID_CLIENT_ID - Android OAuth client ID; also accepted as a valid token audience.
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", "")
 GOOGLE_ANDROID_CLIENT_ID = env("GOOGLE_ANDROID_CLIENT_ID", "")
+
+# Demo mode: when enabled, the login screen offers a "Try demo" button that
+# runs the app against in-memory mock data without contacting the backend.
+DEMO_MODE_ENABLED = env_bool("DEMO_MODE_ENABLED", False)
 
 LOGGING = {
     "version": 1,

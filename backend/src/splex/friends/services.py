@@ -42,7 +42,9 @@ def other_participant(friendship: Friendship, current: Participant) -> Participa
 
 
 @transaction.atomic
-def active_friendship_for(participant_a: Participant, participant_b: Participant) -> Friendship | None:
+def active_friendship_for(
+    participant_a: Participant, participant_b: Participant
+) -> Friendship | None:
     """Return the active Friendship for the unordered pair, or None.
 
     Use this for existence checks; use `get_or_create_friendship` when you may

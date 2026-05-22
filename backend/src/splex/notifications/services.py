@@ -1,7 +1,6 @@
 import json
 import logging
-from base64 import b64decode
-from base64 import urlsafe_b64encode
+from base64 import b64decode, urlsafe_b64encode
 from datetime import timedelta
 
 from django.conf import settings
@@ -97,7 +96,9 @@ def _dispatch_one(notification, title, body):
             send_expo_notification(device.token, notification, title, body)
             sent = True
         except TerminalDispatchError as exc:
-            logger.info("Expo push token gone, deleting (user_id=%s): %s", notification.user_id, exc)
+            logger.info(
+                "Expo push token gone, deleting (user_id=%s): %s", notification.user_id, exc
+            )
             errors.append(f"{exc} (token deleted)")
             device.delete()
         except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
@@ -240,7 +241,11 @@ def get_active_vapid_key() -> VapidKey:
             expires_at=timezone.now() + timedelta(days=3650),
             active=True,
         )
-    key = VapidKey.objects.filter(active=True, expires_at__gt=timezone.now()).order_by("-created_at").first()
+    key = (
+        VapidKey.objects.filter(active=True, expires_at__gt=timezone.now())
+        .order_by("-created_at")
+        .first()
+    )
     if key:
         return _validate_persisted_vapid_key(key)
     VapidKey.objects.filter(active=True).update(active=False)

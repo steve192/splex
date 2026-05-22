@@ -152,36 +152,50 @@ def test_google_login_returns_400_when_tokeninfo_request_fails(settings):
 
 
 # ---------------------------------------------------------------------------
-# GET /api/auth/providers/
+# GET /api/login/config/
 # ---------------------------------------------------------------------------
 
 
-def test_auth_providers_returns_google_client_id(settings):
+def test_login_config_returns_google_client_id(settings):
     settings.GOOGLE_CLIENT_ID = "web-client-id"
     settings.GOOGLE_ANDROID_CLIENT_ID = ""
 
-    response = APIClient().get("/api/auth/providers/")
+    response = APIClient().get("/api/login/config/")
 
     assert response.status_code == 200
     assert response.data["google"]["client_id"] == "web-client-id"
     assert response.data["google"]["android_client_id"] is None
 
 
-def test_auth_providers_returns_null_when_not_configured(settings):
+def test_login_config_returns_null_when_not_configured(settings):
     settings.GOOGLE_CLIENT_ID = ""
     settings.GOOGLE_ANDROID_CLIENT_ID = ""
 
-    response = APIClient().get("/api/auth/providers/")
+    response = APIClient().get("/api/login/config/")
 
     assert response.status_code == 200
     assert response.data["google"]["client_id"] is None
     assert response.data["google"]["android_client_id"] is None
 
 
-def test_auth_providers_requires_no_authentication():
+def test_login_config_requires_no_authentication():
     """The endpoint must be publicly accessible - unauthenticated callers need it."""
-    response = APIClient().get("/api/auth/providers/")
+    response = APIClient().get("/api/login/config/")
     assert response.status_code == 200
+
+
+def test_login_config_reports_demo_mode_enabled(settings):
+    settings.DEMO_MODE_ENABLED = True
+    response = APIClient().get("/api/login/config/")
+    assert response.status_code == 200
+    assert response.data["demo_mode_enabled"] is True
+
+
+def test_login_config_reports_demo_mode_disabled_by_default(settings):
+    settings.DEMO_MODE_ENABLED = False
+    response = APIClient().get("/api/login/config/")
+    assert response.status_code == 200
+    assert response.data["demo_mode_enabled"] is False
 
 
 # ---------------------------------------------------------------------------

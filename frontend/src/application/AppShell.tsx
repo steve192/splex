@@ -9,6 +9,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient } from "../shared/api/client";
+import { DemoWriteBlockedSnackbar } from "../shared/demo/DemoWriteBlockedSnackbar";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ensureServiceWorkerRegistration } from "../shared/lib/serviceWorker";
@@ -119,6 +120,7 @@ export function AppShell() {
                   </NavigationContainer>
                   <PostLoginBootstrap />
                   <UpdateSnackbar />
+                  <DemoWriteBlockedSnackbar />
                 </View>
               </FeedbackProvider>
               <StatusBar
