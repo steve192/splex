@@ -1,10 +1,13 @@
 from django.db import models
 from django.db.models import Q
 
+from splex.shared.managers import SoftDeletableManager
 from splex.shared.models import TimeStampedModel
 
 
 class Friendship(TimeStampedModel):
+    SOFT_DELETE_FIELD = "ended_at"
+
     class Source(models.TextChoices):
         EXPLICIT = "explicit", "Explicit"
         SHARED_GROUP = "shared_group", "Shared group"
@@ -18,6 +21,8 @@ class Friendship(TimeStampedModel):
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.EXPLICIT)
     default_currency = models.CharField(max_length=3, default="EUR")
     ended_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeletableManager()
 
     class Meta:
         constraints = [

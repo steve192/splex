@@ -221,6 +221,8 @@
   "settlement.received": "Erhalten",
   "settlement.receiver": "Empfänger",
   "settlement.title": "Ausgleich",
+  "settlement.autoWriteOffTitle": "Saldo abgeschrieben",
+  "settlement.autoWriteOffLine": "Der verbleibende Saldo von {name} wurde beim Entfernen aus der Gruppe abgeschrieben.",
   "statistics.title": "Statistiken",
   "statistics.summary": "Übersicht",
   "statistics.total": "Gesamtausgaben",

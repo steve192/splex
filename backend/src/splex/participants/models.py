@@ -1,10 +1,13 @@
 from django.conf import settings
 from django.db import models
 
+from splex.shared.managers import SoftDeletableManager
 from splex.shared.models import TimeStampedModel
 
 
 class Participant(TimeStampedModel):
+    SOFT_DELETE_FIELD = "deleted_at"
+
     class Kind(models.TextChoices):
         REGISTERED = "registered", "Registered"
         UNREGISTERED = "unregistered", "Unregistered"
@@ -18,6 +21,13 @@ class Participant(TimeStampedModel):
     )
     display_name = models.CharField(max_length=150)
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.UNREGISTERED)
+    # Soft-delete: set when an unregistered participant is removed from their group.
+    # The row stays so historical expenses can still show the correct name via
+    # `effective_display_name`, but the participant is excluded from active member
+    # lists (their group membership is marked `removed_at` at the same time).
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeletableManager()
 
     @property
     def effective_display_name(self) -> str:

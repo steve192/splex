@@ -72,6 +72,13 @@ export function RemoveParticipantDialog({
   }, [api, groupId, target]);
 
   const hasOutstanding = Boolean(outstanding && (outstanding.owes.length || outstanding.owed_by.length));
+  // Registered users get converted into an unregistered placeholder that keeps their
+  // history in the group; unregistered users have their balance auto-settled then
+  // get removed outright, so the warning copy differs between the two.
+  const warningKey =
+    target?.kind === "unregistered"
+      ? "group.removeMember.outstandingWarning"
+      : "group.removeMember.convertWarning";
 
   return (
     <Dialog visible={visible ?? !!target} onDismiss={onDismiss}>
@@ -88,7 +95,7 @@ export function RemoveParticipantDialog({
         {hasOutstanding && outstanding ? (
           <>
             <HelperText type="info" visible>
-              {t("group.removeMember.convertWarning", { name: target?.display_name ?? "" })}
+              {t(warningKey, { name: target?.display_name ?? "" })}
             </HelperText>
             {outstanding.owes.length ? (
               <View style={styles.gap}>

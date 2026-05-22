@@ -342,3 +342,69 @@ def test_update_group_blocks_currency_change_when_ledger_exists():
     )
     with pytest.raises(ValueError, match="currency cannot be changed"):
         update_group(actor=user, group=group, data={"default_currency": "USD"})
+
+
+@pytest.mark.django_db
+def test_remove_unregistered_participant_with_balance_settles_then_soft_deletes():
+    """Removing an unregistered member zeroes out their balance via auto-settlements
+    and soft-deletes the participant so historical expenses keep resolving the name."""
+    from splex.expenses.services import create_expense
+    from splex.settlements.models import Settlement
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+
+    # Owner paid 20 EUR for both → Bob owes Owner 10 EUR.
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Dinner",
+            "amount": "20",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "20"}],
+        },
+    )
+
+    remove_group_participant(actor=owner, group=group, participant=bob)
+
+    # A settlement should have been created paying Bob → Owner for 10 EUR,
+    # tagged as an auto write-off so the ledger renders it distinctly.
+    settlements = Settlement.objects.filter(group=group)
+    assert settlements.count() == 1
+    settlement = settlements.first()
+    assert settlement.payer_participant_id == bob.id
+    assert settlement.receiver_participant_id == owner_p.id
+    assert str(settlement.amount) == "10.00"
+    assert settlement.kind == Settlement.Kind.AUTO_WRITE_OFF
+
+    # Membership is removed.
+    membership = GroupMembership.objects.get(group=group, participant=bob)
+    assert membership.removed_at is not None
+
+    # Participant row is soft-deleted but still exists so old expenses display the name.
+    bob.refresh_from_db()
+    assert bob.deleted_at is not None
+    assert bob.effective_display_name == "Bob"
+
+
+@pytest.mark.django_db
+def test_remove_unregistered_participant_with_zero_balance_skips_settlement():
+    """No balance → just remove the membership and soft-delete the participant."""
+    from splex.settlements.models import Settlement
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+
+    remove_group_participant(actor=owner, group=group, participant=bob)
+
+    assert not Settlement.objects.filter(group=group).exists()
+    bob.refresh_from_db()
+    assert bob.deleted_at is not None
+    assert GroupMembership.objects.get(group=group, participant=bob).removed_at is not None

@@ -112,6 +112,7 @@ export type Settlement = {
   receiver_avatar_url?: string;
   amount: string;
   currency: string;
+  kind?: "manual" | "auto_write_off";
   created_at: string;
   deleted_at?: string | null;
 };

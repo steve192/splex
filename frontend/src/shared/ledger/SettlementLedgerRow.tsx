@@ -16,6 +16,18 @@ type SettlementLedgerRowProps = {
 export function SettlementLedgerRow({ settlement, onPress }: SettlementLedgerRowProps) {
   const { t } = useI18n();
   const parts = formatDeviceDateParts(settlement.created_at);
+  const isWriteOff = settlement.kind === "auto_write_off";
+  const title = isWriteOff ? t("settlement.autoWriteOffTitle") : t("settlement.title");
+  const description = isWriteOff
+    ? t("settlement.autoWriteOffLine", { name: settlement.payer_display_name ?? "" })
+    : t("settlement.line", {
+        from: settlement.payer_display_name ?? "",
+        to: settlement.receiver_display_name ?? "",
+        amount: `${settlement.amount} ${settlement.currency}`
+      });
+  // Write-offs are bookkeeping entries, not real payments. Render with a distinct
+  // icon and skip the payer→receiver avatar pair so users don't read it as
+  // "Bob actually paid Alice".
   return (
     <Card mode="elevated" style={styles.card}>
       <TouchableRipple style={styles.clickable} onPress={onPress}>
@@ -25,27 +37,27 @@ export function SettlementLedgerRow({ settlement, onPress }: SettlementLedgerRow
             <Text variant="titleMedium">{parts.day}</Text>
           </View>
           <View style={styles.flex}>
-            <View style={settlementRowStyles.avatars}>
-              <PersonAvatar
-                name={settlement.payer_display_name}
-                imageUrl={settlement.payer_avatar_url}
-                size={36}
-              />
-              <List.Icon icon="arrow-right" />
-              <PersonAvatar
-                name={settlement.receiver_display_name}
-                imageUrl={settlement.receiver_avatar_url}
-                size={36}
-              />
-            </View>
-            <Text variant="titleMedium">{t("settlement.title")}</Text>
-            <Text variant="bodySmall">
-              {t("settlement.line", {
-                from: settlement.payer_display_name ?? "",
-                to: settlement.receiver_display_name ?? "",
-                amount: `${settlement.amount} ${settlement.currency}`
-              })}
-            </Text>
+            {isWriteOff ? (
+              <View style={settlementRowStyles.avatars}>
+                <List.Icon icon="account-off-outline" />
+              </View>
+            ) : (
+              <View style={settlementRowStyles.avatars}>
+                <PersonAvatar
+                  name={settlement.payer_display_name}
+                  imageUrl={settlement.payer_avatar_url}
+                  size={36}
+                />
+                <List.Icon icon="arrow-right" />
+                <PersonAvatar
+                  name={settlement.receiver_display_name}
+                  imageUrl={settlement.receiver_avatar_url}
+                  size={36}
+                />
+              </View>
+            )}
+            <Text variant="titleMedium">{title}</Text>
+            <Text variant="bodySmall">{description}</Text>
           </View>
           <View style={settlementRowStyles.amount}>
             <MoneyText plain amount={settlement.amount} currency={settlement.currency} />
