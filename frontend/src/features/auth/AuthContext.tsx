@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiClient, ApiError, tokenStorage, Tokens } from "../../shared/api/client";
 import { DEMO_TOKENS, DEMO_USER } from "../../shared/demo/demoFixtures";
 import { loadPersistedDemoMode } from "../../shared/demo/demoMode";
+import { deregisterPushOnLogout } from "../../shared/notifications/registration";
 
 type User = {
   id: number;
@@ -155,18 +156,21 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
       async logout() {
         const refresh = tokens?.refresh;
         const wasDemoMode = api.isDemoMode();
+        if (wasDemoMode) {
+          await api.setDemoMode(false);
+        } else {
+          // Disable this device's push subscription and blacklist the refresh
+          // token while credentials are still valid, then wipe local state.
+          await deregisterPushOnLogout(api);
+          if (refresh) {
+            await api.post("/api/auth/logout/", { refresh }).catch(() => undefined);
+          }
+        }
         await tokenStorage.set(null);
         await setStoredUser(null);
         api.setTokens(null);
         setTokens(null);
         setUser(null);
-        if (wasDemoMode) {
-          await api.setDemoMode(false);
-          return;
-        }
-        if (refresh) {
-          await api.post("/api/auth/logout/", { refresh }).catch(() => undefined);
-        }
       }
     }),
     [api, initialized, tokens, user]

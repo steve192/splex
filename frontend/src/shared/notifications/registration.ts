@@ -153,6 +153,22 @@ export async function setDevicePushEnabled(api: ApiClient, enabled: boolean): Pr
   }
 }
 
+/**
+ * Called on logout: mark this device's push token / web-push subscription as
+ * disabled on the backend.  Must be called *before* the auth token is cleared
+ * so the request can still authenticate.  Best-effort — never throws.  The
+ * local preference is intentionally left unchanged: if the same user logs back
+ * in, the bootstrap flow will re-enable the subscription automatically.
+ */
+export async function deregisterPushOnLogout(api: ApiClient): Promise<void> {
+  try {
+    await registerForPlatform(api, false);
+  } catch {
+    // Silently ignore: logout must succeed even when the push infrastructure
+    // is unavailable (e.g. no network, no EAS projectId in dev builds).
+  }
+}
+
 /** Run once on app startup. Silently re-registers if the user previously opted in. */
 export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePushState> {
   const preference = await getLocalPushPreference();

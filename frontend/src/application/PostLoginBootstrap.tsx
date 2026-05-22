@@ -21,7 +21,13 @@ export function PostLoginBootstrap() {
   const didBootstrap = useRef(false);
 
   useEffect(() => {
-    if (!initialized || !user) return;
+    if (!initialized) return;
+    if (!user) {
+      // Reset so the next login re-runs the bootstrap (e.g. after logout + re-login
+      // in the same session, or when a different account logs in on the same device).
+      didBootstrap.current = false;
+      return;
+    }
     if (didBootstrap.current) return;
     didBootstrap.current = true;
 
