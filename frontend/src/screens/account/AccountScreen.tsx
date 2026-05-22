@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, HelperText, List, Portal, Switch, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Card, Dialog, HelperText, List, Portal, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
 
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
-import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import {
@@ -24,7 +23,6 @@ export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
-  const { showSuccess } = useFeedback();
   const theme = useTheme();
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
@@ -32,7 +30,6 @@ export function AccountScreen() {
   const [languageSheetOpen, setLanguageSheetOpen] = useState(false);
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
-  const [avatarImage, setAvatarImage] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
@@ -40,6 +37,7 @@ export function AccountScreen() {
   const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(user?.location_tracking_enabled ?? true);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const deleteKeyword = t("account.deleteAccountKeyword");
   const deleteEnabled = deleteConfirm.trim().toUpperCase() === deleteKeyword.toUpperCase();
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
@@ -59,16 +57,21 @@ export function AccountScreen() {
     getLocalPushPreference().then((pref) => setPushOn(pref === "on"));
   }, []);
 
-  async function save() {
-    await api.patch("/api/me/", {
-      display_name: displayName,
-      default_currency: currency,
-      locale,
-      ...(avatarImage ? { avatar_image: avatarImage } : {})
-    });
-    await refreshUser();
-    showSuccess({ icon: "check" });
-  }
+  // Single autosave entry point: patch /api/me/ then refresh local user state.
+  // Failures surface to the user via a Snackbar so they don't silently lose
+  // the change they thought they just made.
+  const saveFields = useCallback(
+    async (patch: Record<string, unknown>) => {
+      try {
+        await api.patch("/api/me/", patch);
+        await refreshUser();
+      } catch (error) {
+        const message = error instanceof Error && error.message ? error.message : t("common.error");
+        setErrorMessage(message);
+      }
+    },
+    [api, refreshUser, t]
+  );
 
   async function togglePush(next: boolean) {
     setPushBusy(true);
@@ -81,13 +84,28 @@ export function AccountScreen() {
 
   async function handleLocationTrackingToggle(enabled: boolean) {
     setLocationTrackingEnabled(enabled);
-    await api.patch("/api/me/", { location_tracking_enabled: enabled });
-    await refreshUser();
+    await saveFields({ location_tracking_enabled: enabled });
+  }
+
+  function handleDisplayNameBlur() {
+    const trimmed = displayName.trim();
+    if (trimmed === (user?.display_name ?? "")) return;
+    saveFields({ display_name: trimmed });
+  }
+
+  function handleCurrencySelect(next: string) {
+    setCurrency(next);
+    saveFields({ default_currency: next });
   }
 
   function handleLocaleSelect(next: "de" | "en") {
     setLocale(next);
-    api.patch("/api/me/", { locale: next }).catch(() => undefined);
+    saveFields({ locale: next });
+  }
+
+  function handleAvatarChange(image: { dataUrl: string; previewUrl: string }) {
+    setAvatarUrl(image.previewUrl);
+    saveFields({ avatar_image: image.dataUrl });
   }
 
   async function handleDeleteAccount() {
@@ -117,15 +135,18 @@ export function AccountScreen() {
             </View>
             <PersonAvatar name={displayName || user?.email} imageUrl={avatarUrl} size={52} />
           </View>
-          <TextInput mode="outlined" label={t("account.displayName")} value={displayName} onChangeText={setDisplayName} />
+          <TextInput
+            mode="outlined"
+            label={t("account.displayName")}
+            value={displayName}
+            onChangeText={setDisplayName}
+            onBlur={handleDisplayNameBlur}
+          />
           <ImageUploadField
             label={t("account.profileImage")}
             name={displayName || user?.email || ""}
             imageUrl={avatarUrl}
-            onChange={(image) => {
-              setAvatarImage(image.dataUrl);
-              setAvatarUrl(image.previewUrl);
-            }}
+            onChange={handleAvatarChange}
           />
           <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)}>
             {t("account.defaultCurrency")}: {currency}
@@ -152,7 +173,6 @@ export function AccountScreen() {
             </Button>
           ) : null}
           <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
-          <Button mode="contained" onPress={save}>{t("common.save")}</Button>
           <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
           <Button
             mode="text"
@@ -200,7 +220,7 @@ export function AccountScreen() {
         title={t("account.defaultCurrency")}
         options={currencyOptions}
         value={currency}
-        onSelect={setCurrency}
+        onSelect={handleCurrencySelect}
         onDismiss={() => setCurrencySheetOpen(false)}
       />
       <SelectionSheet
@@ -219,6 +239,14 @@ export function AccountScreen() {
         onSelect={setThemeMode}
         onDismiss={() => setThemeSheetOpen(false)}
       />
+      <Snackbar
+        visible={!!errorMessage}
+        onDismiss={() => setErrorMessage("")}
+        duration={6000}
+        action={{ label: t("common.dismiss"), onPress: () => setErrorMessage("") }}
+      >
+        {errorMessage}
+      </Snackbar>
     </Screen>
   );
 }
