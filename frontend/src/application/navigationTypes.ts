@@ -3,6 +3,7 @@ import { ContextType } from "../shared/types/models";
 export type RootStackParamList = {
   Main: undefined;
   Login: undefined;
+  TermsOfService: undefined;
   InvitationAccept: { token?: string } | undefined;
 };
 

@@ -1,10 +1,14 @@
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Button, Divider, HelperText, IconButton, Surface, Text, TextInput, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { RootStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
+import { openTermsOfService } from "../../shared/legal/openTermsOfService";
 import { appImages } from "../../shared/assets/images";
 import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
 import { consumeGoogleOAuthResponse } from "../../shared/auth/googleOAuthWeb";
@@ -19,6 +23,7 @@ type AuthProviders = {
 export function LoginScreen() {
   const { t } = useI18n();
   const theme = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { api, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
@@ -204,38 +209,49 @@ export function LoginScreen() {
           }
         ]}
       >
-        <View
-          style={[
-            styles.loginShell,
-            Platform.OS === "web" ? styles.loginShellWeb : undefined
-          ]}
-        >
+        <View style={styles.loginContent}>
           <View
             style={[
-              styles.loginHero,
-              Platform.OS === "web" ? styles.loginHeroWeb : undefined
+              styles.loginShell,
+              Platform.OS === "web" ? styles.loginShellWeb : undefined
             ]}
           >
-            <View style={styles.loginBrandMark}>
-              <Image source={appImages.pwaMaskableIcon} style={styles.loginBrandImage} />
+            <View
+              style={[
+                styles.loginHero,
+                Platform.OS === "web" ? styles.loginHeroWeb : undefined
+              ]}
+            >
+              <View style={styles.loginBrandMark}>
+                <Image source={appImages.pwaMaskableIcon} style={styles.loginBrandImage} />
+              </View>
+              <Text variant="displaySmall" style={styles.loginTitle}>
+                {t("auth.title")}
+              </Text>
+              <Text variant="bodyLarge" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+                {t("auth.subtitle")}
+              </Text>
             </View>
-            <Text variant="displaySmall" style={styles.loginTitle}>
-              {t("auth.title")}
-            </Text>
-            <Text variant="bodyLarge" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
-              {t("auth.subtitle")}
-            </Text>
+            <Surface
+              mode={Platform.OS === "web" ? "elevated" : "flat"}
+              style={[
+                styles.loginPanel,
+                Platform.OS === "web" ? styles.loginPanelWeb : undefined,
+                { backgroundColor: theme.colors.surface }
+              ]}
+            >
+              {form}
+            </Surface>
           </View>
-          <Surface
-            mode={Platform.OS === "web" ? "elevated" : "flat"}
-            style={[
-              styles.loginPanel,
-              Platform.OS === "web" ? styles.loginPanelWeb : undefined,
-              { backgroundColor: theme.colors.surface }
-            ]}
+        </View>
+        <View style={styles.loginFooter}>
+          <Text
+            variant="bodySmall"
+            onPress={() => openTermsOfService(() => navigation.navigate("TermsOfService"))}
+            style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
           >
-            {form}
-          </Surface>
+            {t("tos.title")}
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

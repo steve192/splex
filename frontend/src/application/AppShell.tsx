@@ -59,6 +59,7 @@ export function AppShell() {
       config: {
         screens: {
           Login: "login",
+          TermsOfService: "tos",
           InvitationAccept: "invite/:token",
           Main: {
             screens: {

@@ -1,3 +1,5 @@
+import { useNavigation } from "@react-navigation/native";
+import { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, HelperText, List, Portal, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
@@ -5,6 +7,7 @@ import { Button, Card, Dialog, HelperText, List, Portal, Snackbar, Switch, Text,
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { openTermsOfService } from "../../shared/legal/openTermsOfService";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import {
   DevicePushState,
@@ -23,6 +26,7 @@ export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const theme = useTheme();
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
@@ -215,6 +219,13 @@ export function AccountScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      <Text
+        variant="bodySmall"
+        onPress={() => openTermsOfService(() => navigation.navigate("TermsOfService"))}
+        style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
+      >
+        {t("tos.title")}
+      </Text>
       <SelectionSheet
         visible={currencySheetOpen}
         title={t("account.defaultCurrency")}

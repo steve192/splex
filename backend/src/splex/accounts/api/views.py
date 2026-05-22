@@ -1,4 +1,5 @@
 from rest_framework import permissions, status
+from rest_framework.renderers import StaticHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,6 +18,7 @@ from splex.accounts.services import (
     delete_account,
     request_magic_login,
 )
+from splex.shared.tos import render_terms_of_service_document
 from splex.shared.uploads import save_data_url_image
 
 
@@ -97,6 +99,18 @@ class MagicTokenVerifyView(APIView):
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"user": UserSerializer(user).data, "tokens": tokens})
+
+
+class TermsOfServiceView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    renderer_classes = [StaticHTMLRenderer]
+
+    def get(self, request):
+        return Response(
+            render_terms_of_service_document(),
+            content_type="text/html; charset=utf-8",
+        )
 
 
 class MeView(APIView):
