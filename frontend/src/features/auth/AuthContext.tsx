@@ -2,6 +2,8 @@ import React, { createContext, ReactNode, useContext, useEffect, useMemo, useSta
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ApiClient, ApiError, tokenStorage, Tokens } from "../../shared/api/client";
+import { DEMO_TOKENS, DEMO_USER } from "../../shared/demo/demoFixtures";
+import { loadPersistedDemoMode } from "../../shared/demo/demoMode";
 
 type User = {
   id: number;
@@ -24,6 +26,7 @@ type AuthContextValue = {
   loginWithCode(email: string, code: string): Promise<void>;
   loginWithToken(token: string): Promise<void>;
   loginWithGoogle(idToken: string): Promise<void>;
+  loginAsDemo(): Promise<void>;
   logout(): Promise<void>;
 };
 
@@ -53,7 +56,18 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
   }, [api]);
 
   useEffect(() => {
-    tokenStorage.get().then(async (stored) => {
+    (async () => {
+      if (await loadPersistedDemoMode()) {
+        // Restore the demo session without contacting the backend.
+        await api.setDemoMode(true);
+        api.setTokens(DEMO_TOKENS);
+        setTokens(DEMO_TOKENS);
+        setUser(DEMO_USER);
+        await setStoredUser(DEMO_USER);
+        setInitialized(true);
+        return;
+      }
+      const stored = await tokenStorage.get();
       if (!stored) {
         setInitialized(true);
         return;
@@ -82,7 +96,7 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
       } finally {
         setInitialized(true);
       }
-    });
+    })();
   }, [api]);
 
   const value = useMemo<AuthContextValue>(
@@ -130,13 +144,26 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         setTokens(response.tokens);
         setUser(response.user);
       },
+      async loginAsDemo() {
+        await api.setDemoMode(true);
+        await tokenStorage.set(DEMO_TOKENS);
+        await setStoredUser(DEMO_USER);
+        api.setTokens(DEMO_TOKENS);
+        setTokens(DEMO_TOKENS);
+        setUser(DEMO_USER);
+      },
       async logout() {
         const refresh = tokens?.refresh;
+        const wasDemoMode = api.isDemoMode();
         await tokenStorage.set(null);
         await setStoredUser(null);
         api.setTokens(null);
         setTokens(null);
         setUser(null);
+        if (wasDemoMode) {
+          await api.setDemoMode(false);
+          return;
+        }
         if (refresh) {
           await api.post("/api/auth/logout/", { refresh }).catch(() => undefined);
         }

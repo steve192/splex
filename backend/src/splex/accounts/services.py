@@ -71,7 +71,9 @@ def authenticate_magic_code(email: str, code: str):
 @transaction.atomic
 def authenticate_magic_token(token: str):
     token_hash = MagicLoginChallenge.hash_token(token)
-    challenge = MagicLoginChallenge.objects.select_for_update().filter(token_hash=token_hash).first()
+    challenge = (
+        MagicLoginChallenge.objects.select_for_update().filter(token_hash=token_hash).first()
+    )
     if not challenge or not challenge.is_valid():
         raise ValueError("Invalid or expired login token.")
     return consume_challenge(challenge)

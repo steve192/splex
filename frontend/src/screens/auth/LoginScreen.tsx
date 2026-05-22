@@ -16,8 +16,9 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
 
-type AuthProviders = {
+type LoginConfig = {
   google: { client_id: string | null; android_client_id: string | null };
+  demo_mode_enabled?: boolean;
 };
 
 export function LoginScreen() {
@@ -25,7 +26,7 @@ export function LoginScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { api, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
+  const { api, loginAsDemo, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
@@ -35,6 +36,8 @@ export function LoginScreen() {
   const [backendSettingsOpen, setBackendSettingsOpen] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [googleAndroidClientId, setGoogleAndroidClientId] = useState<string | undefined>(undefined);
+  const [demoModeEnabled, setDemoModeEnabled] = useState(false);
+  const [providersResolved, setProvidersResolved] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === "android") {
@@ -42,12 +45,18 @@ export function LoginScreen() {
     }
     // Fetch which optional login methods are configured on this backend.
     api
-      .get<AuthProviders>("/api/auth/providers/")
+      .get<LoginConfig>("/api/login/config/")
       .then((data) => {
         setGoogleClientId(data.google?.client_id ?? null);
         setGoogleAndroidClientId(data.google?.android_client_id ?? undefined);
+        setDemoModeEnabled(Boolean(data.demo_mode_enabled));
       })
-      .catch(() => undefined); // Silently skip - Google button just won't appear.
+      .catch(() => {
+        // Backend unreachable - assume demo mode is on so the demo path stays
+        // available offline. Other login providers stay hidden by default.
+        setDemoModeEnabled(true);
+      })
+      .finally(() => setProvidersResolved(true));
     // If we returned from a Google OAuth redirect, finish the login here.
     if (Platform.OS === "web") {
       const googleResponse = consumeGoogleOAuthResponse();
@@ -104,6 +113,17 @@ export function LoginScreen() {
   async function saveBackendUrl(value: string) {
     setBackendUrl(value);
     await api.setBaseUrl(value);
+  }
+
+  async function startDemo() {
+    setLoading(true);
+    try {
+      await loginAsDemo();
+    } catch {
+      setMessage(t("auth.demoFailed"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function verifyCode() {
@@ -191,6 +211,19 @@ export function LoginScreen() {
     </>
   );
 
+  const demoBlock =
+    providersResolved && demoModeEnabled ? (
+      <View style={styles.loginDemoSection}>
+        <Divider />
+        <Text variant="bodySmall" style={[styles.loginDemoHint, { color: theme.colors.onSurfaceVariant }]}>
+          {t("auth.demoHint")}
+        </Text>
+        <Button mode="outlined" icon="play-circle-outline" loading={loading} disabled={loading} onPress={startDemo}>
+          {t("auth.startDemo")}
+        </Button>
+      </View>
+    ) : null;
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -241,6 +274,7 @@ export function LoginScreen() {
               ]}
             >
               {form}
+              {demoBlock}
             </Surface>
           </View>
         </View>

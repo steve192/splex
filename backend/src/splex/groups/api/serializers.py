@@ -33,7 +33,11 @@ class GroupSerializer(serializers.Serializer):
 
     def get_last_expense_date(self, group):
         from splex.expenses.models import Expense
-        latest = Expense.objects.filter(group=group, deleted_at__isnull=True).order_by("-date").first()
+        latest = (
+            Expense.objects.filter(group=group, deleted_at__isnull=True)
+            .order_by("-date")
+            .first()
+        )
         return latest.date if latest else None
 
 
@@ -80,8 +84,12 @@ class ExpenseCreateSerializer(serializers.Serializer):
     split_method = serializers.CharField(required=False)
     split_payload = serializers.JSONField(required=False)
     payments = serializers.ListField(child=serializers.DictField(), required=False)
-    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
-    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True
+    )
     approximate_location = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
 

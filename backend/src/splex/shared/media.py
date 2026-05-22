@@ -1,5 +1,4 @@
 from pathlib import PurePosixPath
-from typing import Optional
 
 from django.conf import settings
 from django.core import signing
@@ -27,7 +26,7 @@ def media_storage_path(value: str) -> str:
     return path.as_posix()
 
 
-def signed_media_url(value: Optional[str]) -> str:
+def signed_media_url(value: str | None) -> str:
     if not value:
         return ""
     try:

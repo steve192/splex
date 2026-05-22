@@ -16,8 +16,8 @@ from splex.groups.services import (
 )
 from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
-from splex.settlements.models import Settlement
 from splex.participants.services import get_or_create_user_participant
+from splex.settlements.models import Settlement
 
 
 def invitation_url(token: str) -> str:
@@ -203,9 +203,15 @@ def _merge_settlements(*, source, destination):
         )
     )
     for settlement in settlements:
-        payer_id = destination.id if settlement.payer_participant_id == source.id else settlement.payer_participant_id
+        payer_id = (
+            destination.id
+            if settlement.payer_participant_id == source.id
+            else settlement.payer_participant_id
+        )
         receiver_id = (
-            destination.id if settlement.receiver_participant_id == source.id else settlement.receiver_participant_id
+            destination.id
+            if settlement.receiver_participant_id == source.id
+            else settlement.receiver_participant_id
         )
         if payer_id == receiver_id:
             if settlement.deleted_at is None:

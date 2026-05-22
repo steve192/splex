@@ -22,7 +22,9 @@ def invitation_by_token(token: str):
 
 
 def invitation_image_url(token: str, kind: str, image_url: str) -> str:
-    return f"{settings.BACKEND_PUBLIC_URL}/api/invitations/{token}/images/{kind}/" if image_url else ""
+    if not image_url:
+        return ""
+    return f"{settings.BACKEND_PUBLIC_URL}/api/invitations/{token}/images/{kind}/"
 
 
 def storage_path_from_media_url(url: str) -> str:

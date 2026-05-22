@@ -14,7 +14,11 @@ def serialize_friend(
     from splex.expenses.models import Expense
 
     other = other_participant(friendship, current_participant)
-    latest_expense = Expense.objects.filter(friendship=friendship, deleted_at__isnull=True).order_by("-date").first()
+    latest_expense = (
+        Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
+        .order_by("-date")
+        .first()
+    )
 
     payload = {
         "id": friendship.id,

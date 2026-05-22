@@ -27,7 +27,7 @@ from django.db import models
 class SoftDeletableQuerySet(models.QuerySet):
     """Adds `.active()` / `.inactive()` shortcuts based on `SOFT_DELETE_FIELD`."""
 
-    def active(self) -> "SoftDeletableQuerySet":
+    def active(self) -> SoftDeletableQuerySet:
         field = getattr(self.model, "SOFT_DELETE_FIELD", None)
         if field is None:
             raise AttributeError(
@@ -36,7 +36,7 @@ class SoftDeletableQuerySet(models.QuerySet):
             )
         return self.filter(**{f"{field}__isnull": True})
 
-    def inactive(self) -> "SoftDeletableQuerySet":
+    def inactive(self) -> SoftDeletableQuerySet:
         field = getattr(self.model, "SOFT_DELETE_FIELD", None)
         if field is None:
             raise AttributeError(

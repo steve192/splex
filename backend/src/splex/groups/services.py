@@ -69,7 +69,9 @@ def activate_group_membership(
 
     The model's `unique_together` on (group, participant) makes this race-safe.
     """
-    membership, created = GroupMembership.objects.get_or_create(group=group, participant=participant)
+    membership, created = GroupMembership.objects.get_or_create(
+        group=group, participant=participant
+    )
     if created:
         return membership, "created"
     if membership.removed_at is None:
