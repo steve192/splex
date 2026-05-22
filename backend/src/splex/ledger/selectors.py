@@ -28,11 +28,14 @@ def _ledger_items(*, group=None, friendship=None):
             "payer_participant__user", "receiver_participant__user"
         )
     )
-    return sorted(
-        [*expenses, *settlements],
-        key=lambda item: item.created_at,
-        reverse=True,
-    )
+    # Order by the user-meaningful date (expense.date / settlement creation day),
+    # then by created_at for a stable tiebreaker within the same day. Settlements
+    # have no explicit date field, so fall back to the date portion of created_at.
+    def _ledger_key(item):
+        item_date = getattr(item, "date", None) or item.created_at.date()
+        return (item_date, item.created_at)
+
+    return sorted([*expenses, *settlements], key=_ledger_key, reverse=True)
 
 
 def paginated_ledger_response(
