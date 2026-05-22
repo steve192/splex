@@ -147,9 +147,83 @@ jobs:
         if: ${{ env.EXPO_TOKEN != '' }}
         run: npm run publish-expo-production
 
-  apk:
-    name: Build Android APK
-    needs: [semantic-preview, publish-docker, publish-expo-update]
+  check-fingerprint:
+    name: Check native fingerprint
+    needs: [semantic-preview, tag]
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - name: Checkout current tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.semantic-preview.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install current dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compute current fingerprint
+        id: current
+        working-directory: frontend
+        run: |
+          HASH=$(npx @expo/fingerprint fingerprint:generate --platform android | jq -r '.hash')
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Find previous release tag
+        id: prev-tag
+        run: |
+          PREV=$(git describe --tags --abbrev=0 --match 'v*' \
+            "${{ needs.semantic-preview.outputs.tag }}^" 2>/dev/null || echo '')
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout previous tag
+        if: steps.prev-tag.outputs.tag != ''
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.prev-tag.outputs.tag }}
+          path: prev-release
+
+      - name: Install previous dependencies
+        if: steps.prev-tag.outputs.tag != ''
+        working-directory: prev-release/frontend
+        run: npm ci
+
+      - name: Compute previous fingerprint
+        id: previous
+        if: steps.prev-tag.outputs.tag != ''
+        working-directory: prev-release/frontend
+        run: |
+          HASH=$(npx @expo/fingerprint fingerprint:generate --platform android | jq -r '.hash')
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Compare fingerprints
+        id: compare
+        run: |
+          CURRENT="${{ steps.current.outputs.hash }}"
+          PREVIOUS="${{ steps.previous.outputs.hash }}"
+          echo "Current fingerprint:  $CURRENT"
+          echo "Previous fingerprint: $PREVIOUS"
+          if [ -z "$PREVIOUS" ] || [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "Fingerprint changed or no previous release — native build required"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Fingerprint unchanged — skipping native build"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-android:
+    name: Build Android (APK + AAB)
+    needs: [semantic-preview, publish-docker, publish-expo-update, check-fingerprint]
+    if: needs.check-fingerprint.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -178,10 +252,23 @@ jobs:
             ghcr.io/steve192/splex-easbuilder:latest \
             production-apk "splex-${RELEASE_VERSION}.apk"
 
-      - name: Attach APK to GitHub release
+      - name: Build Android AAB
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RELEASE_VERSION: ${{ needs.semantic-preview.outputs.version }}
+        run: |
+          docker run \
+            -e EXPO_TOKEN="$EXPO_TOKEN" \
+            -v "$(pwd)":/builder \
+            ghcr.io/steve192/splex-easbuilder:latest \
+            production "splex-${RELEASE_VERSION}.aab"
+
+      - name: Attach APK and AAB to GitHub release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.semantic-preview.outputs.tag }}
-          files: frontend/splex-${{ needs.semantic-preview.outputs.version }}.apk
+          files: |
+            frontend/splex-${{ needs.semantic-preview.outputs.version }}.apk
+            frontend/splex-${{ needs.semantic-preview.outputs.version }}.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
