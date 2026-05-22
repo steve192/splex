@@ -9,7 +9,11 @@ from splex.expenses.models import ExpenseOwedShare, ExpensePaymentShare
 from splex.friends.models import Friendship
 from splex.friends.services import create_friendship
 from splex.groups.models import GroupMembership
-from splex.groups.services import assert_group_member, ensure_friendships_for_group
+from splex.groups.services import (
+    activate_group_membership,
+    assert_group_member,
+    ensure_friendships_for_group,
+)
 from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
 from splex.settlements.models import Settlement
@@ -249,15 +253,19 @@ def accept_invitation(*, actor, token: str):
         raise ValueError("Invitation is invalid or expired.")
     if invitation.type == Invitation.Type.GROUP_JOIN:
         participant = get_or_create_user_participant(actor)
-        GroupMembership.objects.get_or_create(group=invitation.group, participant=participant)
-        ensure_friendships_for_group(invitation.group)
-        event = record_activity(
-            actor,
-            EventType.GROUP_MEMBER_JOINED,
-            group=invitation.group,
-            payload={"target_participant_id": participant.id},
-        )
-        create_notifications_for_activity(event)
+        _, status = activate_group_membership(group=invitation.group, participant=participant)
+        # Already-active members re-accepting an invite is a silent no-op so
+        # the flow doesn't surface as an error. New + reactivated paths both
+        # need friendships ensured and a "joined" event recorded.
+        if status != "already_active":
+            ensure_friendships_for_group(invitation.group)
+            event = record_activity(
+                actor,
+                EventType.GROUP_MEMBER_JOINED,
+                group=invitation.group,
+                payload={"target_participant_id": participant.id},
+            )
+            create_notifications_for_activity(event)
     elif invitation.type == Invitation.Type.CLAIM_PARTICIPANT:
         target = invitation.target_participant
         if target.user_id and target.user_id != actor.id:

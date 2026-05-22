@@ -13,7 +13,8 @@ from splex.groups.services import (
     rename_unregistered_participant,
     update_group,
 )
-from splex.friends.services import create_friendship
+from splex.friends.models import Friendship
+from splex.friends.services import accessible_friendships, create_friendship
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 
@@ -58,6 +59,75 @@ def test_add_registered_participant_adds_existing_friend_to_group():
     assert membership.removed_at is None
     event = ActivityEvent.objects.get(event_type="group.member_added", group=group)
     assert event.payload == {"target_participant_id": participant.id}
+
+
+@pytest.mark.django_db
+def test_create_friendship_is_idempotent():
+    """Calling create_friendship for an already-friends pair returns the
+    existing row without creating a second friendship or recording another
+    FRIEND_ACCEPTED activity event."""
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    friend_user = user_model.objects.create_user(email="friend@example.com", display_name="Friend")
+    friend_participant = get_or_create_user_participant(friend_user)
+
+    first = create_friendship(owner, friend_participant)
+    second = create_friendship(owner, friend_participant)
+    assert first.id == second.id
+
+    a, b = sorted([
+        get_or_create_user_participant(owner).id,
+        friend_participant.id,
+    ])
+    assert Friendship.objects.filter(
+        participant_a_id=a, participant_b_id=b, ended_at__isnull=True
+    ).count() == 1
+    assert ActivityEvent.objects.filter(event_type="friend.accepted").count() == 1
+
+
+@pytest.mark.django_db
+def test_db_constraint_blocks_two_active_friendships_for_same_pair():
+    """Defense in depth: even if a code path tried to bypass the service
+    layer, the database itself rejects a second active row for a pair."""
+    from django.db import IntegrityError
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com")
+    friend_user = user_model.objects.create_user(email="friend@example.com")
+    a_p = get_or_create_user_participant(owner)
+    b_p = get_or_create_user_participant(friend_user)
+    a, b = sorted([a_p, b_p], key=lambda p: p.id)
+    Friendship.objects.create(
+        participant_a=a, participant_b=b, source=Friendship.Source.EXPLICIT, default_currency="EUR"
+    )
+    with pytest.raises(IntegrityError):
+        Friendship.objects.create(
+            participant_a=a,
+            participant_b=b,
+            source=Friendship.Source.SHARED_GROUP,
+            default_currency="EUR",
+        )
+
+
+@pytest.mark.django_db
+def test_adding_existing_friend_to_group_does_not_create_duplicate_friendship():
+    """Regression: an EXPLICIT friendship from a friend invite must not be
+    paired with a second SHARED_GROUP row when the friend is later added to
+    a group — otherwise /api/friends/ would list them twice."""
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    friend_user = user_model.objects.create_user(email="friend@example.com", display_name="Friend")
+    friend_participant = get_or_create_user_participant(friend_user)
+    create_friendship(owner, friend_participant)
+    assert accessible_friendships(owner).count() == 1
+
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    add_registered_participant(actor=owner, group=group, participant=friend_participant)
+
+    friendships = list(accessible_friendships(owner))
+    assert len(friendships) == 1
+    # The pre-existing EXPLICIT friendship must be preserved, not overwritten.
+    assert friendships[0].source == Friendship.Source.EXPLICIT
 
 
 @pytest.mark.django_db

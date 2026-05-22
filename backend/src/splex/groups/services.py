@@ -1,11 +1,11 @@
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.friends.models import Friendship
+from splex.friends.services import active_friendship_for, get_or_create_friendship
 from splex.groups.models import Group, GroupMembership
 from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
@@ -56,25 +56,40 @@ def _record_participant_added(actor, group: Group, participant: Participant) -> 
     create_notifications_for_activity(event)
 
 
+def activate_group_membership(
+    *, group: Group, participant: Participant
+) -> tuple[GroupMembership, str]:
+    """Get-or-create an active membership for the (group, participant) pair.
+
+    Returns (membership, status) where status is one of:
+      - "created"          — a brand-new membership row was inserted.
+      - "reactivated"      — an existing soft-removed row had its `removed_at` cleared.
+      - "already_active"   — the participant was already an active member; caller decides
+                             whether that's an error or a no-op.
+
+    The model's `unique_together` on (group, participant) makes this race-safe.
+    """
+    membership, created = GroupMembership.objects.get_or_create(group=group, participant=participant)
+    if created:
+        return membership, "created"
+    if membership.removed_at is None:
+        return membership, "already_active"
+    membership.removed_at = None
+    membership.save(update_fields=["removed_at"])
+    return membership, "reactivated"
+
+
 def add_registered_participant(*, actor, group: Group, participant: Participant) -> Participant:
     assert_group_member(actor, group)
     actor_participant = get_or_create_user_participant(actor)
     if participant.id == actor_participant.id:
         raise ValueError("You are already a member of this group.")
-    if not Friendship.objects.filter(
-        Q(participant_a=actor_participant, participant_b=participant)
-        | Q(participant_a=participant, participant_b=actor_participant),
-        ended_at__isnull=True,
-    ).exists():
+    if active_friendship_for(actor_participant, participant) is None:
         raise ValueError("Only existing friends can be added as registered members.")
 
-    membership, created = GroupMembership.objects.get_or_create(group=group, participant=participant)
-    if not created and membership.removed_at is None:
+    _, status = activate_group_membership(group=group, participant=participant)
+    if status == "already_active":
         raise ValueError("Participant is already a member of this group.")
-
-    if membership.removed_at is not None:
-        membership.removed_at = None
-        membership.save(update_fields=["removed_at"])
 
     ensure_friendships_for_group(group)
     _record_participant_added(actor, group, participant)
@@ -267,6 +282,11 @@ def assert_group_member(user, group: Group) -> None:
 
 
 def ensure_friendships_for_group(group: Group):
+    """Make sure every pair of registered group members is befriended.
+
+    Pre-existing friendships (including EXPLICIT ones from friend invites) are
+    reused; only missing pairs get a fresh SHARED_GROUP row.
+    """
     registered = list(
         Participant.objects.filter(
             group_memberships__group=group,
@@ -276,10 +296,9 @@ def ensure_friendships_for_group(group: Group):
     )
     for left_index, left in enumerate(registered):
         for right in registered[left_index + 1 :]:
-            a, b = sorted([left, right], key=lambda participant: participant.id)
-            Friendship.objects.get_or_create(
-                participant_a=a,
-                participant_b=b,
+            get_or_create_friendship(
+                left,
+                right,
                 source=Friendship.Source.SHARED_GROUP,
-                defaults={"default_currency": group.default_currency},
+                default_currency=group.default_currency,
             )

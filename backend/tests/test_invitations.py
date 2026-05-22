@@ -105,3 +105,28 @@ def test_claim_invitation_merges_existing_removed_member_participant():
     memberships = GroupMembership.objects.filter(group=group, participant=placeholder)
     assert memberships.count() == 1
     assert memberships.get().removed_at is None
+
+
+@pytest.mark.django_db
+def test_accepting_a_second_group_invite_is_a_no_op_for_active_member():
+    """Accepting a fresh invite to a group you're already an active member of
+    must not create a second membership and must not raise."""
+    from splex.activity.models import ActivityEvent
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com")
+    invitee = user_model.objects.create_user(email="invitee@example.com")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+
+    _, token_one, _ = create_group_invitation(actor=owner, group=group)
+    accept_invitation(actor=invitee, token=token_one)
+    _, token_two, _ = create_group_invitation(actor=owner, group=group)
+    accept_invitation(actor=invitee, token=token_two)
+
+    invitee_p = get_or_create_user_participant(invitee)
+    assert GroupMembership.objects.filter(group=group, participant=invitee_p).count() == 1
+    # The second accept is a silent no-op — no duplicate "joined" activity event.
+    joined_events = ActivityEvent.objects.filter(
+        group=group, event_type="group.member_joined"
+    )
+    assert joined_events.count() == 1

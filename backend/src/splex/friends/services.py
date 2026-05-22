@@ -42,23 +42,55 @@ def other_participant(friendship: Friendship, current: Participant) -> Participa
 
 
 @transaction.atomic
+def active_friendship_for(participant_a: Participant, participant_b: Participant) -> Friendship | None:
+    """Return the active Friendship for the unordered pair, or None.
+
+    Use this for existence checks; use `get_or_create_friendship` when you may
+    need to create one.
+    """
+    a, b = sorted([participant_a, participant_b], key=lambda p: p.id)
+    return Friendship.objects.filter(
+        participant_a=a, participant_b=b, ended_at__isnull=True
+    ).first()
+
+
+def get_or_create_friendship(
+    participant_a: Participant,
+    participant_b: Participant,
+    *,
+    source: str,
+    default_currency: str,
+) -> tuple[Friendship, bool]:
+    """Idempotent pair-based get-or-create. Returns (friendship, created).
+
+    The unique constraint on Friendship is `(participant_a, participant_b)` with
+    `ended_at IS NULL`, so this respects the model invariant and never produces
+    duplicates regardless of `source`.
+    """
+    existing = active_friendship_for(participant_a, participant_b)
+    if existing:
+        return existing, False
+    a, b = sorted([participant_a, participant_b], key=lambda p: p.id)
+    return Friendship.objects.create(
+        participant_a=a, participant_b=b, source=source, default_currency=default_currency
+    ), True
+
+
 def create_friendship(actor, other_participant, source=Friendship.Source.EXPLICIT):
+    """Accept-an-invite entry point: ensures a friendship exists between `actor`
+    and `other_participant` and records a FRIEND_ACCEPTED event on first creation
+    only (re-acceptance is a silent no-op so we don't spam notifications)."""
     actor_participant = get_or_create_user_participant(actor)
     if actor_participant.id == other_participant.id:
         raise ValueError("You cannot befriend yourself.")
-    a, b = sorted([actor_participant, other_participant], key=lambda participant: participant.id)
-    friendship = Friendship.objects.filter(
-        participant_a=a,
-        participant_b=b,
-        ended_at__isnull=True,
-    ).first()
-    if not friendship:
-        friendship = Friendship.objects.create(
-            participant_a=a,
-            participant_b=b,
-            source=source,
-            default_currency=actor.default_currency,
-        )
+    friendship, created = get_or_create_friendship(
+        actor_participant,
+        other_participant,
+        source=source,
+        default_currency=actor.default_currency,
+    )
+    if not created:
+        return friendship
     event = record_activity(
         actor,
         EventType.FRIEND_ACCEPTED,
