@@ -67,6 +67,7 @@ def serialize_settlement(settlement):
         "receiver_avatar_url": participant_avatar_url(settlement.receiver_participant),
         "amount": str(settlement.amount),
         "currency": settlement.currency,
+        "kind": settlement.kind,
         "created_at": settlement.created_at,
         "deleted_at": settlement.deleted_at,
     }

@@ -1,10 +1,13 @@
 from django.conf import settings
 from django.db import models
 
+from splex.shared.managers import SoftDeletableManager
 from splex.shared.models import TimeStampedModel
 
 
 class Expense(TimeStampedModel):
+    SOFT_DELETE_FIELD = "deleted_at"
+
     class SplitMethod(models.TextChoices):
         EQUAL_ALL = "equal_all", "Equal all"
         EQUAL_SELECTED = "equal_selected", "Equal selected"
@@ -34,6 +37,8 @@ class Expense(TimeStampedModel):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
     )
     deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeletableManager()
 
 
 class ExpensePaymentShare(models.Model):

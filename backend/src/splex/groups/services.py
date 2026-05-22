@@ -200,6 +200,18 @@ def _convert_participant_in_group(*, group: Group, participant: Participant) -> 
 
 @transaction.atomic
 def remove_group_participant(*, actor, group: Group, participant: Participant) -> None:
+    """Remove a participant from a group.
+
+    Behavior depends on the participant kind:
+      - REGISTERED:   convert to an unregistered placeholder so the user keeps
+                      access to their own data while history in this group is
+                      preserved under a placeholder identity (existing behavior).
+      - UNREGISTERED: auto-settle any outstanding balances with the other group
+                      members, mark the membership as removed, and soft-delete
+                      the Participant row. The row stays so historical expenses
+                      still resolve `effective_display_name`, but they're no
+                      longer an active group member.
+    """
     assert_group_member(actor, group)
     if not GroupMembership.objects.filter(
         group=group, participant=participant, removed_at__isnull=True
@@ -207,14 +219,49 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
         raise ValueError("Participant is not an active member of this group.")
     if participant.user_id == actor.id:
         raise ValueError("You cannot remove yourself from the group here.")
-    placeholder = _convert_participant_in_group(group=group, participant=participant)
+
+    if participant.kind == Participant.Kind.UNREGISTERED:
+        target_id = _settle_and_soft_delete(group=group, participant=participant)
+    else:
+        target_id = _convert_participant_in_group(group=group, participant=participant).id
+
     event = record_activity(
         actor,
         EventType.GROUP_MEMBER_REMOVED,
         group=group,
-        payload={"target_participant_id": placeholder.id},
+        payload={"target_participant_id": target_id},
     )
     create_notifications_for_activity(event)
+
+
+def _settle_and_soft_delete(*, group: Group, participant: Participant) -> int:
+    """Zero out the participant's balances with settlement rows, then mark them
+    removed from the group and soft-delete the Participant row.
+
+    Returns the (now soft-deleted) participant's id for activity logging — the
+    row still exists so expense serializers can resolve their name.
+    """
+    from splex.balances.selectors import group_debts
+
+    for (debtor_id, creditor_id), amount in group_debts(group).items():
+        if amount <= 0:
+            continue
+        if participant.id not in (debtor_id, creditor_id):
+            continue
+        Settlement.objects.create(
+            group=group,
+            payer_participant_id=debtor_id,
+            receiver_participant_id=creditor_id,
+            amount=amount,
+            currency=group.default_currency,
+            kind=Settlement.Kind.AUTO_WRITE_OFF,
+        )
+
+    now = timezone.now()
+    GroupMembership.objects.filter(group=group, participant=participant).update(removed_at=now)
+    participant.deleted_at = now
+    participant.save(update_fields=["deleted_at", "updated_at"])
+    return participant.id
 
 
 @transaction.atomic

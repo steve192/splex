@@ -221,6 +221,8 @@
   "settlement.received": "Received",
   "settlement.receiver": "Receiver",
   "settlement.title": "Settlement",
+  "settlement.autoWriteOffTitle": "Balance written off",
+  "settlement.autoWriteOffLine": "{name}'s remaining balance was written off when they were removed from the group.",
   "statistics.title": "Statistics",
   "statistics.summary": "Overview",
   "statistics.total": "Total spent",
