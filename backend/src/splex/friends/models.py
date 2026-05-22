@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 from splex.shared.models import TimeStampedModel
 
@@ -20,9 +21,14 @@ class Friendship(TimeStampedModel):
 
     class Meta:
         constraints = [
+            # At most one *active* friendship per pair, regardless of how it was
+            # established (explicit invite vs auto-created from a shared group).
+            # Ended friendships (ended_at not null) are excluded so unfriend+
+            # refriend cycles remain possible.
             models.UniqueConstraint(
-                fields=["participant_a", "participant_b", "source"],
-                name="unique_friendship_pair_source",
-            )
+                fields=["participant_a", "participant_b"],
+                condition=Q(ended_at__isnull=True),
+                name="unique_active_friendship_pair",
+            ),
         ]
 
