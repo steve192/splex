@@ -3,8 +3,15 @@
 Self-hosted expense opensource alternative to splitwise.
 
 Split your expenses with friends and keep track who paid for what and who owes money to whom.
+<p align="center">
+   <img src="docs/screenshots/overview.png" alt="Splex Overview Screen" width="200"/>
+   <img src="docs/screenshots/add-expense.png" alt="Splex Overview Screen" width="200"/>
+   <img src="docs/screenshots/group.png" alt="Splex Overview Screen" width="200"/>
+</p>
 
 Available as Web App (PWA) that allows installation on mobile devices without downloading an app, but also as Android App.
+
+[<img alt='Get it on Google Play' width=323 height=125 src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/>](https://play.google.com/store/apps/details?id=com.sterul.splex)
 
 
 ## Deployment
