@@ -22,4 +22,4 @@ RUN adduser --system --group --home /app splex \
     && mkdir -p /app/data /app/.gunicorn \
     && chown -R splex:splex /app/data /app/.gunicorn /app/backend/staticfiles /app/backend/static_pwa
 EXPOSE 8000
-CMD ["sh", "-c", "mkdir -p /app/data && chown -R splex:splex /app/data && exec su -s /bin/sh splex -c 'python manage.py migrate --noinput && python manage.py cleanup_links && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-60}'"]
+CMD ["sh", "-c", "mkdir -p /app/data && chown -R splex:splex /app/data && exec su -s /bin/sh splex -c 'python -c \"from splex.shared.tos import ensure_terms_of_service_file; ensure_terms_of_service_file()\" && python manage.py migrate --noinput && python manage.py cleanup_links && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --worker-class gthread --workers ${GUNICORN_WORKERS:-2} --threads ${GUNICORN_THREADS:-4} --timeout ${GUNICORN_TIMEOUT:-60}'"]

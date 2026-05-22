@@ -225,11 +225,21 @@ export const styles = StyleSheet.create({
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28
   },
+  loginContent: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    width: "100%"
+  },
   loginScreen: {
     alignItems: "center",
     flexGrow: 1,
-    justifyContent: "center",
     padding: 20
+  },
+  loginFooter: {
+    alignItems: "center",
+    paddingTop: 16,
+    width: "100%"
   },
   loginShell: {
     width: "100%"
@@ -243,6 +253,10 @@ export const styles = StyleSheet.create({
   loginTitle: {
     fontWeight: "700",
     marginBottom: 8
+  },
+  subtleFooterLink: {
+    alignSelf: "center",
+    paddingVertical: 6
   },
   rowActions: {
     flexDirection: "row",

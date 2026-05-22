@@ -183,6 +183,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(env("MEDIA_ROOT", str(BASE_DIR.parent / "data" / "media")))
+TOS_FILE_PATH = Path(env("TOS_FILE_PATH", "/app/data/tos.html"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
