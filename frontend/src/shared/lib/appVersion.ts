@@ -10,17 +10,20 @@ import type { TranslateFn } from "../i18n/I18nContext";
  * - On native, we show the current (post-OTA) version and, when it differs,
  *   the native APK's baked-in version alongside it so users can tell whether
  *   they're running the original install or a delivered OTA update.
+ *
+ * Note: `expo-constants` v55 removed `nativeApplicationVersion`; the baked-in
+ * version now has to come from `expo-application`.
  */
 export function appVersionLabel(t: TranslateFn): string {
-  if (Platform.OS === "web") {
-    const Constants = require("expo-constants").default as typeof import("expo-constants").default;
-    const version = Constants.expoConfig?.version ?? "";
-    return version ? t("about.version", { version }) : "";
-  }
-
   const Constants = require("expo-constants").default as typeof import("expo-constants").default;
   const current = Constants.expoConfig?.version ?? "";
-  const native = Constants.nativeApplicationVersion ?? "";
+
+  if (Platform.OS === "web") {
+    return current ? t("about.version", { version: current }) : "";
+  }
+
+  const Application = require("expo-application") as typeof import("expo-application");
+  const native = Application.nativeApplicationVersion ?? "";
 
   if (!current && !native) return "";
   if (!native || native === current) return t("about.version", { version: current || native });
