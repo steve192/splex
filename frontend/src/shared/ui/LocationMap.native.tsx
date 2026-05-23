@@ -18,7 +18,7 @@ export interface LocationMapProps {
 const DEFAULT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 function buildHtml(latitude: number, longitude: number, tileUrl: string): string {
-  // Tile URL contains placeholders like {s}/{z}/{x}/{y} — embed as JSON string for safety.
+  // Tile URL contains placeholders like {s}/{z}/{x}/{y} - embed as JSON string for safety.
   const safeTileUrl = JSON.stringify(tileUrl);
   return `<!DOCTYPE html>
 <html>

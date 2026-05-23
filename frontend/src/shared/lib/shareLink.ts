@@ -20,7 +20,7 @@ interface ShareLinkOptions {
  *
  * Returns "shared" when the share sheet was displayed (we don't know what the
  * user picked, that's OS-private), "copied" when the link landed on the
- * clipboard, and "failed" when no mechanism worked — callers should then fall
+ * clipboard, and "failed" when no mechanism worked - callers should then fall
  * back to a manual-copy dialog.
  */
 export async function shareLink(url: string, opts: ShareLinkOptions = {}): Promise<ShareLinkResult> {

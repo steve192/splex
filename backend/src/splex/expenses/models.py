@@ -40,6 +40,15 @@ class Expense(TimeStampedModel):
 
     objects = SoftDeletableManager()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["created_by", "client_id"],
+                condition=~models.Q(client_id=""),
+                name="expense_unique_client_id_per_user",
+            ),
+        ]
+
 
 class ExpensePaymentShare(models.Model):
     expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="payment_shares")

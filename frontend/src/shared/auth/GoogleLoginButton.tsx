@@ -12,7 +12,7 @@ import { startGoogleOAuthRedirect } from "./googleOAuthWeb";
 WebBrowser.maybeCompleteAuthSession();
 
 interface GoogleLoginButtonProps {
-  /** Web OAuth client ID — must be defined; parent only renders this when available. */
+  /** Web OAuth client ID - must be defined; parent only renders this when available. */
   clientId: string;
   /** Android native client ID; only used on Android when a dedicated client exists. */
   androidClientId?: string;

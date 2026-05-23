@@ -3,7 +3,7 @@ unique constraint allowing both an `explicit` and a `shared_group` row for the
 same pair.
 
 For each (participant_a, participant_b) with more than one active friendship:
-1. Pick a keeper — prefer the `explicit` row, otherwise the oldest by id.
+1. Pick a keeper - prefer the `explicit` row, otherwise the oldest by id.
 2. Re-point every expense, settlement, and activity event that references one
    of the duplicates to point at the keeper instead.
 3. Delete the duplicate rows.
@@ -39,7 +39,7 @@ def dedupe_pairs(apps, schema_editor):
 
 
 def noop_reverse(apps, schema_editor):
-    """Dedupe is not reversible — we have no record of which rows were merged."""
+    """Dedupe is not reversible - we have no record of which rows were merged."""
 
 
 class Migration(migrations.Migration):

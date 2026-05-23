@@ -79,3 +79,24 @@ def test_create_expense_with_exact_shares_persists_expected_rows():
     paid_total = sum((share.amount for share in expense.payment_shares.all()), Decimal("0.00"))
     assert owed_total == Decimal("90.00")
     assert paid_total == Decimal("90.00")
+
+
+@pytest.mark.django_db
+def test_create_expense_is_idempotent_on_client_id():
+    User = get_user_model()
+    alice = User.objects.create_user(email="alice@example.com")
+    group = create_group(actor=alice, name="Trip", default_currency="EUR")
+    add_unregistered_participant(actor=alice, group=group, display_name="Bob")
+
+    data = {
+        "client_id": "mutation-42",
+        "description": "Hotel",
+        "amount": "60.00",
+        "currency": "EUR",
+        "split_method": "equal_all",
+    }
+    first = create_expense(actor=alice, group=group, data=data)
+    second = create_expense(actor=alice, group=group, data=data)
+
+    assert first.id == second.id
+    assert Expense.objects.filter(client_id="mutation-42").count() == 1

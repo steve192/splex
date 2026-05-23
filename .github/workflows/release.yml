@@ -223,10 +223,10 @@ jobs:
           echo "Current fingerprint:  $CURRENT"
           echo "Previous fingerprint: $PREVIOUS"
           if [ -z "$PREVIOUS" ] || [ "$CURRENT" != "$PREVIOUS" ]; then
-            echo "Fingerprint changed or no previous release — native build required"
+            echo "Fingerprint changed or no previous release - native build required"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Fingerprint unchanged — skipping native build"
+            echo "Fingerprint unchanged - skipping native build"
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -299,6 +299,6 @@ jobs:
           body: |
 
             ---
-            _No Android release produced — no native dependency changes detected since the previous release. The existing APK/AAB remains compatible; updates are delivered to installed apps via Expo OTA._
+            _No Android release produced - no native dependency changes detected since the previous release. The existing APK/AAB remains compatible; updates are delivered to installed apps via Expo OTA._
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

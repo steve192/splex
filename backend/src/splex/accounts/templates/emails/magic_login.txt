@@ -9,4 +9,4 @@ This code and link expire in {{ minutes_valid }} minutes.
 
 If you didn't request this, you can safely ignore this email.
 
-— Splex
+- Splex

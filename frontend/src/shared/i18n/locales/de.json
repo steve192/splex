@@ -234,7 +234,7 @@
   "statistics.average": "Durchschnitt",
   "statistics.perWeek": "Pro Woche",
   "statistics.dateRange": "Von {first} bis {last}",
-  "statistics.noData": "Noch keine Ausgaben — füge eine hinzu, um Statistiken zu sehen.",
+  "statistics.noData": "Noch keine Ausgaben - füge eine hinzu, um Statistiken zu sehen.",
   "statistics.monthlyTitle": "Monatliche Ausgaben",
   "statistics.monthlyEmpty": "Keine Ausgaben in den letzten 12 Monaten.",
   "statistics.contributionsTitle": "Wer hat was bezahlt",

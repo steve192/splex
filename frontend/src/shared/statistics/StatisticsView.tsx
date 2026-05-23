@@ -400,14 +400,14 @@ export function StatisticsView({ endpoint, onExpensePress }: StatisticsViewProps
               points={locations.map((loc) => ({
                 latitude: loc.latitude,
                 longitude: loc.longitude,
-                label: `${loc.description} — ${plainAmountText(loc.amount, loc.currency)}`
+                label: `${loc.description} - ${plainAmountText(loc.amount, loc.currency)}`
               }))}
             />
           </Card.Content>
         </Card>
       ) : null}
 
-      {/* Currency breakdown — only when more than one currency */}
+      {/* Currency breakdown - only when more than one currency */}
       {summary.currency_breakdown.length > 1 ? (
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>

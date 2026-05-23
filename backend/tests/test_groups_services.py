@@ -113,7 +113,7 @@ def test_db_constraint_blocks_two_active_friendships_for_same_pair():
 def test_adding_existing_friend_to_group_does_not_create_duplicate_friendship():
     """Regression: an EXPLICIT friendship from a friend invite must not be
     paired with a second SHARED_GROUP row when the friend is later added to
-    a group — otherwise /api/friends/ would list them twice."""
+    a group - otherwise /api/friends/ would list them twice."""
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     friend_user = user_model.objects.create_user(email="friend@example.com", display_name="Friend")
