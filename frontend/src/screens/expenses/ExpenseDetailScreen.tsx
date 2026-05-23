@@ -1,6 +1,6 @@
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, Divider, IconButton, List, Portal, Text, useTheme } from "react-native-paper";
 
@@ -8,7 +8,8 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { formatDeviceDate } from "../../shared/lib/dates";
-import { Expense } from "../../shared/types/models";
+import { asNumber } from "../../shared/lib/money";
+import { Expense, Friend, Group } from "../../shared/types/models";
 import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
@@ -30,14 +31,37 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
   const dangerColor = negativeColor(theme);
   const expenseId = route.params.id;
   const [expense, setExpense] = useState<Expense | null>(null);
+  const [currentParticipantId, setCurrentParticipantId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const converted = expense
     ? expense.original_currency !== expense.converted_currency ||
       expense.original_amount !== expense.converted_amount
     : false;
+  const personalNet = useMemo(() => {
+    if (!expense || currentParticipantId == null) return null;
+    const paid = expense.payments
+      .filter((share) => share.participant_id === currentParticipantId)
+      .reduce((sum, share) => sum + asNumber(share.amount), 0);
+    const owed = expense.owed
+      .filter((share) => share.participant_id === currentParticipantId)
+      .reduce((sum, share) => sum + asNumber(share.amount), 0);
+    return paid - owed;
+  }, [expense, currentParticipantId]);
 
   async function load() {
-    setExpense(await api.get<Expense>(`/api/expenses/${expenseId}/`));
+    const loaded = await api.get<Expense>(`/api/expenses/${expenseId}/`);
+    setExpense(loaded);
+    try {
+      if (loaded.group_id) {
+        const group = await api.get<Group>(`/api/groups/${loaded.group_id}/`);
+        setCurrentParticipantId(group.current_participant_id ?? null);
+      } else if (loaded.friendship_id) {
+        const friend = await api.get<Friend>(`/api/friends/${loaded.friendship_id}/`);
+        setCurrentParticipantId(friend.current_participant_id ?? null);
+      }
+    } catch {
+      // best-effort: personal balance card just won't render
+    }
   }
 
   useFocusEffect(
@@ -94,9 +118,22 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                     variant="headlineSmall"
                     amount={expense.converted_amount}
                     currency={expense.converted_currency}
+                    plain
                   />
                 </Card.Content>
               </Card>
+              {personalNet !== null ? (
+                <Card mode="elevated" style={styles.metricTile}>
+                  <Card.Content>
+                    <Text variant="labelLarge">{t("expense.yourBalance")}</Text>
+                    <MoneyText
+                      variant="headlineSmall"
+                      amount={personalNet}
+                      currency={expense.converted_currency}
+                    />
+                  </Card.Content>
+                </Card>
+              ) : null}
               {converted ? (
                 <Card mode="elevated" style={styles.metricTile}>
                   <Card.Content>

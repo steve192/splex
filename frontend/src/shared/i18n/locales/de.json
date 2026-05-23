@@ -116,6 +116,7 @@
   "expense.payerLine": "{payer} hat {amount} bezahlt",
   "expense.owedBy": "Geschuldet von",
   "expense.originalAmount": "Originalbetrag",
+  "expense.yourBalance": "Dein Saldo",
   "expense.paymentsPayload": "Zahlungen als JSON für mehrere Zahler",
   "expense.pendingSync": "Synchronisierung ausstehend",
   "expense.pendingSyncCount": "{count} ausstehend",
