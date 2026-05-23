@@ -76,15 +76,18 @@ def _normalize_adjusted_equal(total, payload, participant_ids):
     selected = (
         payload.get("participant_ids") or payload.get("participantIds") or participant_ids
     )
-    base = split_evenly(total, selected)
     adjustments = {
         int(item["participant_id"]): money(item["amount"])
         for item in payload.get("adjustments", [])
     }
+    adjustment_sum = sum(adjustments.values(), Decimal("0"))
+    base = split_evenly(money(total) - adjustment_sum, selected)
     adjusted = {
         participant_id: money(amount + adjustments.get(participant_id, 0))
         for participant_id, amount in base.items()
     }
+    if any(amount < Decimal("0") for amount in adjusted.values()):
+        raise ValueError("Adjustments push someone's owed share below zero.")
     assert_sum("Adjusted owed shares", adjusted.values(), total)
     return adjusted
 

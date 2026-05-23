@@ -176,10 +176,20 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     return 100 - used;
   }, [selectedParticipantIds, splitValues]);
 
-  const adjustmentSum = useMemo(
-    () => selectedParticipantIds.reduce((sum, id) => sum + asNumber(splitValues[id]), 0),
-    [selectedParticipantIds, splitValues]
-  );
+  const adjustedHasNegativeShare = useMemo(() => {
+    if (tabValue !== "adjusted_equal") return false;
+    return selectedParticipantIds.some(
+      (id) =>
+        perMemberShare({
+          participantId: id,
+          tabValue,
+          selectedParticipantIds,
+          selectedEqualShares,
+          splitValues,
+          totalAmount
+        }) < -SPLIT_TOLERANCE
+    );
+  }, [selectedEqualShares, selectedParticipantIds, splitValues, tabValue, totalAmount]);
 
   const paymentLeft = useMemo(() => {
     if (!multiPayer) return 0;
@@ -192,8 +202,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     if (tabValue === "equal") return false;
     if (tabValue === "exact") return Math.abs(exactLeft) > SPLIT_TOLERANCE;
     if (tabValue === "percentage") return Math.abs(percentageLeft) > SPLIT_TOLERANCE;
-    return Math.abs(adjustmentSum) > SPLIT_TOLERANCE;
-  }, [adjustmentSum, exactLeft, percentageLeft, selectedParticipantIds.length, tabValue]);
+    return adjustedHasNegativeShare;
+  }, [adjustedHasNegativeShare, exactLeft, percentageLeft, selectedParticipantIds.length, tabValue]);
 
   const paymentConfigInvalid = multiPayer ? Math.abs(paymentLeft) > SPLIT_TOLERANCE : false;
 
@@ -654,8 +664,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         splitConfigInvalid={splitConfigInvalid}
         exactLeft={exactLeft}
         percentageLeft={percentageLeft}
-        adjustmentSum={adjustmentSum}
-        totalAmount={totalAmount}
+        adjustedHasNegativeShare={adjustedHasNegativeShare}
         currency={currency}
         perMemberShare={(participantId) =>
           perMemberShare({
@@ -668,7 +677,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           })
         }
         onDismiss={() => setActiveSheet(null)}
-        onSplitMethodChange={setSplitMethod}
+        onSplitMethodChange={(method) => {
+          if (splitTabValue(method) !== tabValue) setSplitValues({});
+          setSplitMethod(method);
+        }}
         onEnsureParticipants={() => {
           if (!selectedParticipantIds.length) {
             setSelectedParticipantIds(participants.map((participant) => participant.id));

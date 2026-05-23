@@ -52,6 +52,39 @@ describe("expense form logic", () => {
     ).toBe(4);
   });
 
+  it("adjusted_equal splits the rest equally after subtracting adjustments", () => {
+    // 5€ split with 2 people, +1€ adjustment on person 1
+    // → base = (5 - 1) / 2 = 2, person 1 = 3, person 2 = 2 (sum = 5)
+    const args = {
+      tabValue: "adjusted_equal" as const,
+      selectedParticipantIds: [1, 2],
+      selectedEqualShares: {},
+      splitValues: { 1: "1" },
+      totalAmount: 5
+    };
+    expect(perMemberShare({ ...args, participantId: 1 })).toBeCloseTo(3, 2);
+    expect(perMemberShare({ ...args, participantId: 2 })).toBeCloseTo(2, 2);
+  });
+
+  it("adjusted_equal supports adjustments on multiple participants", () => {
+    // 12€ split with 3 people; +2 on p1, -1 on p3
+    // → base = (12 - 1) / 3 = 3.67, 3.67, 3.66 (cent rounding)
+    //   p1 = base + 2, p2 = base, p3 = base - 1, total still 12
+    const args = {
+      tabValue: "adjusted_equal" as const,
+      selectedParticipantIds: [1, 2, 3],
+      selectedEqualShares: {},
+      splitValues: { 1: "2", 3: "-1" },
+      totalAmount: 12
+    };
+    const shares = [1, 2, 3].map((id) =>
+      perMemberShare({ ...args, participantId: id })
+    );
+    expect(shares.reduce((s, v) => s + v, 0)).toBeCloseTo(12, 2);
+    expect(shares[0]).toBeGreaterThan(shares[1]);
+    expect(shares[1]).toBeGreaterThan(shares[2]);
+  });
+
   it("builds split payloads by split method", () => {
     expect(buildSplitPayload({ method: "equal_all", selectedParticipantIds: [1], splitValues: {} })).toBeUndefined();
     expect(

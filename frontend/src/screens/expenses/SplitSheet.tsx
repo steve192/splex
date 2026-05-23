@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { View } from "react-native";
-import { Button, Checkbox, List, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Checkbox, Dialog, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { formatMoney } from "../../shared/lib/money";
@@ -21,8 +22,7 @@ type SplitSheetProps = {
   splitConfigInvalid: boolean;
   exactLeft: number;
   percentageLeft: number;
-  adjustmentSum: number;
-  totalAmount: number;
+  adjustedHasNegativeShare: boolean;
   currency: string;
   perMemberShare: (participantId: number) => number;
   onDismiss: () => void;
@@ -42,8 +42,7 @@ export function SplitSheet({
   splitConfigInvalid,
   exactLeft,
   percentageLeft,
-  adjustmentSum,
-  totalAmount,
+  adjustedHasNegativeShare,
   currency,
   perMemberShare,
   onDismiss,
@@ -55,6 +54,14 @@ export function SplitSheet({
   const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
+  const [infoVisible, setInfoVisible] = useState(false);
+
+  function infoBodyKey(): string {
+    if (tabValue === "equal") return "split.info.equal";
+    if (tabValue === "exact") return "split.info.exact";
+    if (tabValue === "percentage") return "split.info.percentage";
+    return "split.info.adjusted_equal";
+  }
 
   function nameFor(participant: Participant) {
     return participant.id === currentParticipantId ? t("common.you") : participant.display_name;
@@ -76,15 +83,8 @@ export function SplitSheet({
         </Text>
       );
     }
-    if (Math.abs(adjustmentSum) <= SPLIT_TOLERANCE) return null;
-    if (Math.abs(adjustmentSum) > totalAmount + SPLIT_TOLERANCE) {
-      return <Text style={errorStyle}>{t("expense.adjustmentOverTotal")}</Text>;
-    }
-    return (
-      <Text style={errorStyle}>
-        {t("expense.adjustmentMustZero", { amount: currencyAmount(adjustmentSum, currency) })}
-      </Text>
-    );
+    if (!adjustedHasNegativeShare) return null;
+    return <Text style={errorStyle}>{t("expense.adjustmentNegativeShare")}</Text>;
   }
 
   function renderSplitMemberRow(participant: Participant) {
@@ -137,7 +137,15 @@ export function SplitSheet({
       >
         <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
         <View style={styles.rowBetween}>
-          <Text variant="titleLarge">{t("expense.split")}</Text>
+          <View style={styles.inline}>
+            <Text variant="titleLarge">{t("expense.split")}</Text>
+            <IconButton
+              icon="information-outline"
+              size={20}
+              accessibilityLabel={t("split.info.title")}
+              onPress={() => setInfoVisible(true)}
+            />
+          </View>
           <Button disabled={splitConfigInvalid} onPress={onDismiss}>
             {t("common.done")}
           </Button>
@@ -159,6 +167,15 @@ export function SplitSheet({
         {splitStatus()}
         <View style={styles.gap}>{participants.map((participant) => renderSplitMemberRow(participant))}</View>
       </Modal>
+      <Dialog visible={infoVisible} onDismiss={() => setInfoVisible(false)}>
+        <Dialog.Title>{t("split.info.title")}</Dialog.Title>
+        <Dialog.Content>
+          <Text variant="bodyMedium">{t(infoBodyKey())}</Text>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button onPress={() => setInfoVisible(false)}>{t("common.done")}</Button>
+        </Dialog.Actions>
+      </Dialog>
     </Portal>
   );
 }
