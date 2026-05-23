@@ -2,6 +2,33 @@
 
 from django.conf import settings
 from django.db import migrations, models
+from django.db.models import Count
+
+
+def clear_duplicate_client_ids(apps, schema_editor):
+    """Existing data may contain duplicates produced by the pre-fix bug where a
+    dropped connection caused the same expense to be created twice (once via
+    the REST endpoint, once via the sync queue). Keep the oldest row's
+    ``client_id`` and blank it out on the rest so the new partial unique
+    constraint can be applied without losing any expense rows."""
+    Expense = apps.get_model("expenses", "Expense")
+    duplicates = (
+        Expense.objects.exclude(client_id="")
+        .values("created_by_id", "client_id")
+        .annotate(count=Count("id"))
+        .filter(count__gt=1)
+    )
+    for entry in duplicates:
+        ids = list(
+            Expense.objects.filter(
+                created_by_id=entry["created_by_id"],
+                client_id=entry["client_id"],
+            )
+            .order_by("id")
+            .values_list("id", flat=True)
+        )
+        # Keep the first occurrence (oldest), clear client_id on the rest.
+        Expense.objects.filter(id__in=ids[1:]).update(client_id="")
 
 
 class Migration(migrations.Migration):
@@ -14,6 +41,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(clear_duplicate_client_ids, migrations.RunPython.noop),
         migrations.AddConstraint(
             model_name='expense',
             constraint=models.UniqueConstraint(condition=models.Q(('client_id', ''), _negated=True), fields=('created_by', 'client_id'), name='expense_unique_client_id_per_user'),
