@@ -34,7 +34,7 @@
         "backgroundColor": "#006A60"
       },
       "package": "com.sterul.splex",
-      "versionCode": 2,
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
