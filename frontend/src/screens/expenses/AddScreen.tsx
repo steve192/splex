@@ -552,7 +552,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                   const valid = parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
                   setAmount(valid);
                 }}
-                autoFocus={!amount}
+                autoFocus={!amount && activeSheet === null}
               />
               <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={styles.selfCenter}>
                 {currency}
