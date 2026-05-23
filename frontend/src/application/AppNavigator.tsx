@@ -85,7 +85,8 @@ function MainTabs() {
     <Tabs.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarLabelPosition: "below-icon"
+        tabBarLabelPosition: "below-icon",
+        tabBarHideOnKeyboard: true
       }}
     >
       <Tabs.Screen

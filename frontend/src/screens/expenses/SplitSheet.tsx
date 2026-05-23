@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { Button, Checkbox, Dialog, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
 import { formatMoney } from "../../shared/lib/money";
 import { Participant, SplitMethod } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
@@ -54,6 +55,7 @@ export function SplitSheet({
   const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
+  const keyboardHeight = useKeyboardHeight();
   const [infoVisible, setInfoVisible] = useState(false);
 
   function infoBodyKey(): string {
@@ -133,7 +135,7 @@ export function SplitSheet({
         visible={visible}
         onDismiss={onDismiss}
         contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
-        style={styles.bottomSheetWrapper}
+        style={[styles.bottomSheetWrapper, { marginBottom: keyboardHeight }]}
       >
         <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
         <View style={styles.rowBetween}>

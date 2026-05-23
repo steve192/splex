@@ -4,6 +4,7 @@ import { Button, Divider, List, Modal, Portal, Searchbar, Text, useTheme } from 
 
 import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
 import { ContextOption, Friend, Group } from "../../shared/types/models";
 import { ContentWidth } from "../../shared/ui/ContentWidth";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
@@ -20,6 +21,7 @@ type ContextPickerSheetProps = {
 export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismiss }: ContextPickerSheetProps) {
   const { t } = useI18n();
   const theme = useTheme();
+  const keyboardHeight = useKeyboardHeight();
   const [query, setQuery] = useState("");
 
   const filteredGroups = useMemo(() => filterByQuery(groups, query, (group) => group.name), [groups, query]);
@@ -40,7 +42,7 @@ export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismi
         visible={visible}
         onDismiss={onDismiss}
         contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
-        style={styles.bottomSheetWrapper}
+        style={[styles.bottomSheetWrapper, { marginBottom: keyboardHeight }]}
       >
         <ContentWidth>
           <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />

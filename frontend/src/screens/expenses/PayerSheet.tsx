@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { List, Modal, Portal, Switch, Text, TextInput, Button, useTheme } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
 import { asNumber } from "../../shared/lib/money";
 import { Participant } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
@@ -45,6 +46,7 @@ export function PayerSheet({
   const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
+  const keyboardHeight = useKeyboardHeight();
 
   function nameFor(participant: Participant) {
     return participant.id === currentParticipantId ? t("common.you") : participant.display_name;
@@ -56,7 +58,7 @@ export function PayerSheet({
         visible={visible}
         onDismiss={onDismiss}
         contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
-        style={styles.bottomSheetWrapper}
+        style={[styles.bottomSheetWrapper, { marginBottom: keyboardHeight }]}
       >
         <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
         <View style={styles.rowBetween}>

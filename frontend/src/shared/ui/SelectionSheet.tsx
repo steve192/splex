@@ -3,6 +3,7 @@ import { ScrollView, View } from "react-native";
 import { Button, Checkbox, Divider, List, Modal, Portal, Searchbar, Text, useTheme } from "react-native-paper";
 
 import { useI18n } from "../i18n/I18nContext";
+import { useKeyboardHeight } from "../lib/useKeyboardHeight";
 import { ContentWidth } from "./ContentWidth";
 import { styles } from "./styles";
 
@@ -42,6 +43,7 @@ export type SelectionSheetProps<T extends string | number> =
 export function SelectionSheet<T extends string | number>(props: SelectionSheetProps<T>) {
   const { t } = useI18n();
   const theme = useTheme();
+  const keyboardHeight = useKeyboardHeight();
   const [query, setQuery] = useState("");
 
   const filteredOptions = useMemo(() => {
@@ -76,7 +78,7 @@ export function SelectionSheet<T extends string | number>(props: SelectionSheetP
         visible={props.visible}
         onDismiss={props.onDismiss}
         contentContainerStyle={[styles.bottomSheet, { backgroundColor: theme.colors.surface }]}
-        style={styles.bottomSheetWrapper}
+        style={[styles.bottomSheetWrapper, { marginBottom: keyboardHeight }]}
       >
         <ContentWidth>
           <View style={[styles.bottomSheetHandle, { backgroundColor: theme.colors.outlineVariant }]} />
