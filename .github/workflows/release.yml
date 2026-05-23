@@ -282,3 +282,23 @@ jobs:
             frontend/splex-${{ needs.semantic-preview.outputs.version }}.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  note-skipped-android-build:
+    name: Note skipped Android build in release
+    needs: [semantic-preview, check-fingerprint]
+    if: needs.check-fingerprint.outputs.changed == 'false' && !inputs.force_android_build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Append note to GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.semantic-preview.outputs.tag }}
+          append_body: true
+          body: |
+
+            ---
+            _No Android release produced — no native dependency changes detected since the previous release. The existing APK/AAB remains compatible; updates are delivered to installed apps via Expo OTA._
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
