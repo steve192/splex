@@ -67,13 +67,27 @@ class LocationSuggestionsView(APIView):
         lat_delta = Decimal(str(radius / 111000))  # ~111 km per degree
         lon_delta = Decimal(str(radius / (111000 * 1)))  # Simplified, doesn't account for latitude
 
-        expenses = Expense.objects.filter(
-            Q(deleted_at__isnull=True) & Q(created_by=request.user) &
-            Q(latitude__isnull=False) & Q(longitude__isnull=False) &
-            Q(latitude__gte=latitude - lat_delta) &
-            Q(latitude__lte=latitude + lat_delta) &
-            Q(longitude__gte=longitude - lon_delta) &
-            Q(longitude__lte=longitude + lon_delta)
-        ).values_list("description", flat=True).distinct().order_by("-id")[:10]
+        # Note: .distinct() combined with .order_by("-id") doesn't dedupe by
+        # description alone — Postgres adds id to the SELECT/DISTINCT, so every
+        # row stays. Dedupe in Python while walking newest-first instead.
+        descriptions = (
+            Expense.objects.filter(
+                Q(deleted_at__isnull=True) & Q(created_by=request.user) &
+                Q(latitude__isnull=False) & Q(longitude__isnull=False) &
+                Q(latitude__gte=latitude - lat_delta) &
+                Q(latitude__lte=latitude + lat_delta) &
+                Q(longitude__gte=longitude - lon_delta) &
+                Q(longitude__lte=longitude + lon_delta)
+            )
+            .order_by("-date", "-id")
+            .values_list("description", flat=True)[:200]
+        )
+        max_suggestions = 5
+        seen: list[str] = []
+        for description in descriptions:
+            if description and description not in seen:
+                seen.append(description)
+            if len(seen) >= max_suggestions:
+                break
 
-        return Response({"suggestions": list(expenses)})
+        return Response({"suggestions": seen})
