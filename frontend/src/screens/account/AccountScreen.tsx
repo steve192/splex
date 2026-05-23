@@ -8,6 +8,7 @@ import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { openTermsOfService } from "../../shared/legal/openTermsOfService";
+import { appVersionLabel } from "../../shared/lib/appVersion";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import {
   DevicePushState,
@@ -225,6 +226,12 @@ export function AccountScreen() {
         style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
       >
         {t("tos.title")}
+      </Text>
+      <Text
+        variant="bodySmall"
+        style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
+      >
+        {appVersionLabel(t)}
       </Text>
       <SelectionSheet
         visible={currencySheetOpen}

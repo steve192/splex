@@ -253,6 +253,8 @@
   "statistics.pairsHint": "Amount each payer covered for each beneficiary.",
   "statistics.pairsLine": "{payer} → {beneficiary}",
   "statistics.currencyBreakdownTitle": "By original currency",
+  "about.version": "Version {version}",
+  "about.versionWithBuild": "Version {version} (build {build})",
   "tos.title": "Terms of Service",
   "tos.loading": "Loading Terms of Service…",
   "tos.loadFailed": "Could not load the Terms of Service from the configured backend.",
