@@ -2,7 +2,17 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      force_android_build:
+        description: "Force building APK + AAB even if the native fingerprint did not change"
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      force_android_build:
+        description: "Force building APK + AAB even if the native fingerprint did not change"
+        type: boolean
+        default: false
     secrets:
       EXPO_TOKEN:
         required: false
@@ -223,7 +233,7 @@ jobs:
   build-android:
     name: Build Android (APK + AAB)
     needs: [semantic-preview, publish-docker, publish-expo-update, check-fingerprint]
-    if: needs.check-fingerprint.outputs.changed == 'true'
+    if: needs.check-fingerprint.outputs.changed == 'true' || inputs.force_android_build
     runs-on: ubuntu-latest
     permissions:
       contents: write
