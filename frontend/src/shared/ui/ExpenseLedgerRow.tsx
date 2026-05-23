@@ -1,12 +1,12 @@
 import { View } from "react-native";
-import { Card, Text, TouchableRipple, useTheme } from "react-native-paper";
+import { Card, Text, TouchableRipple } from "react-native-paper";
 
 import { useI18n, TranslateFn } from "../i18n/I18nContext";
 import { formatDeviceDateParts } from "../lib/dates";
 import { asNumber, formatMoney } from "../lib/money";
 import { Expense } from "../types/models";
 import { AvatarStack } from "./AvatarStack";
-import { negativeColor, positiveColor } from "./colors";
+import { BalanceStack } from "./BalanceStack";
 import { styles } from "./styles";
 
 type ExpenseLedgerRowProps = {
@@ -30,7 +30,6 @@ function payerLine(expense: Expense, t: TranslateFn): string {
 
 export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: ExpenseLedgerRowProps) {
   const { t } = useI18n();
-  const theme = useTheme();
   const parts = formatDeviceDateParts(expense.date);
   const paid = expense.payments
     .filter((share) => share.participant_id === currentParticipantId)
@@ -39,13 +38,6 @@ export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: Exp
     .filter((share) => share.participant_id === currentParticipantId)
     .reduce((sum, share) => sum + asNumber(share.amount), 0);
   const net = paid - owed;
-  const color =
-    net > 0
-      ? positiveColor(theme)
-      : net < 0
-        ? negativeColor(theme)
-        : theme.colors.onSurfaceVariant;
-  const label = net > 0 ? t("balance.owedToYou") : net < 0 ? t("balance.youOwe") : t("balance.settled");
 
   return (
     <Card mode="elevated" style={styles.card}>
@@ -61,10 +53,7 @@ export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: Exp
             <Text variant="bodySmall">{payerLine(expense, t)}</Text>
           </View>
           <View style={styles.expenseNet}>
-            <Text variant="bodySmall" style={{ color }}>{label}</Text>
-            <Text variant="titleSmall" style={{ color, fontWeight: "700" }}>
-              {net === 0 ? "" : `${formatMoney(net)} ${expense.converted_currency}`}
-            </Text>
+            <BalanceStack amount={net} currency={expense.converted_currency} />
           </View>
         </Card.Content>
       </TouchableRipple>

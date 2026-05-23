@@ -12,9 +12,9 @@ import { shareLink } from "../../shared/lib/shareLink";
 import { countPendingExpensesByContext, pendingExpenseContextKey } from "../../shared/ledger/pendingExpenses";
 import { loadCachedFriends, loadCachedOverviewItems, saveCachedFriends, saveCachedOverviewItems } from "../../shared/lib/offlineCache";
 import { Friend, OverviewItem } from "../../shared/types/models";
+import { BalanceStack } from "../../shared/ui/BalanceStack";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
-import { MoneyText } from "../../shared/ui/MoneyText";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -125,7 +125,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
               }
               right={() => (
                 <View style={styles.listTileRight}>
-                  <MoneyText variant="bodyMedium" amount={item.balance} currency={item.currency} />
+                  <BalanceStack amount={item.balance} currency={item.currency} />
                 </View>
               )}
             />
