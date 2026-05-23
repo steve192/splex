@@ -20,14 +20,32 @@ def test_normalize_owed_shares_percentage_must_sum_to_100():
 
 
 @pytest.mark.django_db
-def test_normalize_owed_shares_adjusted_equal_must_sum_total():
-    with pytest.raises(ValueError, match="Adjusted owed shares must sum"):
+def test_normalize_owed_shares_adjusted_equal_subtracts_adjustments_from_total():
+    # 5.00 split between 2 people, +1.00 on participant 1
+    # → base = (5 - 1) / 2 = 2.00; participant 1 owes 3.00, participant 2 owes 2.00
+    shares = normalize_owed_shares(
+        Decimal("5.00"),
+        Expense.SplitMethod.ADJUSTED_EQUAL,
+        {
+            "participant_ids": [1, 2],
+            "adjustments": [{"participant_id": 1, "amount": "1.00"}],
+        },
+        [1, 2],
+    )
+    assert shares == {1: Decimal("3.00"), 2: Decimal("2.00")}
+
+
+@pytest.mark.django_db
+def test_normalize_owed_shares_adjusted_equal_rejects_negative_share():
+    with pytest.raises(ValueError, match="below zero"):
         normalize_owed_shares(
-            Decimal("100.00"),
+            Decimal("5.00"),
             Expense.SplitMethod.ADJUSTED_EQUAL,
             {
                 "participant_ids": [1, 2],
-                "adjustments": [{"participant_id": 1, "amount": "10.00"}],
+                # An adjustment of -10 on a 5€ split with 2 people would force
+                # participant 2 into a negative share.
+                "adjustments": [{"participant_id": 1, "amount": "-10.00"}],
             },
             [1, 2],
         )

@@ -132,10 +132,14 @@ const adjustedEqualStrategy: SplitStrategy = {
       )
     };
   },
-  perMemberShare: ({ participantId, selectedParticipantIds, selectedEqualShares, splitValues }) => {
+  perMemberShare: ({ participantId, selectedParticipantIds, splitValues, totalAmount }) => {
     if (!selectedParticipantIds.includes(participantId)) return 0;
-    const base = selectedEqualShares[participantId] ?? 0;
-    return base + asNumber(splitValues[participantId]);
+    const sumAdjustments = selectedParticipantIds.reduce(
+      (sum, id) => sum + asNumber(splitValues[id]),
+      0
+    );
+    const baseShares = splitEvenly(totalAmount - sumAdjustments, selectedParticipantIds);
+    return (baseShares[participantId] ?? 0) + asNumber(splitValues[participantId]);
   }
 };
 
