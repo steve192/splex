@@ -10,8 +10,8 @@ each model named differently for historical reasons:
   - Friendship.ended_at
 
 Every query that should exclude inactive rows has to remember to filter the
-right field. To make that uniform — and to make "I want the live rows" a
-single discoverable call — soft-deletable models declare their flag via the
+right field. To make that uniform - and to make "I want the live rows" a
+single discoverable call - soft-deletable models declare their flag via the
 class attribute `SOFT_DELETE_FIELD` and use `SoftDeletableManager` as their
 default manager. New code should prefer `Model.objects.active()` instead of
 re-typing the filter inline.

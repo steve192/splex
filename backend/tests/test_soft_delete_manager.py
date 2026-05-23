@@ -1,4 +1,4 @@
-"""Smoke tests for SoftDeletableManager — confirms `.active()` / `.inactive()`
+"""Smoke tests for SoftDeletableManager - confirms `.active()` / `.inactive()`
 respect each model's `SOFT_DELETE_FIELD`. New code paths should prefer these
 helpers over re-typing the filter inline."""
 

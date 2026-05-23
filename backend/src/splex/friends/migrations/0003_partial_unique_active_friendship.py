@@ -6,7 +6,7 @@ Source becomes purely descriptive metadata; the same pair cannot have both an
 `explicit` and a `shared_group` row at the same time. Ended friendships are
 excluded from the constraint so unfriend-then-refriend cycles still work.
 
-The previous dedupe migration (0002) is a prerequisite — if duplicates remain
+The previous dedupe migration (0002) is a prerequisite - if duplicates remain
 when this migration runs, adding the constraint will fail.
 """
 

@@ -27,7 +27,7 @@ export async function getLocationPermissionStatus(): Promise<LocationPermissionS
         if (status.state === "granted") return "granted";
         if (status.state === "denied") return "denied";
       } catch {
-        // Permissions API unavailable — we can't know without prompting.
+        // Permissions API unavailable - we can't know without prompting.
       }
     }
     return "undetermined";
@@ -51,7 +51,7 @@ export async function requestLocationPermission(): Promise<LocationPermissionSta
         if (status.state === "granted") return "granted";
         if (status.state === "denied") return "denied";
       } catch {
-        // Some browsers (older Safari, Firefox in private mode) reject — fall through to prompt.
+        // Some browsers (older Safari, Firefox in private mode) reject - fall through to prompt.
       }
     }
     // Actively trigger the browser prompt by requesting a position. Resolves "granted" on

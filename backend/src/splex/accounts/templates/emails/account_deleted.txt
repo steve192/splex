@@ -17,4 +17,4 @@ Changed your mind? You can create a new account at any time at:
 If you did not request this deletion, please contact the administrator of your
 Splex instance immediately.
 
-— Splex
+- Splex

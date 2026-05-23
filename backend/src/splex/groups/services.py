@@ -62,9 +62,9 @@ def activate_group_membership(
     """Get-or-create an active membership for the (group, participant) pair.
 
     Returns (membership, status) where status is one of:
-      - "created"          — a brand-new membership row was inserted.
-      - "reactivated"      — an existing soft-removed row had its `removed_at` cleared.
-      - "already_active"   — the participant was already an active member; caller decides
+      - "created"          - a brand-new membership row was inserted.
+      - "reactivated"      - an existing soft-removed row had its `removed_at` cleared.
+      - "already_active"   - the participant was already an active member; caller decides
                              whether that's an error or a no-op.
 
     The model's `unique_together` on (group, participant) makes this race-safe.
@@ -240,7 +240,7 @@ def _settle_and_soft_delete(*, group: Group, participant: Participant) -> int:
     """Zero out the participant's balances with settlement rows, then mark them
     removed from the group and soft-delete the Participant row.
 
-    Returns the (now soft-deleted) participant's id for activity logging — the
+    Returns the (now soft-deleted) participant's id for activity logging - the
     row still exists so expense serializers can resolve their name.
     """
     from splex.balances.selectors import group_debts

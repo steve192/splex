@@ -137,6 +137,15 @@ def _replace_expense_shares(expense, *, payer_shares, owed_shares, currency):
 @transaction.atomic
 def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense:
     ensure_context_access(actor, group, friendship)
+    # Idempotency: if the client supplied a client_id and we've already created
+    # an expense for it, return the existing row instead of creating a duplicate.
+    # This protects against the "request succeeded but the response never made
+    # it back, client retries" race that would otherwise produce twin expenses.
+    client_id = (data.get("client_id") or "").strip()
+    if client_id:
+        existing = Expense.objects.filter(created_by=actor, client_id=client_id).first()
+        if existing is not None:
+            return existing
     currency = context_currency(group, friendship)
     converted_amount, rate = convert(data["amount"], data["currency"], currency)
     method = data.get("split_method") or Expense.SplitMethod.EQUAL_ALL

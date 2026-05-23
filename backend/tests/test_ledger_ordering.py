@@ -49,7 +49,7 @@ def test_ledger_is_ordered_by_expense_date_not_insertion_order():
 
 @pytest.mark.django_db
 def test_same_day_expenses_are_ordered_by_insertion_newest_first():
-    """Stable tiebreaker — entries on the same date come back newest-added first."""
+    """Stable tiebreaker - entries on the same date come back newest-added first."""
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")

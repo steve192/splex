@@ -125,7 +125,7 @@ def test_accepting_a_second_group_invite_is_a_no_op_for_active_member():
 
     invitee_p = get_or_create_user_participant(invitee)
     assert GroupMembership.objects.filter(group=group, participant=invitee_p).count() == 1
-    # The second accept is a silent no-op — no duplicate "joined" activity event.
+    # The second accept is a silent no-op - no duplicate "joined" activity event.
     joined_events = ActivityEvent.objects.filter(
         group=group, event_type="group.member_joined"
     )
