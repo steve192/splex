@@ -49,6 +49,9 @@ class GroupCreateSerializer(serializers.Serializer):
 class GroupUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=180, required=False)
     icon_image = serializers.CharField(required=False, allow_blank=True)
+    # Optional Openverse / license text; stored on Group.icon_attribution and
+    # surfaced via the dedicated media-attribution endpoint.
+    icon_attribution = serializers.CharField(required=False, allow_blank=True)
     default_currency = serializers.CharField(min_length=3, max_length=3, required=False)
     default_split_method = serializers.CharField(max_length=40, required=False)
     default_split_payload = serializers.JSONField(required=False)

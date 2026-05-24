@@ -109,7 +109,14 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
         changed.append("name")
     if data.get("icon_image"):
         group.icon_url = save_data_url_image(data_url=data["icon_image"], folder="group-icons")
+        # An icon change always replaces any previous attribution; if the
+        # caller supplied a new one, use it, otherwise reset to blank.
+        group.icon_attribution = data.get("icon_attribution") or ""
         changed.append("icon_url")
+        changed.append("icon_attribution")
+    elif "icon_attribution" in data:
+        group.icon_attribution = data["icon_attribution"] or ""
+        changed.append("icon_attribution")
     if "default_currency" in data:
         has_ledger = (
             Expense.objects.filter(group=group).exists()

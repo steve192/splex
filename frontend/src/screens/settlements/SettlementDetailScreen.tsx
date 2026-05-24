@@ -12,7 +12,7 @@ import { formatDeviceDate } from "../../shared/lib/dates";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
 import { Friend, Group, Participant, Settlement } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
@@ -111,12 +111,22 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
                 <List.Item
                   title={settlement.payer_display_name ?? t("settlement.payer")}
                   description={t("settlement.paid")}
-                  left={() => <PersonAvatar name={settlement.payer_display_name} imageUrl={settlement.payer_avatar_url} />}
+                  left={() => (
+                    <ClickableAvatar
+                      name={settlement.payer_display_name}
+                      imageUrl={settlement.payer_avatar_url}
+                    />
+                  )}
                 />
                 <List.Item
                   title={settlement.receiver_display_name ?? t("settlement.receiver")}
                   description={t("settlement.received")}
-                  left={() => <PersonAvatar name={settlement.receiver_display_name} imageUrl={settlement.receiver_avatar_url} />}
+                  left={() => (
+                    <ClickableAvatar
+                      name={settlement.receiver_display_name}
+                      imageUrl={settlement.receiver_avatar_url}
+                    />
+                  )}
                 />
               </Card.Content>
             </Card>

@@ -12,6 +12,7 @@ class Group(TimeStampedModel):
 
     name = models.CharField(max_length=180)
     icon_url = models.URLField(blank=True)
+    icon_attribution = models.TextField(blank=True)
     default_currency = models.CharField(max_length=3, default="EUR")
     default_split_method = models.CharField(max_length=40, default="equal_all")
     default_split_payload = models.JSONField(default=dict, blank=True)

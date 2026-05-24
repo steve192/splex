@@ -17,7 +17,7 @@ import {
 } from "../../shared/notifications/registration";
 import { ThemeMode } from "../../shared/types/models";
 import { LocationTrackingToggle } from "../../shared/ui/LocationTrackingToggle";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
@@ -108,9 +108,9 @@ export function AccountScreen() {
     saveFields({ locale: next });
   }
 
-  function handleAvatarChange(image: { dataUrl: string; previewUrl: string }) {
+  function handleAvatarChange(image: { dataUrl: string; previewUrl: string; attribution?: string }) {
     setAvatarUrl(image.previewUrl);
-    saveFields({ avatar_image: image.dataUrl });
+    saveFields({ avatar_image: image.dataUrl, avatar_attribution: image.attribution ?? "" });
   }
 
   async function handleDeleteAccount() {
@@ -138,7 +138,11 @@ export function AccountScreen() {
               <Text variant="titleMedium">{displayName || user?.email}</Text>
               <Text variant="bodyMedium">{user?.email}</Text>
             </View>
-            <PersonAvatar name={displayName || user?.email} imageUrl={avatarUrl} size={52} />
+            <ClickableAvatar
+              name={displayName || user?.email}
+              imageUrl={avatarUrl}
+              size={52}
+            />
           </View>
           <TextInput
             mode="outlined"
