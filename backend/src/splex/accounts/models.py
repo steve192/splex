@@ -36,6 +36,7 @@ class User(AbstractUser):
     display_name = models.CharField(max_length=150, blank=True)
     default_currency = models.CharField(max_length=3, default="EUR")
     avatar_url = models.URLField(blank=True)
+    avatar_attribution = models.TextField(blank=True)
     push_enabled = models.BooleanField(default=True)
     locale = models.CharField(max_length=8, default="en")
     location_tracking_enabled = models.BooleanField(default=True)

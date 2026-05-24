@@ -27,6 +27,7 @@ import { Friend, Group, Participant, SplitMethod } from "../../shared/types/mode
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
+import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
@@ -62,6 +63,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [iconUrl, setIconUrl] = useState("");
   const [iconImage, setIconImage] = useState("");
+  const [iconAttribution, setIconAttribution] = useState("");
   const [archived, setArchived] = useState(false);
   const [defaultSplitMethod, setDefaultSplitMethod] = useState<SplitMethod>("equal_all");
   const [removeTarget, setRemoveTarget] = useState<Participant | null>(null);
@@ -108,7 +110,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
     await api.patch(`/api/groups/${groupId}/`, {
       name,
       default_currency: currency.toUpperCase(),
-      ...(iconImage ? { icon_image: iconImage } : {}),
+      ...(iconImage ? { icon_image: iconImage, icon_attribution: iconAttribution } : {}),
       default_split_method: defaultSplitMethod,
       default_split_payload: {}
     });
@@ -194,9 +196,11 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
               label={t("group.icon")}
               name={name}
               imageUrl={iconUrl}
+              searchQuery={name}
               onChange={(image) => {
                 setIconImage(image.dataUrl);
                 setIconUrl(image.previewUrl);
+                setIconAttribution(image.attribution ?? "");
               }}
             />
             <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)}>
@@ -264,7 +268,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
             <Card.Content>
               {participant.kind === "unregistered" ? (
                 <View style={styles.memberCardRow}>
-                  <PersonAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
+                  <ClickableAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
                   <View style={styles.memberContent}>
                     <Text variant="titleMedium">{participant.display_name}</Text>
                     <Text variant="bodyMedium">{t("participant.unregistered")}</Text>
@@ -458,7 +462,7 @@ function RegisteredParticipantItem({
     <List.Item
       title={participant.display_name}
       description={description}
-      left={renderPersonAvatar(participant.display_name, participant.avatar_url)}
+      left={renderClickableAvatar(participant.display_name, participant.avatar_url)}
       right={renderDeleteAction(removable, dangerColor, deleteLabel, onRemove)}
     />
   );
@@ -483,6 +487,12 @@ function renderArchiveSwitch(value: boolean, onValueChange: (value: boolean) => 
 function renderPersonAvatar(name: string, imageUrl?: string) {
   return function PersonAvatarRenderer() {
     return <PersonAvatar name={name} imageUrl={imageUrl} />;
+  };
+}
+
+function renderClickableAvatar(name: string, imageUrl?: string) {
+  return function ClickableAvatarRenderer() {
+    return <ClickableAvatar name={name} imageUrl={imageUrl} />;
   };
 }
 

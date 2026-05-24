@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { View, useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -95,6 +96,7 @@ export function AppShell() {
   );
 
   return (
+    <GestureHandlerRootView style={styles.flex}>
     <PreferencesContext.Provider value={preferences}>
       <I18nProvider>
         <PaperProvider
@@ -132,5 +134,6 @@ export function AppShell() {
         </PaperProvider>
       </I18nProvider>
     </PreferencesContext.Provider>
+    </GestureHandlerRootView>
   );
 }

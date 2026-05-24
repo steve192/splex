@@ -7,7 +7,7 @@ from django.views.generic import TemplateView
 from django.views.static import serve
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from splex.shared.api_views import PrivateMediaView
+from splex.shared.api_views import MediaAttributionView, PrivateMediaView
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,9 @@ class PwaRouteView(TemplateView):
 
 urlpatterns = [
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # `<token>/attribution/` is registered before the catch-all so the
+    # `<path:token>` route below doesn't greedily swallow it.
+    path("api/media/<path:token>/attribution/", MediaAttributionView.as_view(), name="media_attribution"),
     path("api/media/<path:token>/", PrivateMediaView.as_view(), name="private_media"),
     path("api/", include("splex.accounts.api.urls")),
     path("api/", include("splex.groups.api.urls")),

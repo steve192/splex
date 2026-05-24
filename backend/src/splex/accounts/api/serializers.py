@@ -35,6 +35,7 @@ class UserUpdateSerializer(serializers.Serializer):
     display_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     default_currency = serializers.CharField(min_length=3, max_length=3, required=False)
     avatar_image = serializers.CharField(required=False, allow_blank=True)
+    avatar_attribution = serializers.CharField(required=False, allow_blank=True)
     push_enabled = serializers.BooleanField(required=False)
     locale = serializers.CharField(max_length=8, required=False)
     location_tracking_enabled = serializers.BooleanField(required=False)

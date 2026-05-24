@@ -9,7 +9,7 @@ import { RootStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../../shared/lib/inviteLinks";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -93,7 +93,7 @@ export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptSc
             <>
               <View style={styles.rowBetween}>
                 <View style={styles.inline}>
-                  <PersonAvatar
+                  <ClickableAvatar
                     name={preview.invited_by ?? t("invite.invitedBy")}
                     imageUrl={preview.invited_by_image_url}
                     size={48}
@@ -108,7 +108,7 @@ export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptSc
                 <List.Item
                   title={preview.group}
                   description={t("invite.group")}
-                  left={() => <PersonAvatar name={preview.group ?? ""} imageUrl={preview.group_image_url} />}
+                  left={() => <ClickableAvatar name={preview.group ?? ""} imageUrl={preview.group_image_url} />}
                 />
               ) : null}
               {preview.target_participant ? (

@@ -1,8 +1,8 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, View } from "react-native";
-import { Button, Card, Dialog, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
+import { View } from "react-native";
+import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
@@ -23,6 +23,7 @@ import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryC
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
+import { ImageViewerModal } from "../../shared/ui/ImageViewerModal";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -351,22 +352,13 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         )}
       </Screen>
 
+      <ImageViewerModal
+        visible={groupImageVisible}
+        title={group?.name ?? ""}
+        imageUrl={group?.icon_url}
+        onDismiss={() => setGroupImageVisible(false)}
+      />
       <Portal>
-        <Dialog visible={groupImageVisible} onDismiss={() => setGroupImageVisible(false)}>
-          <Dialog.Title>{group?.name ?? ""}</Dialog.Title>
-          <Dialog.Content>
-            {group?.icon_url ? (
-              <Image
-                source={{ uri: group.icon_url }}
-                style={{ width: "100%", aspectRatio: 1, borderRadius: 8 }}
-                resizeMode="cover"
-              />
-            ) : null}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setGroupImageVisible(false)}>{t("common.done")}</Button>
-          </Dialog.Actions>
-        </Dialog>
         <SettlementDialog
           visible={!!settleTarget}
           target={settleTarget}

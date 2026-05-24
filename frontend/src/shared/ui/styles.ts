@@ -72,6 +72,48 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
     width: 256
   },
+  imageSearchSheet: {
+    alignSelf: "center",
+    borderRadius: 16,
+    gap: 12,
+    height: "90%",
+    maxWidth: 720,
+    padding: 16,
+    width: "94%"
+  },
+  imageSearchEmpty: {
+    alignItems: "center",
+    gap: 12,
+    justifyContent: "center",
+    paddingVertical: 32
+  },
+  imageSearchGrid: {
+    gap: 8,
+    paddingBottom: 16
+  },
+  imageSearchRow: {
+    gap: 8
+  },
+  imageSearchCell: {
+    aspectRatio: 1,
+    borderRadius: 8,
+    flex: 1,
+    overflow: "hidden"
+  },
+  imageSearchThumb: {
+    height: "100%",
+    width: "100%"
+  },
+  attribution: {
+    marginTop: 8
+  },
+  imagePopupImage: {
+    alignSelf: "center",
+    aspectRatio: 1,
+    borderRadius: 8,
+    maxWidth: 280,
+    width: "100%"
+  },
   contentWidth: {
     alignSelf: "center",
     gap: 16,

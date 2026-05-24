@@ -122,17 +122,23 @@ class MeView(APIView):
         serializer = UserUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = request.user
-        for field, value in serializer.validated_data.items():
-            if field == "avatar_image":
-                user.avatar_url = save_data_url_image(data_url=value, folder="profile-images")
+        data = serializer.validated_data
+        update_fields: list[str] = []
+        if "avatar_image" in data and data["avatar_image"]:
+            user.avatar_url = save_data_url_image(data_url=data["avatar_image"], folder="profile-images")
+            # New image always replaces previous attribution.
+            user.avatar_attribution = data.get("avatar_attribution") or ""
+            update_fields.extend(["avatar_url", "avatar_attribution"])
+        elif "avatar_attribution" in data:
+            user.avatar_attribution = data["avatar_attribution"] or ""
+            update_fields.append("avatar_attribution")
+        for field, value in data.items():
+            if field in {"avatar_image", "avatar_attribution"}:
                 continue
             if field == "default_currency":
                 value = value.upper()
             setattr(user, field, value)
-        update_fields = [
-            "avatar_url" if field == "avatar_image" else field
-            for field in serializer.validated_data.keys()
-        ]
+            update_fields.append(field)
         user.save(update_fields=update_fields)
         return Response(UserSerializer(user).data)
 

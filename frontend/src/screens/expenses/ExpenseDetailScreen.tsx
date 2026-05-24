@@ -13,7 +13,7 @@ import { Expense, Friend, Group } from "../../shared/types/models";
 import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -154,7 +154,12 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                     key={share.participant_id}
                     title={share.display_name}
                     description={`${share.amount} ${expense.converted_currency}`}
-                    left={() => <PersonAvatar name={share.display_name} imageUrl={share.avatar_url} />}
+                    left={() => (
+                      <ClickableAvatar
+                        name={share.display_name}
+                        imageUrl={share.avatar_url}
+                      />
+                    )}
                   />
                 ))}
                 <Divider />
@@ -164,7 +169,12 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                     key={share.participant_id}
                     title={share.display_name}
                     description={`${share.amount} ${expense.converted_currency}`}
-                    left={() => <PersonAvatar name={share.display_name} imageUrl={share.avatar_url} />}
+                    left={() => (
+                      <ClickableAvatar
+                        name={share.display_name}
+                        imageUrl={share.avatar_url}
+                      />
+                    )}
                   />
                 ))}
               </Card.Content>

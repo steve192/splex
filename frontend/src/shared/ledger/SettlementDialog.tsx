@@ -4,7 +4,7 @@ import { Button, Dialog, List, Text, TextInput } from "react-native-paper";
 
 import { useI18n } from "../i18n/I18nContext";
 import { CURRENCIES } from "../lib/currencies";
-import { PersonAvatar } from "../ui/PersonAvatar";
+import { ClickableAvatar } from "../ui/ClickableAvatar";
 import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
 import { styles } from "../ui/styles";
 
@@ -56,12 +56,18 @@ export function SettlementDialog({
           {target ? (
             <View style={styles.settlementPreview}>
               <View style={styles.settlementPerson}>
-                <PersonAvatar name={target.payer_display_name} imageUrl={target.payer_avatar_url} />
+                <ClickableAvatar
+                  name={target.payer_display_name}
+                  imageUrl={target.payer_avatar_url}
+                />
                 <Text variant="bodyMedium">{target.payer_display_name}</Text>
               </View>
               <List.Icon icon="arrow-right" />
               <View style={styles.settlementPerson}>
-                <PersonAvatar name={target.receiver_display_name} imageUrl={target.receiver_avatar_url} />
+                <ClickableAvatar
+                  name={target.receiver_display_name}
+                  imageUrl={target.receiver_avatar_url}
+                />
                 <Text variant="bodyMedium">{target.receiver_display_name}</Text>
               </View>
             </View>
