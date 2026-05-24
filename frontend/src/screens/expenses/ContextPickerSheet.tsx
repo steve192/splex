@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, Divider, List, Modal, Portal, Searchbar, Text, useTheme } from "react-native-paper";
 
-import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
 import { ContextOption, Friend, Group } from "../../shared/types/models";
@@ -68,7 +67,6 @@ export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismi
                       title={group.name}
                       description={group.default_currency}
                       imageUrl={group.icon_url}
-                      imageSource={defaultGroupAvatar(group.name)}
                       onPress={() =>
                         pick({
                           type: "group",

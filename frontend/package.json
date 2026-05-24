@@ -22,7 +22,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:leaflet-assets": "node scripts/build-leaflet-assets.js",
-    "postinstall": "node scripts/build-leaflet-assets.js"
+    "build:pwa-icons": "node scripts/build-pwa-icons.js",
+    "postinstall": "node scripts/build-leaflet-assets.js && node scripts/build-pwa-icons.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "55.0.11",
