@@ -1,0 +1,19 @@
+{
+  "name": "Splex",
+  "short_name": "Splex",
+  "description": "Track shared expenses with friends, partners and groups.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#006A60",
+  "theme_color": "#006A60",
+  "icons": [
+    {
+      "src": "/icons/icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
