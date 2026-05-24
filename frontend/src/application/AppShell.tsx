@@ -62,6 +62,8 @@ export function AppShell() {
         screens: {
           Login: "login",
           TermsOfService: "tos",
+          PrivacyPolicy: "privacy",
+          Imprint: "imprint",
           InvitationAccept: "invite/:token",
           Main: {
             screens: {

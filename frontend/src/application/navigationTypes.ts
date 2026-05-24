@@ -4,6 +4,8 @@ export type RootStackParamList = {
   Main: undefined;
   Login: undefined;
   TermsOfService: undefined;
+  PrivacyPolicy: undefined;
+  Imprint: undefined;
   InvitationAccept: { token?: string } | undefined;
 };
 

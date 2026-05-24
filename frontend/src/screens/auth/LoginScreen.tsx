@@ -1,14 +1,11 @@
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Button, Divider, HelperText, IconButton, Surface, Text, TextInput, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { RootStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
-import { openTermsOfService } from "../../shared/legal/openTermsOfService";
+import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
 import { appImages } from "../../shared/assets/images";
 import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
 import { consumeGoogleOAuthResponse } from "../../shared/auth/googleOAuthWeb";
@@ -24,7 +21,6 @@ type LoginConfig = {
 export function LoginScreen() {
   const { t } = useI18n();
   const theme = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { api, loginAsDemo, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
@@ -279,13 +275,7 @@ export function LoginScreen() {
           </View>
         </View>
         <View style={styles.loginFooter}>
-          <Text
-            variant="bodySmall"
-            onPress={() => openTermsOfService(() => navigation.navigate("TermsOfService"))}
-            style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
-          >
-            {t("tos.title")}
-          </Text>
+          <LegalFooterLinks />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
