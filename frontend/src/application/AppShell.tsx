@@ -14,6 +14,7 @@ import { DemoWriteBlockedSnackbar } from "../shared/demo/DemoWriteBlockedSnackba
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ensureServiceWorkerRegistration } from "../shared/lib/serviceWorker";
+import { PwaInstallPrompt } from "../shared/pwa/PwaInstallPrompt";
 import { ThemeMode } from "../shared/types/models";
 import { styles } from "../shared/ui/styles";
 import { AppNavigator } from "./AppNavigator";
@@ -125,6 +126,7 @@ export function AppShell() {
                   <PostLoginBootstrap />
                   <UpdateSnackbar />
                   <DemoWriteBlockedSnackbar />
+                  <PwaInstallPrompt />
                 </View>
               </FeedbackProvider>
               <StatusBar

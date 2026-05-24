@@ -13,6 +13,8 @@ import {
   getLocalPushPreference,
   setDevicePushEnabled
 } from "../../shared/notifications/registration";
+import { PwaIosInstructionsDialog } from "../../shared/pwa/PwaIosInstructionsDialog";
+import { usePwaInstallPrompt } from "../../shared/pwa/usePwaInstallPrompt";
 import { ThemeMode } from "../../shared/types/models";
 import { LocationTrackingToggle } from "../../shared/ui/LocationTrackingToggle";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
@@ -26,6 +28,16 @@ export function AccountScreen() {
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
   const theme = useTheme();
+  const { canInstall, installMethod, install: installPwa } = usePwaInstallPrompt();
+  const [iosInstructionsVisible, setIosInstructionsVisible] = useState(false);
+
+  function handleInstallPress() {
+    if (installMethod === "ios-safari") {
+      setIosInstructionsVisible(true);
+      return;
+    }
+    installPwa();
+  }
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
@@ -179,6 +191,11 @@ export function AccountScreen() {
             </Button>
           ) : null}
           <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
+          {canInstall ? (
+            <Button mode="elevated" icon="download" onPress={handleInstallPress}>
+              {t("pwa.install.installButton")}
+            </Button>
+          ) : null}
           <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
           <Button
             mode="text"
@@ -221,6 +238,10 @@ export function AccountScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      <PwaIosInstructionsDialog
+        visible={iosInstructionsVisible}
+        onDismiss={() => setIosInstructionsVisible(false)}
+      />
       <LegalFooterLinks />
       <Text
         variant="bodySmall"

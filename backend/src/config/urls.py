@@ -49,7 +49,7 @@ if settings.ENABLE_ADMIN_UI:
 if settings.SERVE_PWA:
     urlpatterns += [
         re_path(
-            r"^(?P<path>(_expo/.*|assets/.*|favicon.ico|manifest.json|sw.js|\.well-known/assetlinks\.json))$",
+            r"^(?P<path>(_expo/.*|assets/.*|icons/.*|favicon\.ico|manifest\.webmanifest|sw\.js|\.well-known/assetlinks\.json))$",
             serve,
             {"document_root": settings.PWA_ROOT},
         ),
