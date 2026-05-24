@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { appImages, defaultGroupAvatar } from "../../shared/assets/images";
+import { appImages } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
@@ -107,7 +107,6 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
             <PersonAvatar
               name={group?.name ?? t("group.title")}
               imageUrl={group?.icon_url}
-              imageSource={defaultGroupAvatar(group?.name)}
               size={30}
             />
             <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>

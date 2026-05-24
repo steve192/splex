@@ -25,13 +25,13 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
     },
-    "runtimeVersion": "4.0.0",
+    "runtimeVersion": "5.0.0",
     "android": {
-      "versionCode": 4,
+      "versionCode": 5,
       "package": "com.sterul.splex",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-foreground.png",
-        "backgroundColor": "#006A60"
+        "foregroundImage": "./assets/images/pwa-maskable-icon.png",
+        "backgroundColor": "#199c8e"
       },
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
@@ -55,7 +55,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/app-icon.png"
+      "favicon": "./assets/images/pwa-maskable-icon.png"
     },
     "plugins": [
       "expo-notifications",

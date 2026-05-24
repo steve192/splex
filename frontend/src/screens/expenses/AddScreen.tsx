@@ -16,7 +16,6 @@ import {
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, AddStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
 import { ApiError } from "../../shared/api/client";
-import { defaultGroupAvatar } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
@@ -510,13 +509,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         <View style={styles.rowBetween}>
           <View style={[styles.flex, styles.inline]}>
             {selectedContext ? (
-              <PersonAvatar
-                name={selectedContext.name}
-                imageUrl={selectedContext.image_url}
-                imageSource={
-                  selectedContext.type === "group" ? defaultGroupAvatar(selectedContext.name) : undefined
-                }
-              />
+              <PersonAvatar name={selectedContext.name} imageUrl={selectedContext.image_url} />
             ) : null}
             <View>
               <Text variant="headlineSmall">{editing ? t("expense.edit") : t("expense.add")}</Text>
