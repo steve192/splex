@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { LegalDocumentKind } from "../../shared/legal/openTermsOfService";
 
-type TermsOfServiceState = {
+type LegalDocumentState = {
   html: string;
   loading: boolean;
   error: string;
   reload: () => void;
 };
 
-export function useTermsOfServiceHtml(): TermsOfServiceState {
+const ENDPOINTS: Record<LegalDocumentKind, string> = {
+  tos: "/api/tos/",
+  privacy: "/api/privacy/",
+  imprint: "/api/imprint/"
+};
+
+export function useLegalDocumentHtml(kind: LegalDocumentKind): LegalDocumentState {
   const { api } = useAuth();
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(true);
@@ -24,7 +31,7 @@ export function useTermsOfServiceHtml(): TermsOfServiceState {
       setError("");
       try {
         const baseUrl = await api.getBaseUrl();
-        const response = await fetch(`${baseUrl}/api/tos/`, {
+        const response = await fetch(`${baseUrl}${ENDPOINTS[kind]}`, {
           headers: { Accept: "text/html" }
         });
         const body = await response.text();
@@ -48,7 +55,7 @@ export function useTermsOfServiceHtml(): TermsOfServiceState {
     return () => {
       cancelled = true;
     };
-  }, [api, reloadKey]);
+  }, [api, kind, reloadKey]);
 
   return {
     html,
@@ -58,4 +65,9 @@ export function useTermsOfServiceHtml(): TermsOfServiceState {
       setReloadKey((current) => current + 1);
     }
   };
+}
+
+// Backwards-compatible alias.
+export function useTermsOfServiceHtml(): LegalDocumentState {
+  return useLegalDocumentHtml("tos");
 }

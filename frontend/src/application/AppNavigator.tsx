@@ -18,7 +18,7 @@ import { GroupDetailScreen } from "../screens/groups/GroupDetailScreen";
 import { GroupSettingsScreen } from "../screens/groups/GroupSettingsScreen";
 import { GroupStatisticsScreen } from "../screens/groups/GroupStatisticsScreen";
 import { InvitationAcceptScreen } from "../screens/invitations/InvitationAcceptScreen";
-import { TermsOfServiceScreen } from "../screens/legal/TermsOfServiceScreen";
+import { LegalDocumentScreen } from "../screens/legal/LegalDocumentScreen";
 import { OverviewScreen } from "../screens/overview/OverviewScreen";
 import { SettlementDetailScreen } from "../screens/settlements/SettlementDetailScreen";
 import { useI18n } from "../shared/i18n/I18nContext";
@@ -250,7 +250,24 @@ export function AppNavigator() {
       key={tokens ? `auth-${pendingInviteToken ?? "main"}` : "login"}
       initialRouteName={tokens ? (pendingInviteToken ? "InvitationAccept" : "Main") : "Login"}
     >
-      <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ title: t("tos.title") }} />
+      <Stack.Screen
+        name="TermsOfService"
+        options={{ title: t("legal.tos.title") }}
+      >
+        {() => <LegalDocumentScreen kind="tos" />}
+      </Stack.Screen>
+      <Stack.Screen
+        name="PrivacyPolicy"
+        options={{ title: t("legal.privacy.title") }}
+      >
+        {() => <LegalDocumentScreen kind="privacy" />}
+      </Stack.Screen>
+      <Stack.Screen
+        name="Imprint"
+        options={{ title: t("legal.imprint.title") }}
+      >
+        {() => <LegalDocumentScreen kind="imprint" />}
+      </Stack.Screen>
       {tokens ? (
         pendingInviteToken ? (
           <>

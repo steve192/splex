@@ -18,7 +18,7 @@ from splex.accounts.services import (
     delete_account,
     request_magic_login,
 )
-from splex.shared.tos import render_terms_of_service_document
+from splex.shared.tos import render_legal_document
 from splex.shared.uploads import save_data_url_image
 
 
@@ -102,16 +102,29 @@ class MagicTokenVerifyView(APIView):
         return Response({"user": UserSerializer(user).data, "tokens": tokens})
 
 
-class TermsOfServiceView(APIView):
+class _LegalDocumentView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
     renderer_classes = [StaticHTMLRenderer]
+    document_kind: str = ""
 
     def get(self, request):
         return Response(
-            render_terms_of_service_document(),
+            render_legal_document(self.document_kind),
             content_type="text/html; charset=utf-8",
         )
+
+
+class TermsOfServiceView(_LegalDocumentView):
+    document_kind = "tos"
+
+
+class PrivacyPolicyView(_LegalDocumentView):
+    document_kind = "privacy"
+
+
+class ImprintView(_LegalDocumentView):
+    document_kind = "imprint"
 
 
 class MeView(APIView):
