@@ -10,7 +10,7 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { appImages } from "../../shared/assets/images";
 import { shareLink } from "../../shared/lib/shareLink";
 import { countPendingExpensesByContext, pendingExpenseContextKey } from "../../shared/ledger/pendingExpenses";
-import { loadCachedFriends, loadCachedOverviewItems, saveCachedFriends, saveCachedOverviewItems } from "../../shared/lib/offlineCache";
+import { cachedGet } from "../../shared/lib/offlineCache";
 import { Friend, OverviewItem } from "../../shared/types/models";
 import { BalanceStack } from "../../shared/ui/BalanceStack";
 import { EmptyState } from "../../shared/ui/EmptyState";
@@ -38,27 +38,12 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
     setLoading(true);
     try {
       const [overview, friends] = await Promise.all([
-        api.get<{ items: OverviewItem[] }>("/api/overview/"),
-        api.get<Friend[]>("/api/friends/")
+        cachedGet<{ items: OverviewItem[] }>(api, "/api/overview/"),
+        cachedGet<Friend[]>(api, "/api/friends/")
       ]);
-      const nextItems = [
+      setItems([
         ...overview.items,
         ...friends.map((friend) => ({
-          type: "friend" as const,
-          id: friend.id,
-          name: friend.display_name,
-          avatar_url: friend.avatar_url,
-          currency: friend.default_currency,
-          balance: friend.balance
-        }))
-      ];
-      setItems(nextItems);
-      await Promise.all([saveCachedOverviewItems(overview.items), saveCachedFriends(friends)]);
-    } catch {
-      const [cachedOverview, cachedFriends] = await Promise.all([loadCachedOverviewItems(), loadCachedFriends()]);
-      setItems([
-        ...cachedOverview,
-        ...cachedFriends.map((friend) => ({
           type: "friend" as const,
           id: friend.id,
           name: friend.display_name,

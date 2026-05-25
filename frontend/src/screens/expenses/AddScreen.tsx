@@ -20,16 +20,7 @@ import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { useLocationForm } from "../../shared/location/useLocationForm";
-import {
-  loadCachedFriend,
-  loadCachedFriends,
-  loadCachedGroup,
-  loadCachedGroups,
-  saveCachedFriend,
-  saveCachedFriends,
-  saveCachedGroup,
-  saveCachedGroups
-} from "../../shared/lib/offlineCache";
+import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber, buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -212,18 +203,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
   const loadContexts = useCallback(async () => {
     try {
-      const [groupRows, friendRows] = await Promise.all([api.get<Group[]>("/api/groups/"), api.get<Friend[]>("/api/friends/")]);
+      const [groupRows, friendRows] = await Promise.all([
+        cachedGet<Group[]>(api, "/api/groups/"),
+        cachedGet<Friend[]>(api, "/api/friends/")
+      ]);
       setGroups(groupRows);
       setFriends(friendRows);
       setMessage("");
-      await Promise.all([saveCachedGroups(groupRows), saveCachedFriends(friendRows)]);
     } catch {
-      const [cachedGroups, cachedFriends] = await Promise.all([loadCachedGroups(), loadCachedFriends()]);
-      if (cachedGroups.length || cachedFriends.length) {
-        setGroups(cachedGroups);
-        setFriends(cachedFriends);
-        return;
-      }
       setMessage(t("common.error"));
     }
   }, [api, t]);
@@ -297,15 +284,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       if (activeContextId == null) return;
 
       if (contextType === "group") {
-        let group: Group;
-        try {
-          group = await api.get<Group>(`/api/groups/${activeContextId}/`);
-          await saveCachedGroup(group);
-        } catch {
-          const cachedGroup = await loadCachedGroup(activeContextId);
-          if (!cachedGroup) throw new Error("missing cached group");
-          group = cachedGroup;
-        }
+        const group = await cachedGet<Group>(api, `/api/groups/${activeContextId}/`);
         const rows = group.participants ?? [];
         setParticipants(rows);
         setCurrentParticipantId(group.current_participant_id ?? null);
@@ -314,15 +293,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         if (!loadedExpense && !pendingMutationId && group.default_split_method) setSplitMethod(group.default_split_method);
         if (!loadedExpense && !pendingMutationId) setSelectedParticipantIds(rows.map((participant) => participant.id));
       } else {
-        let friend: Friend;
-        try {
-          friend = await api.get<Friend>(`/api/friends/${activeContextId}/`);
-          await saveCachedFriend(friend);
-        } catch {
-          const cachedFriend = await loadCachedFriend(activeContextId);
-          if (!cachedFriend) throw new Error("missing cached friend");
-          friend = cachedFriend;
-        }
+        const friend = await cachedGet<Friend>(api, `/api/friends/${activeContextId}/`);
         const rows = buildParticipantsForFriend(friend);
         setParticipants(rows);
         setCurrentParticipantId(friend.current_participant_id ?? null);

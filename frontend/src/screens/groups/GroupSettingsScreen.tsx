@@ -21,6 +21,7 @@ import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { shareLink } from "../../shared/lib/shareLink";
+import { cachedGet } from "../../shared/lib/offlineCache";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -88,8 +89,8 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
 
   async function load() {
     const [row, friendRows] = await Promise.all([
-      api.get<Group>(`/api/groups/${groupId}/`),
-      api.get<Friend[]>("/api/friends/")
+      cachedGet<Group>(api, `/api/groups/${groupId}/`),
+      cachedGet<Friend[]>(api, "/api/friends/")
     ]);
     setGroup(row);
     setFriends(friendRows);

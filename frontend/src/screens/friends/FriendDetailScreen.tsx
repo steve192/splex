@@ -14,7 +14,7 @@ import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses a
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
-import { loadCachedFriendDetail, saveCachedFriendDetail } from "../../shared/lib/offlineCache";
+import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber, formatMoney } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Friend, LedgerItem } from "../../shared/types/models";
@@ -47,25 +47,16 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
     try {
+      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=30`;
       const [detail, ledgerResponse] = await Promise.all([
-        api.get<Friend>(`/api/friends/${friendshipId}/`),
-        api.get<{ results: LedgerItem[]; next_offset: number | null }>(
-          `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=30`
-        )
+        cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
+        offset
+          ? api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
+          : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
       ]);
       setFriend(detail);
       setLedger((current) => (offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results));
       setNextOffset(ledgerResponse.next_offset);
-      if (!offset) {
-        await saveCachedFriendDetail(friendshipId, { detail, ledger: ledgerResponse.results });
-      }
-    } catch {
-      if (offset) return;
-      const cached = await loadCachedFriendDetail(friendshipId);
-      if (!cached) throw new Error("missing cached friend detail");
-      setFriend(cached.detail);
-      setLedger(cached.ledger);
-      setNextOffset(null);
     } finally {
       if (offset) setLoadingMore(false);
     }

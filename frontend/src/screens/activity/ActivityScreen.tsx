@@ -10,8 +10,8 @@ import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
 import { formatDeviceDate } from "../../shared/lib/dates";
-import { loadCachedActivityEvents, loadCachedFriends, loadCachedGroups, saveCachedActivityEvents } from "../../shared/lib/offlineCache";
-import { ActivityFeedEvent } from "../../shared/types/models";
+import { cachedGet, readCachedResponse } from "../../shared/lib/offlineCache";
+import { ActivityFeedEvent, Friend, Group } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -30,8 +30,8 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
   async function withPendingEvents(remoteEvents: ActivityFeedEvent[]): Promise<ActivityFeedEvent[]> {
     const [pendingExpenses, groups, friends] = await Promise.all([
       listPendingExpenses(),
-      loadCachedGroups(),
-      loadCachedFriends()
+      readCachedResponse<Group[]>("/api/groups/"),
+      readCachedResponse<Friend[]>("/api/friends/")
     ]);
     const pendingEvents = pendingExpenses.map<ActivityFeedEvent>((draft) => ({
       id: `pending-${draft.mutationId}`,
@@ -41,8 +41,8 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
       context_type: draft.contextType === "group" ? "group" : "friend",
       context_name:
         draft.contextType === "group"
-          ? groups.find((group) => group.id === draft.contextId)?.name
-          : friends.find((friend) => friend.id === draft.contextId)?.display_name,
+          ? groups?.find((group) => group.id === draft.contextId)?.name
+          : friends?.find((friend) => friend.id === draft.contextId)?.display_name,
       pending_mutation_id: draft.mutationId,
       payload: {
         description: draft.description,
@@ -59,21 +59,16 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
     if (loading) return;
     setLoading(true);
     try {
-      const response = await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(
-        `/api/activity/?offset=${offset}&limit=50`
-      );
+      const path = `/api/activity/?offset=${offset}&limit=50`;
+      const response = offset
+        ? await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path)
+        : await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path);
       if (offset) {
         setEvents((current) => [...current, ...response.results]);
       } else {
         setEvents(await withPendingEvents(response.results));
-        await saveCachedActivityEvents(response.results);
       }
       setNextOffset(response.next_offset);
-    } catch {
-      if (!offset) {
-        setEvents(await withPendingEvents(await loadCachedActivityEvents()));
-        setNextOffset(null);
-      }
     } finally {
       setLoading(false);
     }
