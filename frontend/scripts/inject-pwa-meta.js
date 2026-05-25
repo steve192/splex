@@ -3,7 +3,10 @@
 /**
  * Patches dist/index.html with the tags needed for the browser to recognize the
  * app as an installable PWA: manifest link, theme-color meta, and an
- * apple-touch-icon for iOS Add-to-Home-Screen.
+ * apple-touch-icon for iOS Add-to-Home-Screen. Also rewrites the viewport meta
+ * to disable browser-level pinch-to-zoom so the PWA behaves like a native app
+ * (in-app pinch gestures for image viewers use react-native-gesture-handler /
+ * pointer events with `touch-action: none` and are unaffected).
  *
  * Expo's web export doesn't expose a way to inject these into the generated
  * index.html, so we patch it post-export. Hooked from metro.config.js via
@@ -22,30 +25,50 @@ const TAGS = [
   '<meta name="apple-mobile-web-app-title" content="Splex">'
 ];
 
+const VIEWPORT_TAG =
+  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />';
+
+function rewriteViewport(html) {
+  const replaced = html.replace(/<meta\s+name="viewport"[^>]*>/i, VIEWPORT_TAG);
+  if (replaced === html) {
+    return { html, changed: false };
+  }
+  return { html: replaced, changed: !html.includes(VIEWPORT_TAG) };
+}
+
 function inject() {
   const indexPath = path.join(__dirname, "..", "dist", "index.html");
   if (!fs.existsSync(indexPath)) return;
 
-  const html = fs.readFileSync(indexPath, "utf8");
+  const original = fs.readFileSync(indexPath, "utf8");
+  const { html: afterViewport, changed: viewportChanged } = rewriteViewport(original);
+
   const missing = TAGS.filter((tag) => {
     const marker = tag.match(/(href|name)="([^"]+)"/)[0];
-    return !html.includes(marker);
+    return !afterViewport.includes(marker);
   });
-  if (missing.length === 0) return;
 
-  const updated = html.replace("</head>", `${missing.join("")}</head>`);
-  if (updated === html) {
-    console.error("inject-pwa-meta: failed to find </head> in index.html.");
-    return;
+  let updated = afterViewport;
+  if (missing.length > 0) {
+    updated = afterViewport.replace("</head>", `${missing.join("")}</head>`);
+    if (updated === afterViewport) {
+      console.error("inject-pwa-meta: failed to find </head> in index.html.");
+      return;
+    }
   }
 
+  if (updated === original) return;
+
   fs.writeFileSync(indexPath, updated);
+  const parts = [];
+  if (missing.length > 0) parts.push(`added ${missing.length} tag(s)`);
+  if (viewportChanged) parts.push("rewrote viewport");
   console.log(
-    `inject-pwa-meta: added ${missing.length} tag(s) to ${path.relative(process.cwd(), indexPath)}`
+    `inject-pwa-meta: ${parts.join(", ")} in ${path.relative(process.cwd(), indexPath)}`
   );
 }
 
-module.exports = { inject };
+module.exports = { inject, rewriteViewport, VIEWPORT_TAG };
 
 if (require.main === module) {
   inject();
