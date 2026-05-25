@@ -5,6 +5,9 @@
  *   - request location permission if the user has location tracking enabled
  *   - sync the device locale to the backend if it differs from what the server has,
  *     so push notification text is translated using the latest language choice
+ *   - warm the offline cache for resources that some screens read but never
+ *     fetch themselves (so a user who only browses the overview still has
+ *     groups/friends available offline when opening activity or add-expense)
  *
  * Renders nothing.
  */
@@ -14,6 +17,7 @@ import { useAuth } from "../features/auth/AuthContext";
 import { useI18n } from "../shared/i18n/I18nContext";
 import { bootstrapPushOnStartup } from "../shared/notifications/registration";
 import { bootstrapLocationOnStartup } from "../shared/location/locationService";
+import { prefetchPaths } from "../shared/lib/offlineCache";
 
 export function PostLoginBootstrap() {
   const { api, user, initialized, refreshUser } = useAuth();
@@ -35,6 +39,7 @@ export function PostLoginBootstrap() {
     bootstrapLocationOnStartup(user.location_tracking_enabled, api)
       .then(() => refreshUser().catch(() => undefined))
       .catch(() => undefined);
+    prefetchPaths(api, ["/api/groups/", "/api/friends/", "/api/overview/"]).catch(() => undefined);
 
     if (user.locale !== locale) {
       api.patch("/api/me/", { locale }).catch(() => undefined);

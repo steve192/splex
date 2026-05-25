@@ -14,7 +14,7 @@ import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/Se
 import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { shareLink } from "../../shared/lib/shareLink";
-import { loadCachedGroupDetail, saveCachedGroupDetail } from "../../shared/lib/offlineCache";
+import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber } from "../../shared/lib/money";
 import { PendingMutation } from "../../shared/sync/queue";
 import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
@@ -59,32 +59,18 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("group", groupId));
     try {
+      const ledgerPath = `/api/groups/${groupId}/ledger/?offset=${offset}&limit=30`;
       const [detail, balanceRows, ledgerResponse] = await Promise.all([
-        api.get<Group>(`/api/groups/${groupId}/`),
-        api.get<GroupBalance[]>(`/api/groups/${groupId}/balances/`),
-        api.get<{ results: LedgerItem[]; next_offset: number | null }>(
-          `/api/groups/${groupId}/ledger/?offset=${offset}&limit=30`
-        )
+        cachedGet<Group>(api, `/api/groups/${groupId}/`),
+        cachedGet<GroupBalance[]>(api, `/api/groups/${groupId}/balances/`),
+        offset
+          ? api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
+          : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
       ]);
       setGroup(detail);
       setBalances(balanceRows);
       setLedger((current) => (offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results));
       setNextOffset(ledgerResponse.next_offset);
-      if (!offset) {
-        await saveCachedGroupDetail(groupId, {
-          detail,
-          balances: balanceRows,
-          ledger: ledgerResponse.results
-        });
-      }
-    } catch {
-      if (offset) return;
-      const cached = await loadCachedGroupDetail(groupId);
-      if (!cached) throw new Error("missing cached group detail");
-      setGroup(cached.detail);
-      setBalances(cached.balances);
-      setLedger(cached.ledger);
-      setNextOffset(null);
     } finally {
       if (offset) setLoadingMore(false);
     }
