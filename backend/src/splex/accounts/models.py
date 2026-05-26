@@ -41,6 +41,11 @@ class User(AbstractUser):
     locale = models.CharField(max_length=8, default="en")
     location_tracking_enabled = models.BooleanField(default=True)
 
+    # Data-retention tracking: timestamps are set when each warning email is sent and
+    # cleared when the user logs in again so the cycle resets after re-activation.
+    retention_first_notice_sent_at = models.DateTimeField(null=True, blank=True)
+    retention_second_notice_sent_at = models.DateTimeField(null=True, blank=True)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 

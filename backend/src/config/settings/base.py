@@ -257,6 +257,12 @@ VAPID_SUBJECT = env("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")
 # users may sign in; unknown emails (magic link or Google) are rejected.
 ALLOW_REGISTRATION = env_bool("ALLOW_REGISTRATION", True)
 
+# Data retention: accounts that have not logged in for this many months are
+# automatically deleted after two warning emails (14 days and 7 days before
+# deletion).  Set to 0 to disable automatic deletion entirely.
+# Enforced automatically every 24 h by the built-in background scheduler.
+DATA_RETENTION_INACTIVE_MONTHS = env_int("DATA_RETENTION_INACTIVE_MONTHS", 6)
+
 # Google OAuth2 / OIDC login.
 # Leave empty to disable the Google login option entirely.
 # GOOGLE_CLIENT_ID      - the Web or iOS OAuth client ID used to verify tokens on the backend.
