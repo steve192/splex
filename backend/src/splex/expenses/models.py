@@ -109,7 +109,7 @@ class Receipt(TimeStampedModel):
         blank=True,
         related_name="uploaded_receipts",
     )
-    # Matches the client_id used by the AddScreen for offline-sync — lets us
+    # Matches the client_id used by the AddScreen for offline-sync - lets us
     # link drafts uploaded before the expense was saved to the eventual expense.
     client_id = models.CharField(max_length=64, blank=True)
     # Path inside Django's default storage backend.

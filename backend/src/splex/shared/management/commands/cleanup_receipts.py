@@ -1,4 +1,4 @@
-"""cleanup_receipts — delete draft receipts that were never attached.
+"""cleanup_receipts - delete draft receipts that were never attached.
 
 A "draft" receipt is one whose ``expense`` field is NULL: it was uploaded by
 a user who started filling out the AddScreen but never saved the expense.

@@ -17,7 +17,7 @@ What happens if my account is deleted?
 - Groups where you are the only registered member are deleted.
 - In shared groups your past expenses remain visible to other members,
   but are no longer linked to a Splex account.
-- You can create a new account at any time — it will not be linked to
+- You can create a new account at any time - it will not be linked to
   the data from your previous account.
 
 If you want to delete your account right now you can do so from your

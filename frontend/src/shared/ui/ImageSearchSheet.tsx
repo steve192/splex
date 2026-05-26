@@ -194,7 +194,7 @@ export function buildAttributionText(image: OpenverseImage): string {
   const title = image.title || "Untitled";
   const creator = image.creator ? ` by ${image.creator}` : "";
   const license = image.license
-    ? ` — ${image.license.toUpperCase()}${image.licenseVersion ? ` ${image.licenseVersion}` : ""}`
+    ? ` - ${image.license.toUpperCase()}${image.licenseVersion ? ` ${image.licenseVersion}` : ""}`
     : "";
   const sourceUrl = image.sourceUrl ? ` (${image.sourceUrl})` : "";
   return `"${title}"${creator}${license}${sourceUrl}`.trim();

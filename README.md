@@ -1,6 +1,6 @@
 # Splex
 
-Self-hosted expense opensource alternative to splitwise.
+Self-hosted opensource alternative to splitwise.
 
 Split your expenses with friends and keep track who paid for what and who owes money to whom.
 <p align="center">
@@ -14,12 +14,65 @@ Available as Web App (PWA) that allows installation on mobile devices without do
 [<img alt='Get it on Google Play' width=323 height=125 src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/>](https://play.google.com/store/apps/details?id=com.sterul.splex)
 
 
+## Motivation
+Splitwise is a strong product for tracking shared expenses, whether you are traveling with friends or managing day-to-day costs in a shared household.
+
+Over time, some features I considered essential became restricted behind a paywall, including limits around adding expenses.
+
+I started looking for an open source alternative that matched my needs. I found [SplitPro](https://github.com/oss-apps/split-pro), but it did not fully cover the workflows I wanted, so I built Splex.
+
+
+## Features
+
+**Expense tracking**
+- Track expenses in groups (any number of people) and 1-to-1 with friends
+- Five split methods per expense: equal, equal among selected, exact amounts, percentages, and adjusted-equal
+- Multiple payers per expense (e.g. you cover 70 €, your partner 30 €)
+- Multi-currency expenses with automatic conversion at the time of entry
+- Optional location for each expense, with a small map on the detail screen
+- Suggestions for nearby expense descriptions based on your history
+- Receipt attachments: upload images (JPEG/PNG/WebP) or PDFs per expense, up to a configurable size limit and per-group total quota
+- Per-group balance, ledger and statistics views
+- Settlements to clear debts, with manual and auto-write-off variants
+- Activity feed of recent changes across all your groups and friendships
+
+**Accounts and sharing**
+- Passwordless login via emailed magic link / 6-digit code
+- Optional Google login (web + native Android client)
+- Invite friends and group members via shareable links with QR codes
+- Configurable registration: open signup or closed-instance (existing users only)
+
+**Privacy and data retention**
+- Configurable automatic deletion of accounts inactive for X months
+- Optional anonymous demo mode that runs entirely client-side without contacting the backend
+
+**Notifications**
+- Web push Web App and Expo push for the Android app
+- Per-user push opt-in, multi-device 
+
+**Apps and platforms**
+- Installable Progressive Web App (offline-capable, with a sync queue for expenses entered while offline)
+- Native Android app published on Google Play, plus APK builds on GitHub
+- Light and dark themes
+
+**Self-hosting**
+- Single Docker image: app + PWA served from one container
+- SQLite by default (zero external dependencies), optional PostgreSQL via `DATABASE_URL`
+- Built-in background scheduler runs maintenance jobs automatically - no cron required
+- All limits and timeouts (file sizes, retention windows, rate limits, token lifetimes) configurable via `.env`
+- Customizable Terms of Service, Privacy Policy and Imprint pages
+
 ## Deployment
+
+SQLite is the simplest choice for a small single-host install because it keeps everything in one mounted volume with no extra service to operate. PostgreSQL is the better choice when you want stronger concurrency, easier external backups, or a database service managed separately from the app container.
 
 ### First-time setup
 
-Create a directory for Splex on your server and place a `docker-compose.yml` there:
+Create a directory for Splex on your server and place a `docker-compose.yml` there.
 
+Decide if you want to use sqlite or postgres as your database.
+
+#### sqlite database
 ```yaml
 services:
   app:
@@ -35,6 +88,42 @@ services:
 
 The `./data` directory is created automatically by Docker on first start and holds
 the SQLite database and uploaded media files. Back this directory up regularly.
+
+#### postgres database
+
+Use PostgreSQL when you want the app container and database in separate services.
+
+```yaml
+services:
+   postgres:
+      image: postgres:17
+      environment:
+         POSTGRES_DB: splex
+         POSTGRES_USER: splex
+         POSTGRES_PASSWORD: change-me
+      volumes:
+         - ./postgres-data:/var/lib/postgresql/data
+      restart: unless-stopped
+
+   splex:
+      image: ghcr.io/steve192/splex:latest
+      depends_on:
+         - postgres
+      env_file:
+         - .env
+      environment:
+         DATABASE_URL: postgres://splex:change-me@postgres:5432/splex
+      ports:
+         - "8000:8000"
+      volumes:
+         - ./data:/app/data
+      restart: unless-stopped
+```
+
+
+The `./data` mount is still needed with PostgreSQL because it holds uploaded
+media files and the legal document files; only the database itself moves into `./postgres-data` .
+
 
 Copy the environment template and fill it in:
 
@@ -69,6 +158,20 @@ Database migrations are applied automatically on every container start.
    docker compose up -d
    ```
    Migrations are applied automatically during startup - no manual `migrate` step needed.
+
+### Backups
+
+What you should back up depends on the database you use.
+
+If you use SQLite, back up the `./data` directory. It contains the SQLite database,
+uploaded media files, and the legal document files.
+
+If you use PostgreSQL, back up both `./postgres-data` and `./data`. The PostgreSQL
+volume contains the database itself, while `./data` still contains uploaded media
+files and the legal document files.
+
+For most self-hosted setups, regular filesystem snapshots or periodic backups of
+those directories are sufficient.
 
 ### Admin console
 
@@ -141,3 +244,127 @@ pip install -e ".[dev]"
 python manage.py migrate
 python manage.py runserver
 ```
+
+
+### FAQ
+
+
+<details>
+<summary>Will you properly maintain this app?</summary>
+
+Yes.
+
+My friends and I use this app every day. If something breaks, it affects our daily workflow directly.
+
+</details>
+
+
+<details>
+
+<summary>Will this app stay free?</summary>
+
+Yes.
+
+If you self-host Splex, it will remain free to use.
+
+Running a public instance is different, because public hosting can create real
+operating costs.
+
+Right now, most of those services are covered by free tiers or open source
+friendly plans, but that may change if usage grows significantly.
+
+The main cost factors for a public instance are server hosting itself
+(CPU, memory, storage, and bandwidth), email delivery, backups, and any
+monitoring or logging infrastructure needed to keep the service reliable.
+
+Push notifications are not a direct cost today in the current setup: web push is
+self-hosted with VAPID keys, and Expo's push notification service is documented
+as free at the moment. That said, provider limits or pricing can always change.
+
+Google login is also not a direct billed feature in the current setup. Splex uses
+Google OAuth client IDs and token verification, not Google Identity Platform's
+paid sign-in tiers. Still, external platform rules and quotas can change over time.
+
+If the public instance ever becomes expensive to operate at scale, I may add ads
+or another way to offset those hosting costs for the public service.
+
+That would only apply to the public instance, never to self-hosted deployments.
+
+
+</details>
+
+<details>
+
+<summary>Is there an iPhone app?</summary>
+
+Not at the moment.
+
+The current architecture could theoretically support an iPhone app, but I do not
+own an iPhone and do not have an Apple Developer license.
+
+If you use an iPhone, you can still install the PWA and get nearly the same
+experience as with a native app.
+
+Native iPhone support may happen in the future, but it is not on the near-term roadmap.
+
+</details>
+
+<details>
+
+<summary>What should I back up?</summary>
+
+If you use SQLite, back up `./data`.
+
+If you use PostgreSQL, back up both `./postgres-data` and `./data`.
+
+`./data` is always important because it stores uploaded media files and the legal
+document files, even when PostgreSQL is used for the database.
+
+</details>
+
+<details>
+
+<summary>Was AI used to develop this app? (AI Transparency)</summary>
+<a id="ai-transparency"></a>
+
+Yes.
+
+In open source, this gets asked often. Fair question, but not the deciding one.
+
+The better questions to ask, are is the software dependable, secure, and
+careful with user data? Does it behave as documented? Is there clear ownership
+when something goes wrong?
+
+Those standards do not change based on tooling. Purely Human-written code and
+AI-assisted code can both contain bugs, poor abstractions, and bad decisions.
+What matters is whether the person shipping it understands the system,
+evaluates tradeoffs responsibly, and can explain why things are built the way
+they are.
+
+How I use AI in my workflow:
+
+- Research: exploring unfamiliar libraries, APIs, and implementation patterns.
+- Discussion and iteration: testing ideas, architecture, edge cases,
+  and failure modes before or during implementation.
+- Implementation: sometimes rough drafts, sometimes repetitive boilerplate,
+  sometimes pair-programming-style back-and-forth on concrete code.
+
+Quality varies a lot. Some generated code is discarded quickly, some parts are
+kept with small edits. Either way, nothing is "trusted by default". I review,
+test, and maintain what ships.
+
+AI helps with speed, not accountability. Responsibility for Splex stays with me.
+
+</details>
+
+## Roadmap
+
+- Import from Splitwise
+- Import from other split tools such as SplitPro
+
+## Contributing
+
+If you are missing a feature, open an issue.
+
+That gives us a place to discuss whether the feature is a good fit for Splex,
+how it should be implemented, and whether someone is available to do the work.

@@ -33,7 +33,7 @@ export type PickedReceipt = {
   name: string;
   mimeType: string;
   sizeBytes: number;
-  /** Web only — the underlying File object for direct FormData append. */
+  /** Web only - the underlying File object for direct FormData append. */
   file?: File;
 };
 

@@ -37,7 +37,7 @@ type ImageUploadFieldProps = {
  *     web, and the dialog already implements the rich web cropper).
  *   - Web + Openverse pick: shared {@link ImageCropDialog}.
  *
- * So `ImageCropDialog` is the single non-OS cropper in the app — used for
+ * So `ImageCropDialog` is the single non-OS cropper in the app - used for
  * everything except the one case where the OS picker gives us crop for free.
  */
 export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange }: ImageUploadFieldProps) {
@@ -82,7 +82,7 @@ export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange 
       setCropSource(dataUrl);
       return;
     }
-    // Native — OS cropper already ran during the pick; commit directly.
+    // Native - OS cropper already ran during the pick; commit directly.
     setPreviewUrl(asset.uri);
     onChange({ dataUrl, previewUrl: asset.uri });
   }

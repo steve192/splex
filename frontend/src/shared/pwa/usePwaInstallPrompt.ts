@@ -34,16 +34,16 @@ function detectIosSafari(): boolean {
     globalThis.navigator.platform === "MacIntel" && globalThis.navigator.maxTouchPoints > 1;
   const isIos = /iPad|iPhone|iPod/.test(ua) || isIpad;
   if (!isIos) return false;
-  // Only Safari (and WKWebView shells) can Add to Home Screen on iOS — Chrome
+  // Only Safari (and WKWebView shells) can Add to Home Screen on iOS - Chrome
   // iOS (CriOS), Firefox (FxiOS), Edge (EdgiOS) and Opera (OPiOS) cannot.
   return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
 }
 
 /**
  * How the user can install the PWA from here:
- * - `native`: Chromium / Edge / Samsung Internet — call `install()` to show
+ * - `native`: Chromium / Edge / Samsung Internet - call `install()` to show
  *   the browser's built-in install dialog.
- * - `ios-safari`: iOS Safari — no programmatic API exists; the UI must show
+ * - `ios-safari`: iOS Safari - no programmatic API exists; the UI must show
  *   instructions for the Share → Add to Home Screen flow.
  */
 export type PwaInstallMethod = "native" | "ios-safari";
@@ -55,7 +55,7 @@ export type PwaInstallPromptState = {
    * bypass any prior "don't ask again" choice.
    */
   canInstall: boolean;
-  /** How to install — drives whether `install()` works or instructions are needed. */
+  /** How to install - drives whether `install()` works or instructions are needed. */
   installMethod: PwaInstallMethod | null;
   /**
    * True when the auto-shown banner should be visible: `canInstall` AND the
@@ -64,7 +64,7 @@ export type PwaInstallPromptState = {
   available: boolean;
   /**
    * Trigger the browser's native install dialog (Chromium only). On iOS Safari
-   * this resolves to "unavailable" — show iOS instructions instead.
+   * this resolves to "unavailable" - show iOS instructions instead.
    */
   install(): Promise<"accepted" | "dismissed" | "unavailable">;
   /** Hide the auto-shown banner for the current session only. */

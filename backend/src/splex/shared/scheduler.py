@@ -60,7 +60,7 @@ def _try_claim_task(name: str, interval_hours: int) -> bool:
             if updated:
                 return True
 
-            # Slow path: row does not exist yet — create it.
+            # Slow path: row does not exist yet - create it.
             # If two workers race here, one gets IntegrityError (unique name)
             # and returns False; the winner returns True.
             try:
@@ -104,7 +104,7 @@ def _scheduler_loop() -> None:
 def start_background_scheduler() -> None:
     """Start the background scheduler daemon thread.
 
-    Safe to call multiple times — each call starts one thread, but the DB
+    Safe to call multiple times - each call starts one thread, but the DB
     lock inside the loop prevents duplicate task runs across workers.
     """
     import threading
