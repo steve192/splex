@@ -188,6 +188,11 @@ def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense
         owed_shares=owed_shares,
         currency=currency,
     )
+    # Attach any draft receipts the user uploaded before saving the expense.
+    # Local import avoids a circular dependency with receipts.py.
+    from splex.expenses.receipts import attach_drafts_to_expense
+
+    attach_drafts_to_expense(actor=actor, expense=expense)
     event = record_activity(
         actor,
         EventType.EXPENSE_CREATED,

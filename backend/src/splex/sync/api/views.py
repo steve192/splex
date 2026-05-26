@@ -67,7 +67,7 @@ class SyncMutationsView(APIView):
                     )
                 else:
                     raise ValueError("Unsupported expense context.")
-                expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+                expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
                     id=expense.id
                 )
                 response_payload = {

@@ -14,6 +14,7 @@ import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
+import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -179,6 +180,15 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                 ))}
               </Card.Content>
             </Card>
+
+            {expense.receipts && expense.receipts.length > 0 ? (
+              <Card mode="elevated">
+                <Card.Content style={styles.gap}>
+                  <Text variant="titleMedium">{t("receipts.section")}</Text>
+                  <ReceiptList receipts={expense.receipts} />
+                </Card.Content>
+              </Card>
+            ) : null}
 
             {expense.deleted_at ? (
               <Text variant="bodyMedium">{t("expense.deleted")}</Text>

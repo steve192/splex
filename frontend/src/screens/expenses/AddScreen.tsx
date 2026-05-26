@@ -1,12 +1,15 @@
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import {
+  ActivityIndicator,
   Button,
   Card,
   Divider,
   HelperText,
+  IconButton,
   Text,
   TextInput,
   TouchableRipple,
@@ -45,6 +48,9 @@ import {
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
+import { ReceiptList } from "../../shared/receipts/ReceiptList";
+import { pickReceipt, uploadReceipt } from "../../shared/receipts/receiptService";
+import type { Receipt } from "../../shared/types/models";
 
 type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
 
@@ -83,6 +89,19 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadedExpense, setLoadedExpense] = useState<Expense | null>(null);
+  // client_id is generated once and stays stable for the lifetime of the form.
+  // It links any draft receipts the user uploads before save to the eventual
+  // expense (see uploadReceipt + backend attach_drafts_to_expense).
+  const [draftClientId] = useState(() => pendingMutationId ?? createClientId());
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+
+  // Receipts require a live network connection: a draft upload talks to the
+  // backend immediately, and a pending-sync mutation has no server-side expense
+  // yet to attach against.
+  const netInfo = useNetInfo();
+  const isOnline = netInfo.isConnected !== false && netInfo.isInternetReachable !== false;
+  const canUploadReceipts = isOnline && !pendingMutationId;
 
   const locationForm = useLocationForm(user?.location_tracking_enabled ?? false);
 
@@ -234,6 +253,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setContextType(expense.group_id ? "group" : "friendship");
         setContextId(expense.group_id ?? expense.friendship_id ?? null);
         applyPaymentsToForm(expense.payments, { setMultiPayer, setPaymentValues, setPayerId });
+        setReceipts(expense.receipts ?? []);
       })
       .catch(() => setMessage(t("common.error")));
   }, [api, expenseId, t]);
@@ -352,12 +372,42 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setPaymentValues((current) => ({ ...current, [participantId]: value }));
   }
 
+  async function handleAddReceipt() {
+    if (uploadingReceipt) return;
+    const asset = await pickReceipt();
+    if (!asset) return;
+    if (!expenseId && !contextId) {
+      setMessage(t("expense.contextChoose"));
+      return;
+    }
+    setUploadingReceipt(true);
+    try {
+      const ctx = expenseId
+        ? { expenseId }
+        : {
+            clientId: draftClientId,
+            groupId: contextType === "group" ? contextId ?? undefined : undefined,
+            friendshipId: contextType === "friendship" ? contextId ?? undefined : undefined,
+          };
+      const uploaded = await uploadReceipt(api, asset, ctx);
+      setReceipts((current) => [...current, uploaded]);
+    } catch (error) {
+      Alert.alert(error instanceof Error ? error.message : t("receipts.uploadFailed"));
+    } finally {
+      setUploadingReceipt(false);
+    }
+  }
+
+  function handleReceiptRemoved(receiptId: number) {
+    setReceipts((current) => current.filter((r) => r.id !== receiptId));
+  }
+
   async function save() {
     if (!contextId) return;
     if (splitConfigInvalid || paymentConfigInvalid) return;
     setSaving(true);
     const expense = {
-      client_id: pendingMutationId ?? createClientId(),
+      client_id: draftClientId,
       description: description.trim(),
       amount: moneyValue(amount),
       currency: currency.toUpperCase(),
@@ -570,6 +620,35 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 ) : null}
               </Card.Content>
             </Card>
+
+            {selectedContext && (canUploadReceipts || receipts.length > 0) ? (
+              <Card mode="elevated" style={styles.card}>
+                <Card.Content style={styles.gap}>
+                  <View style={styles.rowBetween}>
+                    <Text variant="titleMedium">{t("receipts.section")}</Text>
+                    {canUploadReceipts ? (
+                      uploadingReceipt ? (
+                        <ActivityIndicator />
+                      ) : (
+                        <IconButton
+                          icon="paperclip"
+                          onPress={handleAddReceipt}
+                          accessibilityLabel={t("receipts.addAction")}
+                        />
+                      )
+                    ) : null}
+                  </View>
+                  {!canUploadReceipts ? (
+                    <HelperText type="info">{t("receipts.offlineHint")}</HelperText>
+                  ) : null}
+                  <ReceiptList
+                    receipts={receipts}
+                    allowRemove={canUploadReceipts}
+                    onRemoved={handleReceiptRemoved}
+                  />
+                </Card.Content>
+              </Card>
+            ) : null}
 
             <Button mode="contained" icon="check" loading={saving} disabled={!valid || saving} onPress={save}>
               {t("expense.save")}

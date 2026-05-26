@@ -157,6 +157,10 @@ def delete_group(*, actor, group: Group) -> None:
     if not group.archived_at:
         group.archived_at = now
     group.save(update_fields=["deleted_at", "archived_at", "updated_at"])
+    # Local import avoids circular dependency with expenses.receipts.
+    from splex.expenses.receipts import delete_receipts_for_group
+
+    delete_receipts_for_group(group)
     event = record_activity(actor, EventType.GROUP_DELETED, group=group, payload={})
     create_notifications_for_activity(event)
 

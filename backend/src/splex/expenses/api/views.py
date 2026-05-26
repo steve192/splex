@@ -14,14 +14,14 @@ from splex.ledger.serializers import serialize_expense
 
 class ExpenseDetailView(APIView):
     def get(self, request, expense_id):
-        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense_id
         )
         ensure_context_access(request.user, expense.group, expense.friendship)
         return Response(serialize_expense(expense))
 
     def patch(self, request, expense_id):
-        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense_id, deleted_at__isnull=True
         )
         serializer = ExpenseCreateSerializer(data=request.data, partial=True)
@@ -29,7 +29,7 @@ class ExpenseDetailView(APIView):
         expense = update_expense(
             actor=request.user, expense=expense, data=serializer.validated_data
         )
-        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense.id
         )
         return Response(serialize_expense(expense))

@@ -57,7 +57,7 @@ class FriendExpensesView(APIView):
         friendship, _ = ensure_friendship_member(request.user, friendship_id)
         expenses = (
             Expense.objects.filter(friendship=friendship, deleted_at__isnull=True)
-            .prefetch_related("payment_shares", "owed_shares")
+            .prefetch_related("payment_shares", "owed_shares", "receipts")
             .order_by("-date", "-created_at")
         )
         return Response([serialize_expense(expense) for expense in expenses])
@@ -69,7 +69,7 @@ class FriendExpensesView(APIView):
         expense = create_expense(
             actor=request.user, friendship=friendship, data=serializer.validated_data
         )
-        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense.id
         )
         return Response(serialize_expense(expense), status=status.HTTP_201_CREATED)
