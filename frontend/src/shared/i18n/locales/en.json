@@ -201,7 +201,7 @@
   "imageSearch.action": "Search",
   "imageSearch.title": "Search images",
   "imageSearch.placeholder": "Search Openverse",
-  "imageSearch.poweredBy": "Results from Openverse — commercial-use licenses only.",
+  "imageSearch.poweredBy": "Results from Openverse - commercial-use licenses only.",
   "imageSearch.empty": "Type a search term to find an image.",
   "imageSearch.searchFailed": "Search failed. Try again.",
   "imageSearch.downloadFailed": "Could not download this image. Try another.",

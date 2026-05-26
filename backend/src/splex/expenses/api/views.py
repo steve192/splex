@@ -68,7 +68,7 @@ class LocationSuggestionsView(APIView):
         lon_delta = Decimal(str(radius / (111000 * 1)))  # Simplified, doesn't account for latitude
 
         # Note: .distinct() combined with .order_by("-id") doesn't dedupe by
-        # description alone — Postgres adds id to the SELECT/DISTINCT, so every
+        # description alone - Postgres adds id to the SELECT/DISTINCT, so every
         # row stays. Dedupe in Python while walking newest-first instead.
         descriptions = (
             Expense.objects.filter(

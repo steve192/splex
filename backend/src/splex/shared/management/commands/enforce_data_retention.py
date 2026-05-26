@@ -1,4 +1,4 @@
-"""enforce_data_retention — inactivity warnings and automatic account deletion.
+"""enforce_data_retention - inactivity warnings and automatic account deletion.
 
 This command is run automatically every 24 hours by Splex's built-in background
 scheduler (splex.shared.scheduler).  You can also invoke it manually at any time,

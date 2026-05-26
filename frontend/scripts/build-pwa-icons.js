@@ -3,7 +3,7 @@
 /**
  * Regenerates the PWA icon set in public/icons/ from the canonical source at
  * assets/images/pwa-maskable-icon.png. The browser needs 192x192 and 512x512
- * entries to mint a WebAPK quickly on Android Chrome install — pointing the
+ * entries to mint a WebAPK quickly on Android Chrome install - pointing the
  * manifest at the raw multi-MB source means every install round-trips that
  * whole blob to Google's WebAPK minter before the install completes.
  *

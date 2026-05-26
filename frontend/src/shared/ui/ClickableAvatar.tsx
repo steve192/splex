@@ -14,7 +14,7 @@ type ClickableAvatarProps = {
 /**
  * PersonAvatar that opens a full-screen zoomable popup ({@link ImageViewerModal})
  * when tapped. Falls back to a plain PersonAvatar (non-interactive) when there
- * is no image to enlarge — tapping an initials bubble would just show an empty
+ * is no image to enlarge - tapping an initials bubble would just show an empty
  * popup.
  *
  * Attribution for the image is fetched on demand by the modal itself, so call

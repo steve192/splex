@@ -265,7 +265,7 @@ def test_cleanup_disabled_when_retention_zero(alice, group, media_root):
 @pytest.mark.django_db
 def test_upload_service_rejects_declared_type_mismatch(alice, group, media_root):
     """Magic-byte sniffing wins over the client-declared content-type."""
-    # Random bytes labeled as PDF — should still be rejected by the sniffer.
+    # Random bytes labeled as PDF - should still be rejected by the sniffer.
     with pytest.raises(Exception) as exc:
         upload_receipt(
             actor=alice,

@@ -33,7 +33,7 @@ export function PwaInstallPrompt() {
     install();
   }
 
-  // Only invite installation for signed-in users — the login screen shouldn't
+  // Only invite installation for signed-in users - the login screen shouldn't
   // be the first impression to push an install on. This also covers
   // returning-while-logged-in: the persisted user is restored on app start.
   if (!user || !available) {

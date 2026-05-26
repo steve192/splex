@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 class ReceiptUploadView(APIView):
-    """``POST /api/receipts/`` — multipart upload of a new receipt.
+    """``POST /api/receipts/`` - multipart upload of a new receipt.
 
     Required form fields:
       - ``file``: the binary file (image or PDF)
 
     One of the following context fields must be present:
-      - ``expense_id``    — attach to an existing expense (must be accessible)
-      - ``group_id`` + ``client_id``      — draft for a pending group expense
-      - ``friendship_id`` + ``client_id`` — draft for a pending friendship expense
+      - ``expense_id``    - attach to an existing expense (must be accessible)
+      - ``group_id`` + ``client_id``      - draft for a pending group expense
+      - ``friendship_id`` + ``client_id`` - draft for a pending friendship expense
     """
 
     parser_classes = [MultiPartParser, FormParser]
@@ -92,7 +92,7 @@ class ReceiptUploadView(APIView):
 
 
 class ReceiptDetailView(APIView):
-    """``DELETE /api/receipts/<id>/`` — remove a receipt and its file."""
+    """``DELETE /api/receipts/<id>/`` - remove a receipt and its file."""
 
     def delete(self, request, receipt_id):
         try:
@@ -107,7 +107,7 @@ class ReceiptDetailView(APIView):
 
 
 class ReceiptDownloadView(APIView):
-    """``GET /api/receipts/<id>/download/`` — stream the file back to the user.
+    """``GET /api/receipts/<id>/download/`` - stream the file back to the user.
 
     The Content-Disposition header includes the original filename and, by
     default, the file is served inline so PDFs and images preview in the

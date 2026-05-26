@@ -1,4 +1,4 @@
-"""Receipt service module — upload, attach, list, delete and cleanup.
+"""Receipt service module - upload, attach, list, delete and cleanup.
 
 A receipt is a single image (JPEG/PNG/WebP) or PDF file that a user attaches
 to an expense to back it up with documentary evidence.  Files are stored
@@ -10,7 +10,7 @@ Upload lifecycle
 ----------------
 1.  User taps "Add receipt" on the AddScreen before saving the expense.  The
     file is uploaded with the expense's pending ``client_id`` and the chosen
-    context (group_id or friendship_id) — but no expense_id yet.  The Receipt
+    context (group_id or friendship_id) - but no expense_id yet.  The Receipt
     row is created in "draft" state (expense_id NULL).
 2.  When the expense is saved, ``attach_drafts_to_expense`` matches drafts by
     ``(uploaded_by, client_id)`` and points them at the freshly created
@@ -115,7 +115,7 @@ def _context_storage_prefix(*, group: Group | None, friendship: Friendship | Non
 def _safe_filename(name: str) -> str:
     """Sanitize a user-supplied filename for safe display/serving.
 
-    The on-disk storage path is always a UUID — this is just the value we
+    The on-disk storage path is always a UUID - this is just the value we
     echo back to the client and use in the Content-Disposition header.
     """
     name = (name or "").strip().replace("\x00", "")
@@ -207,7 +207,7 @@ def attach_drafts_to_expense(*, actor, expense: Expense) -> int:
     """Attach any draft receipts uploaded by ``actor`` for the expense's client_id.
 
     Only drafts whose context matches the expense (same group_id / friendship_id)
-    are attached — the upload endpoint already enforces context membership but
+    are attached - the upload endpoint already enforces context membership but
     we re-check here so a stray client_id collision cannot leak data across
     contexts.
 
