@@ -19,6 +19,7 @@ import { GroupSettingsScreen } from "../screens/groups/GroupSettingsScreen";
 import { GroupStatisticsScreen } from "../screens/groups/GroupStatisticsScreen";
 import { InvitationAcceptScreen } from "../screens/invitations/InvitationAcceptScreen";
 import { LegalDocumentScreen } from "../screens/legal/LegalDocumentScreen";
+import { OpenSourceLicensesScreen } from "../screens/legal/OpenSourceLicensesScreen";
 import { OverviewScreen } from "../screens/overview/OverviewScreen";
 import { SettlementDetailScreen } from "../screens/settlements/SettlementDetailScreen";
 import { useI18n } from "../shared/i18n/I18nContext";
@@ -268,6 +269,11 @@ export function AppNavigator() {
       >
         {() => <LegalDocumentScreen kind="imprint" />}
       </Stack.Screen>
+      <Stack.Screen
+        name="OpenSourceLicenses"
+        component={OpenSourceLicensesScreen}
+        options={{ title: t("legal.openSource.title") }}
+      />
       {tokens ? (
         pendingInviteToken ? (
           <>

@@ -7,7 +7,7 @@ from django.views.generic import TemplateView
 from django.views.static import serve
 
 from splex.accounts.api.views import UpdateLastLoginTokenRefreshView
-from splex.shared.api_views import MediaAttributionView, PrivateMediaView
+from splex.shared.api_views import MediaAttributionView, OpenSourceComponentsView, PrivateMediaView
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ urlpatterns = [
     # `<path:token>` route below doesn't greedily swallow it.
     path("api/media/<path:token>/attribution/", MediaAttributionView.as_view(), name="media_attribution"),
     path("api/media/<path:token>/", PrivateMediaView.as_view(), name="private_media"),
+    path("api/open-source-components/", OpenSourceComponentsView.as_view(), name="open_source_components"),
     path("api/", include("splex.accounts.api.urls")),
     path("api/", include("splex.groups.api.urls")),
     path("api/", include("splex.friends.api.urls")),

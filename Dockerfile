@@ -2,6 +2,7 @@ FROM node:24.16.0-bookworm AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 COPY frontend/scripts ./scripts
+COPY frontend/metro.config.js ./metro.config.js
 RUN npm install
 COPY frontend ./
 RUN npm run build:web
@@ -16,6 +17,7 @@ WORKDIR /app
 COPY backend /app/backend
 RUN pip install --no-cache-dir /app/backend
 COPY --from=frontend-build /app/frontend/dist /app/backend/static_pwa
+COPY --from=frontend-build /app/frontend/src/shared/legal/openSourceComponents.generated.json /app/backend/src/splex/shared/openSourceComponents.generated.json
 WORKDIR /app/backend
 RUN python manage.py collectstatic --noinput
 RUN adduser --system --group --home /app splex \

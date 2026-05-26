@@ -7,10 +7,11 @@ import { RootStackParamList } from "../../application/navigationTypes";
 import { useI18n } from "../i18n/I18nContext";
 import { LegalDocumentKind, openLegalDocument } from "./openTermsOfService";
 
-const ENTRIES: { kind: LegalDocumentKind; route: keyof RootStackParamList; labelKey: `legal.${LegalDocumentKind}.title` }[] = [
-  { kind: "tos", route: "TermsOfService", labelKey: "legal.tos.title" },
-  { kind: "privacy", route: "PrivacyPolicy", labelKey: "legal.privacy.title" },
-  { kind: "imprint", route: "Imprint", labelKey: "legal.imprint.title" }
+const ENTRIES: ({ kind: LegalDocumentKind; route: keyof RootStackParamList; labelKey: `legal.${LegalDocumentKind}.title`; type: "document" } | { route: keyof RootStackParamList; labelKey: "legal.openSource.title"; type: "route" })[] = [
+  { kind: "tos", route: "TermsOfService", labelKey: "legal.tos.title", type: "document" },
+  { kind: "privacy", route: "PrivacyPolicy", labelKey: "legal.privacy.title", type: "document" },
+  { kind: "imprint", route: "Imprint", labelKey: "legal.imprint.title", type: "document" },
+  { route: "OpenSourceLicenses", labelKey: "legal.openSource.title", type: "route" }
 ];
 
 export function LegalFooterLinks() {
@@ -22,11 +23,17 @@ export function LegalFooterLinks() {
   return (
     <View style={styles.row}>
       {ENTRIES.map((entry, index) => (
-        <View key={entry.kind} style={styles.item}>
+        <View key={entry.type === "document" ? entry.kind : entry.route} style={styles.item}>
           {index > 0 && <Text variant="bodySmall" style={[styles.separator, { color: linkColor }]}>·</Text>}
           <Text
             variant="bodySmall"
-            onPress={() => openLegalDocument(entry.kind, () => navigation.navigate(entry.route))}
+            onPress={() => {
+              if (entry.type === "document") {
+                openLegalDocument(entry.kind, () => navigation.navigate(entry.route));
+                return;
+              }
+              navigation.navigate(entry.route);
+            }}
             style={{ color: linkColor }}
           >
             {t(entry.labelKey)}

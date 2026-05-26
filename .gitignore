@@ -38,7 +38,9 @@ frontend/.expo/
 frontend/.expo-shared/
 frontend/web-build/
 frontend/src/**/*.generated.ts
+frontend/src/**/*.generated.json
 frontend/public/icons/
+frontend/public/open-source-components.json
 
 # Native/mobile generated output
 frontend/android/.gradle/
