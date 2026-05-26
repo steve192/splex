@@ -79,6 +79,16 @@ export type ExpenseShare = {
   amount: string;
 };
 
+export type Receipt = {
+  id: number;
+  expense_id: number | null;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  created_at?: string;
+  uploaded_by_id: number | null;
+};
+
 export type Expense = {
   id: number;
   client_id?: string;
@@ -98,6 +108,7 @@ export type Expense = {
   deleted_at?: string | null;
   payments: ExpenseShare[];
   owed: ExpenseShare[];
+  receipts?: Receipt[];
 };
 
 export type Settlement = {

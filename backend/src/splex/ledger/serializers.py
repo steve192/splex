@@ -1,4 +1,5 @@
 from splex.expenses.models import Expense
+from splex.expenses.receipts import serialize_receipt
 from splex.participants.models import Participant
 from splex.participants.services import participant_avatar_url
 
@@ -16,6 +17,7 @@ def serialize_expense(expense):
         participant.id: participant_avatar_url(participant)
         for participant in participants
     }
+    receipts = [serialize_receipt(r) for r in expense.receipts.all().order_by("id")]
     return {
         "id": expense.id,
         "client_id": expense.client_id,
@@ -51,6 +53,7 @@ def serialize_expense(expense):
             }
             for share in expense.owed_shares.all()
         ],
+        "receipts": receipts,
     }
 
 

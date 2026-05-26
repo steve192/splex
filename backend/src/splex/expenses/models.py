@@ -63,3 +63,69 @@ class ExpenseOwedShare(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3)
 
+
+class Receipt(TimeStampedModel):
+    """A user-uploaded receipt (image or PDF) attached to an expense.
+
+    A receipt can also exist in "draft" state, where ``expense`` is null but
+    ``client_id`` and ``uploaded_by`` are set.  Drafts are matched to a created
+    expense by ``(uploaded_by, client_id)`` and the cleanup job removes drafts
+    that stay orphaned for longer than ``RECEIPT_DRAFT_RETENTION_HOURS``.
+    """
+
+    class ContentType(models.TextChoices):
+        JPEG = "image/jpeg", "JPEG"
+        PNG = "image/png", "PNG"
+        WEBP = "image/webp", "WebP"
+        PDF = "application/pdf", "PDF"
+
+    # NULL while draft; FK to the expense once attached.
+    expense = models.ForeignKey(
+        Expense,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="receipts",
+    )
+    # Context refs are denormalized so we can enforce the per-group quota and
+    # clean up storage on group deletion without joining through Expense.
+    group = models.ForeignKey(
+        "groups.Group",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="receipts",
+    )
+    friendship = models.ForeignKey(
+        "friends.Friendship",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_receipts",
+    )
+    # Matches the client_id used by the AddScreen for offline-sync — lets us
+    # link drafts uploaded before the expense was saved to the eventual expense.
+    client_id = models.CharField(max_length=64, blank=True)
+    # Path inside Django's default storage backend.
+    storage_path = models.CharField(max_length=500)
+    original_filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=64, choices=ContentType.choices)
+    size_bytes = models.PositiveBigIntegerField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["uploaded_by", "client_id"]),
+            models.Index(fields=["group"]),
+            models.Index(fields=["friendship"]),
+            models.Index(fields=["expense"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Receipt({self.original_filename}, expense_id={self.expense_id})"
+

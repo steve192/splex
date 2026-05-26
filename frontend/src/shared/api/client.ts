@@ -72,6 +72,11 @@ export class ApiClient {
     this.tokenChangeHandler?.(tokens);
   }
 
+  /** Returns the current access token, or null if not authenticated. */
+  getAccessToken(): string | null {
+    return this.tokens?.access ?? null;
+  }
+
   setTokenChangeHandler(handler: (tokens: Tokens | null) => void) {
     this.tokenChangeHandler = handler;
   }
@@ -114,7 +119,11 @@ export class ApiClient {
     }
     const headers = new Headers(options.headers);
     headers.set("Accept", "application/json");
-    headers.set("Content-Type", "application/json");
+    // For multipart uploads, fetch() needs to set the Content-Type itself so
+    // the boundary parameter is included.  Skip our default JSON header then.
+    if (!(options.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
     if (this.tokens?.access) {
       headers.set("Authorization", `Bearer ${this.tokens.access}`);
     }
@@ -218,6 +227,47 @@ export class ApiClient {
 
   delete<T>(path: string): Promise<T> {
     return this.request<T>(path, { method: "DELETE" });
+  }
+
+  upload<T>(path: string, formData: FormData): Promise<T> {
+    return this.request<T>(path, { method: "POST", body: formData });
+  }
+
+  /**
+   * Fetch a file (e.g. receipt) and return the raw Response so the caller can
+   * stream it to disk, a Blob URL, or `expo-sharing`.  Reuses the same auth +
+   * refresh flow as `request<T>` but does not parse the body as JSON.
+   */
+  async fetchBinary(path: string): Promise<Response> {
+    if (this.demoMode) {
+      throw new ApiError("Receipts are not available in demo mode.", { status: 400 });
+    }
+    const headers = new Headers();
+    if (this.tokens?.access) {
+      headers.set("Authorization", `Bearer ${this.tokens.access}`);
+    }
+    const url = `${await this.getBaseUrl()}${path}`;
+    let response: Response;
+    try {
+      response = await fetch(url, { headers });
+    } catch {
+      throw new ApiError("Network unavailable", { offline: true });
+    }
+    if (response.status === 401 && this.tokens?.refresh) {
+      this.refreshPromise ??= this.refreshAccessToken().finally(() => {
+        this.refreshPromise = null;
+      });
+      await this.refreshPromise;
+      const retryHeaders = new Headers();
+      if (this.tokens?.access) {
+        retryHeaders.set("Authorization", `Bearer ${this.tokens.access}`);
+      }
+      response = await fetch(url, { headers: retryHeaders });
+    }
+    if (!response.ok) {
+      throw new ApiError(`Failed to fetch (${response.status})`, { status: response.status });
+    }
+    return response;
   }
 }
 

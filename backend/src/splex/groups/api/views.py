@@ -218,7 +218,7 @@ class GroupExpensesView(APIView):
         assert_group_member(request.user, group)
         expenses = (
             Expense.objects.filter(group=group, deleted_at__isnull=True)
-            .prefetch_related("payment_shares", "owed_shares")
+            .prefetch_related("payment_shares", "owed_shares", "receipts")
             .order_by("-date", "-created_at")
         )
         return Response([serialize_expense(expense) for expense in expenses])
@@ -229,7 +229,7 @@ class GroupExpensesView(APIView):
         serializer = ExpenseCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         expense = create_expense(actor=request.user, group=group, data=serializer.validated_data)
-        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares").get(
+        expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense.id
         )
         return Response(serialize_expense(expense), status=status.HTTP_201_CREATED)

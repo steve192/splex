@@ -263,6 +263,19 @@ ALLOW_REGISTRATION = env_bool("ALLOW_REGISTRATION", True)
 # Enforced automatically every 24 h by the built-in background scheduler.
 DATA_RETENTION_INACTIVE_MONTHS = env_int("DATA_RETENTION_INACTIVE_MONTHS", 6)
 
+# Receipts: per-file size limit (bytes) for receipt uploads.  Files larger
+# than this are rejected at upload time.  Defaults to 15 MiB.
+# Set to 0 to disable the per-file limit (no upper bound).
+RECEIPT_MAX_FILE_SIZE_BYTES = env_int("RECEIPT_MAX_FILE_SIZE_BYTES", 15 * 1024 * 1024)
+# Maximum combined size (bytes) of all receipts within a single group.
+# When a group reaches this quota new uploads are rejected.  Defaults to 100 MiB.
+# Set to 0 to disable the per-group quota (unlimited storage per group).
+RECEIPT_MAX_GROUP_TOTAL_BYTES = env_int("RECEIPT_MAX_GROUP_TOTAL_BYTES", 100 * 1024 * 1024)
+# How long a "draft" receipt (uploaded but never attached to an expense) is
+# kept before the cleanup job removes it.  Defaults to 24 hours.
+# Set to 0 to disable the cleanup job entirely (drafts kept indefinitely).
+RECEIPT_DRAFT_RETENTION_HOURS = env_int("RECEIPT_DRAFT_RETENTION_HOURS", 24)
+
 # Google OAuth2 / OIDC login.
 # Leave empty to disable the Google login option entirely.
 # GOOGLE_CLIENT_ID      - the Web or iOS OAuth client ID used to verify tokens on the backend.
