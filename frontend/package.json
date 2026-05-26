@@ -2,6 +2,13 @@
   "name": "splex-frontend",
   "version": "1.8.2",
   "private": true,
+  "license": "Splex Non-Commercial Source License 1.0",
+  "author": "steve192",
+  "homepage": "https://github.com/steve192/splex",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/steve192/splex.git"
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start --tunnel",

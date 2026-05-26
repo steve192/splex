@@ -1,0 +1,167 @@
+Splex Non-Commercial Source License 1.0
+
+Copyright (c) 2026 steve192
+
+1. Definitions
+
+"Software" means the Splex project, including all source code, object code,
+assets, documentation, configuration, and other material made available under
+this License.
+
+"Licensor" means steve192, the original author and copyright holder of the
+Software.
+
+"You" means any individual or legal entity exercising permissions under this
+License.
+
+"Contribution" means any code, patch, modification, documentation, asset,
+translation, or other material intentionally submitted to the Software for
+inclusion in the Software.
+
+"Commercial Use" means any use of the Software, directly or indirectly, for
+monetary compensation, commercial advantage, private financial gain, paid
+services, internal business operations, customer-facing business use, or as part
+of a product or service offered by a for-profit or revenue-generating activity.
+Commercial Use includes selling, licensing, sublicensing, hosting for paying
+users, bundling with paid offerings, or using the Software to support a business
+or commercial organization. Any use not expressly permitted by this License is
+reserved by the Licensor.
+
+2. License Grant
+
+Subject to your full compliance with this License, the Licensor grants you a
+limited, worldwide, non-exclusive, non-transferable, non-sublicensable,
+revocable license to:
+
+a. use, copy, and run the Software for non-commercial purposes only;
+b. modify the Software and create derivative works for non-commercial purposes only; and
+c. distribute the Software, and derivative works of the Software, for
+non-commercial purposes only.
+
+3. Non-Commercial Restriction
+
+You may not use the Software for any Commercial Use.
+
+You may not sell the Software, sell access to the Software, charge for hosting
+or support of the Software, include the Software in a paid offering, or use the
+Software in connection with any revenue-generating activity unless you first
+obtain separate written permission from the Licensor.
+
+4. Modifications and Derivative Works
+
+You may modify the Software and create derivative works, but only for
+non-commercial purposes and only if every copy of the modified Software or
+derivative work is licensed in its entirety under this same License.
+
+You may not relicense the Software or any derivative work under a different
+license.
+
+5. Distribution Conditions
+
+You may distribute the Software, whether modified or unmodified, only for
+non-commercial purposes and only if all of the following conditions are met:
+
+a. you provide a complete copy of this License with every distribution;
+b. you preserve all copyright, attribution, authorship, and proprietary notices
+present in the Software;
+c. you clearly state whether you modified the Software; and
+d. every distributed copy and derivative work remains licensed under this same License.
+
+6. Attribution
+
+Every distribution of the Software, whether modified or unmodified, in source or
+binary form, must include attribution to the Licensor as the original author.
+At minimum, the following notice must be included in a reasonable and visible
+location:
+
+"Original software: Splex by steve192, licensed under the Splex Non-Commercial
+Source License 1.0."
+
+Third-party components included with, bundled with, linked to, or used by the
+Software remain subject to their own respective license terms, copyright
+notices, attribution requirements, and other legal conditions.
+
+This License applies only to the original Splex code and other material for
+which the Licensor has the authority to grant rights under this License. It does
+not replace, override, revoke, or relicense any third-party component.
+
+For clarity, the same-license requirements in Sections 4 and 5 apply to your
+modifications to the Software and derivative works of the Software itself, but
+do not require third-party components to be relicensed under this License.
+
+When you distribute the Software, you must also preserve and include any third-
+party copyright notices, license texts, attribution notices, and NOTICE files
+required by the licenses of the third-party components included in that
+distribution.
+
+7. Ownership
+
+The Software is licensed, not sold. Except for the limited rights expressly
+granted by this License, all right, title, and interest in and to the Software
+are reserved by the Licensor.
+
+8. Contributor Assignment
+
+By intentionally submitting a Contribution to the Software, you irrevocably
+assign, transfer, and convey to the Licensor, without additional consideration,
+all right, title, and interest worldwide in and to that Contribution, including
+all copyrights and all other intellectual property rights, to the maximum extent
+permitted by applicable law.
+
+You agree that:
+
+a. no compensation, royalty, fee, or other payment is owed to you for any Contribution;
+b. the Licensor will be the sole owner of the Contribution upon submission;
+c. you waive, to the maximum extent permitted by applicable law, any moral
+rights or similar rights you may have in the Contribution; and
+d. you represent and warrant that you have sufficient rights and authority to
+make this assignment.
+
+If any part of the foregoing assignment is held ineffective under applicable law,
+you grant to the Licensor an exclusive, perpetual, irrevocable, worldwide,
+fully-paid, royalty-free, transferable, sublicensable license to use, reproduce,
+modify, distribute, relicense, display, perform, and otherwise exploit the
+Contribution without restriction.
+
+9. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT,
+ACCURACY, AVAILABILITY, SECURITY, OR THAT THE SOFTWARE WILL BE ERROR-FREE OR
+UNINTERRUPTED.
+
+10. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+LICENSOR OR ANY COPYRIGHT HOLDER, CONTRIBUTOR, OR DISTRIBUTOR BE LIABLE FOR ANY
+CLAIM, DAMAGES, LOSSES, OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT,
+NEGLIGENCE, STRICT LIABILITY, OR OTHERWISE, ARISING FROM OR RELATED TO THE
+SOFTWARE OR THE USE OF OR INABILITY TO USE THE SOFTWARE, INCLUDING BUT NOT
+LIMITED TO DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR
+PUNITIVE DAMAGES, LOSS OF DATA, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR OTHER
+COMMERCIAL OR PERSONAL LOSSES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
+
+11. Termination
+
+This License terminates automatically and immediately if you breach any term of
+this License.
+
+Upon termination, all rights granted to you under this License are revoked
+automatically, and you must immediately stop using, copying, modifying,
+distributing, hosting, and otherwise exploiting the Software and any derivative
+works.
+
+12. Acceptance
+
+By using, copying, modifying, distributing, or contributing to the Software, you
+agree to be bound by this License.
+
+13. Miscellaneous
+
+If any provision of this License is held unenforceable, the remaining provisions
+shall remain in full force to the maximum extent permitted by law.
+
+No failure by the Licensor to enforce any provision of this License will operate
+as a waiver of that provision or any other provision.

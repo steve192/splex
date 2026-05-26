@@ -6,6 +6,7 @@ export type RootStackParamList = {
   TermsOfService: undefined;
   PrivacyPolicy: undefined;
   Imprint: undefined;
+  OpenSourceLicenses: undefined;
   InvitationAccept: { token?: string } | undefined;
 };
 

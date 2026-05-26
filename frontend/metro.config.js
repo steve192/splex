@@ -16,6 +16,14 @@ execFileSync(process.execPath, [path.join(__dirname, "scripts/build-pwa-icons.js
   stdio: "inherit"
 });
 
+// Generate the third-party notices inventory from package-lock.json on every
+// Metro startup. This mirrors the other generated-asset hooks without adding
+// another npm lifecycle step. The output stays in src/ and is served only via
+// the backend API, not as a public static file.
+execFileSync(process.execPath, [path.join(__dirname, "scripts/generate-open-source-components.js")], {
+  stdio: "inherit"
+});
+
 // After `expo export` finishes writing dist/index.html, patch it with the PWA
 // meta tags (manifest, theme-color, apple-touch-icon). Expo's exporter has no
 // pre-write hook for index.html, so we run on process exit - it no-ops when

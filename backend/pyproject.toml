@@ -7,6 +7,11 @@ name = "splex-backend"
 version = "1.8.2"
 description = "Self-hosted expense splitter backend"
 requires-python = ">=3.12"
+authors = [
+  { name = "steve192" },
+]
+license = { text = "Splex Non-Commercial Source License 1.0" }
+urls = { Homepage = "https://github.com/steve192/splex", Repository = "https://github.com/steve192/splex" }
 dependencies = [
   "Django==6.0.5",
   "djangorestframework==3.17.1",

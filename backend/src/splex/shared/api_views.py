@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from splex.groups.models import Group
 from splex.shared.media import private_media_response, storage_path_from_signed_token
+from splex.shared.open_source import build_open_source_payload
 
 
 class PrivateMediaView(APIView):
@@ -42,3 +43,11 @@ class MediaAttributionView(APIView):
             if group:
                 attribution = group.icon_attribution or ""
         return Response({"attribution": attribution})
+
+
+class OpenSourceComponentsView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        return Response(build_open_source_payload())
