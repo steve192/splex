@@ -1,8 +1,17 @@
+import base64
+import json
+import logging
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.renderers import StaticHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from splex.accounts.api.serializers import (
     MagicCodeVerifySerializer,
@@ -20,6 +29,51 @@ from splex.accounts.services import (
 )
 from splex.shared.tos import render_legal_document
 from splex.shared.uploads import save_data_url_image
+
+logger = logging.getLogger(__name__)
+
+# Only write last_login once per this interval to avoid a DB update on every refresh call.
+_LAST_LOGIN_UPDATE_INTERVAL = timedelta(hours=24)
+
+
+def _user_id_from_jwt_payload(token_str: str):
+    """Extract user_id from a JWT without signature validation (read-only)."""
+    try:
+        payload_b64 = token_str.split(".")[1]
+        # Restore padding
+        payload_b64 += "=" * (-len(payload_b64) % 4)
+        payload = json.loads(base64.b64decode(payload_b64))
+        return payload.get("user_id")
+    except Exception:
+        return None
+
+
+class UpdateLastLoginTokenRefreshView(TokenRefreshView):
+    """Wraps simplejwt's TokenRefreshView to keep last_login current.
+
+    simplejwt's UPDATE_LAST_LOGIN setting only applies to the obtain-pair view.
+    Since Splex issues tokens via custom login flows, token refresh is the only
+    long-running signal that a user is still active.  We update last_login at
+    most once per 24 hours to avoid a DB write on every refresh call.
+    """
+
+    def post(self, request, *args, **kwargs):
+        # Read user_id from the incoming refresh token before it is rotated/blacklisted.
+        user_id = _user_id_from_jwt_payload(request.data.get("refresh", ""))
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and user_id:
+            try:
+                user_model = get_user_model()
+                cutoff = timezone.now() - _LAST_LOGIN_UPDATE_INTERVAL
+                # Only update if last_login is stale (or never set), to keep DB writes minimal.
+                updated = user_model.objects.filter(pk=user_id).filter(
+                    Q(last_login__lt=cutoff) | Q(last_login__isnull=True)
+                ).update(last_login=timezone.now())
+                if updated:
+                    logger.debug("Updated last_login via token refresh for user_id=%s", user_id)
+            except Exception:
+                logger.warning("Failed to update last_login on token refresh", exc_info=True)
+        return response
 
 
 class LoginConfigView(APIView):

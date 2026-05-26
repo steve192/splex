@@ -1,0 +1,66 @@
+{% extends "emails/base.html" %}
+{% block title %}Your Splex account will be deleted in {{ days_remaining }} day{{ days_remaining|pluralize }}{% endblock %}
+{% block preheader %}Log in before {{ deletion_date }} to keep your Splex account.{% endblock %}
+{% block footer_reason %}have a Splex account associated with this address{% endblock %}
+
+{% block content %}
+<h1 style="margin:0 0 16px 0; font-size:22px; line-height:28px; color:#111827; font-weight:600;">
+  Your account will be deleted in {{ days_remaining }} day{{ days_remaining|pluralize }}
+</h1>
+
+<p style="margin:0 0 16px 0; font-size:15px; line-height:22px; color:#374151;">
+  {% if display_name %}Hi {{ display_name }},{% else %}Hi,{% endif %}
+</p>
+
+<p style="margin:0 0 16px 0; font-size:15px; line-height:22px; color:#374151;">
+  Your Splex account for <strong style="color:#111827;">{{ email }}</strong> has been
+  inactive for a while. To protect your privacy and keep data tidy, we automatically
+  delete accounts that haven't been used for an extended period.
+</p>
+
+<p style="margin:0 0 24px 0; font-size:15px; line-height:22px; color:#374151;">
+  If we don't hear from you, your account will be permanently deleted on
+  <strong style="color:#111827;">{{ deletion_date }}</strong>.
+</p>
+
+<!-- Warning box -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 28px 0;">
+  <tr>
+    <td style="background-color:#fef9c3; border-left:4px solid #ca8a04; padding:14px 18px; border-radius:4px;">
+      <p style="margin:0; font-size:14px; line-height:20px; color:#713f12;">
+        <strong>Deletion date: {{ deletion_date }}</strong> — simply log in to cancel this deletion.
+      </p>
+    </td>
+  </tr>
+</table>
+
+<!-- CTA button -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px 0;">
+  <tr>
+    <td bgcolor="#006A60" style="border-radius:8px;">
+      <a href="{{ frontend_url }}"
+         style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:8px;">
+        Log in to keep my account
+      </a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0 0 16px 0; font-size:13px; line-height:20px; color:#6b7280;">
+  What happens if my account is deleted?
+</p>
+<ul style="margin:0 0 24px 0; padding-left:20px; font-size:13px; line-height:22px; color:#6b7280;">
+  <li>Your profile and login credentials are permanently removed.</li>
+  <li>Groups where you are the only registered member are deleted.</li>
+  <li>In shared groups your past expenses remain visible to other members,
+      but are no longer linked to a Splex account.</li>
+  <li>You can create a new account at any time — it will not be linked to
+      the data from your previous account.</li>
+</ul>
+
+<p style="margin:0; font-size:13px; line-height:20px; color:#6b7280;">
+  If you no longer wish to use Splex and want to delete your account immediately,
+  you can do so from your account settings at
+  <a href="{{ frontend_url }}" style="color:#006A60; text-decoration:underline;">{{ frontend_url }}</a>.
+</p>
+{% endblock %}
