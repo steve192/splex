@@ -125,6 +125,7 @@ INSTALLED_APPS = [
     "splex.currency",
     "splex.sync",
     "splex.shared",
+    "splex.imports",
 ]
 
 MIDDLEWARE = [

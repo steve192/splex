@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../features/auth/AuthContext";
 import { ActivityScreen } from "../screens/activity/ActivityScreen";
 import { AccountScreen } from "../screens/account/AccountScreen";
+import { ImportFromServiceScreen } from "../screens/account/ImportFromServiceScreen";
+import { SplitProImportScreen } from "../screens/account/SplitProImportScreen";
+import { SplitwiseImportScreen } from "../screens/account/SplitwiseImportScreen";
 import { LoginScreen } from "../screens/auth/LoginScreen";
 import { AddScreen } from "../screens/expenses/AddScreen";
 import { ExpenseDetailScreen } from "../screens/expenses/ExpenseDetailScreen";
@@ -25,13 +28,14 @@ import { SettlementDetailScreen } from "../screens/settlements/SettlementDetailS
 import { useI18n } from "../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../shared/lib/inviteLinks";
 import { syncPendingMutations } from "../shared/sync/queue";
-import { AddStackParamList, ActivityStackParamList, OverviewStackParamList, RootStackParamList, TabParamList } from "./navigationTypes";
+import { AccountStackParamList, AddStackParamList, ActivityStackParamList, OverviewStackParamList, RootStackParamList, TabParamList } from "./navigationTypes";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<TabParamList>();
 const OverviewStack = createNativeStackNavigator<OverviewStackParamList>();
 const ActivityStack = createNativeStackNavigator<ActivityStackParamList>();
 const AddStack = createNativeStackNavigator<AddStackParamList>();
+const AccountStack = createNativeStackNavigator<AccountStackParamList>();
 
 function OverviewStackNavigator() {
   const { t } = useI18n();
@@ -68,6 +72,34 @@ function ActivityStackNavigator() {
       <ActivityStack.Screen name="ExpenseDetail" component={ExpenseDetailScreen} options={{ title: t("expense.details") }} />
       <ActivityStack.Screen name="SettlementDetail" component={SettlementDetailScreen} options={{ title: t("settlement.title") }} />
     </ActivityStack.Navigator>
+  );
+}
+
+function AccountStackNavigator() {
+  const { t } = useI18n();
+  return (
+    <AccountStack.Navigator>
+      <AccountStack.Screen
+        name="AccountHome"
+        component={AccountScreen}
+        options={{ headerShown: false, title: t("tabs.account") }}
+      />
+      <AccountStack.Screen
+        name="ImportFromService"
+        component={ImportFromServiceScreen}
+        options={{ title: t("importFromService.title") }}
+      />
+      <AccountStack.Screen
+        name="SplitwiseImport"
+        component={SplitwiseImportScreen}
+        options={{ title: t("splitwiseImport.title") }}
+      />
+      <AccountStack.Screen
+        name="SplitProImport"
+        component={SplitProImportScreen}
+        options={{ title: t("splitProImport.title") }}
+      />
+    </AccountStack.Navigator>
   );
 }
 
@@ -132,7 +164,17 @@ function MainTabs() {
       />
       <Tabs.Screen
         name="Account"
-        component={AccountScreen}
+        component={AccountStackNavigator}
+        listeners={({ navigation }) => ({
+          tabPress: (event) => {
+            event.preventDefault();
+            navigation.navigate({
+              name: "Account",
+              params: { screen: "AccountHome" },
+              merge: false
+            } as never);
+          }
+        })}
         options={{ title: t("tabs.account"), tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-cog-outline" size={22} color={color} /> }}
       />
     </Tabs.Navigator>

@@ -42,6 +42,7 @@ urlpatterns = [
     path("api/", include("splex.currency.api.urls")),
     path("api/", include("splex.sync.api.urls")),
     path("api/", include("splex.notifications.api.urls")),
+    path("api/", include("splex.imports.api.urls")),
 ]
 
 if settings.ENABLE_ADMIN_UI:

@@ -1,7 +1,10 @@
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, Dialog, HelperText, List, Portal, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
 
+import { AccountStackParamList } from "../../application/navigationTypes";
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
@@ -28,6 +31,7 @@ export function AccountScreen() {
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
   const theme = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<AccountStackParamList>>();
   const { canInstall, installMethod, install: installPwa } = usePwaInstallPrompt();
   const [iosInstructionsVisible, setIosInstructionsVisible] = useState(false);
 
@@ -191,6 +195,13 @@ export function AccountScreen() {
             </Button>
           ) : null}
           <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
+          <Button
+            mode="elevated"
+            icon="swap-horizontal"
+            onPress={() => navigation.navigate("ImportFromService")}
+          >
+            {t("account.importFromService")}
+          </Button>
           {canInstall ? (
             <Button mode="elevated" icon="download" onPress={handleInstallPress}>
               {t("pwa.install.installButton")}

@@ -49,6 +49,13 @@ export type ActivityStackParamList = {
   SettlementDetail: { id: number };
 };
 
+export type AccountStackParamList = {
+  AccountHome: undefined;
+  ImportFromService: undefined;
+  SplitwiseImport: undefined;
+  SplitProImport: undefined;
+};
+
 export type AddStackParamList = {
   AddHome:
     | {
