@@ -20,9 +20,9 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
     },
-    "runtimeVersion": "6.0.0",
+    "runtimeVersion": "7.0.0",
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "package": "com.sterul.splex",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/pwa-maskable-icon.png",
