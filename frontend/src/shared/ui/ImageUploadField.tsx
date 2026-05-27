@@ -93,8 +93,12 @@ export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange 
     try {
       const response = await fetch(image.url);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      const dataUrl = await blobToDataUrl(blob);
+      // arrayBuffer() avoids a Blob+FileReader path that broke in SDK 56 when
+      // expo/fetch became the default global fetch: its Response.blob() returns
+      // a Blob type that React Native's FileReader polyfill cannot read.
+      const buffer = await response.arrayBuffer();
+      const mime = response.headers.get("content-type") ?? "image/jpeg";
+      const dataUrl = `data:${mime};base64,${arrayBufferToBase64(buffer)}`;
       setPendingAttribution(buildAttributionText(image));
       setCropSource(dataUrl);
     } catch {
@@ -150,11 +154,12 @@ export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange 
   );
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
-    reader.readAsDataURL(blob);
-  });
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const CHUNK = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)));
+  }
+  return btoa(binary);
 }

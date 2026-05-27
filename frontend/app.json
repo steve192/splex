@@ -14,11 +14,6 @@
       "splex",
       "com.sterul.splex"
     ],
-    "splash": {
-      "image": "./assets/images/splash-screen.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#006A60"
-    },
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
@@ -43,6 +38,11 @@
               "scheme": "https",
               "host": "splex.sterul.com",
               "pathPrefix": "/invite/"
+            },
+            {
+              "scheme": "https",
+              "host": "splex.sterul.com",
+              "pathPrefix": "/login/magic"
             }
           ],
           "category": [
@@ -55,11 +55,24 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/pwa-maskable-icon.png"
+      "favicon": "./assets/images/pwa-maskable-icon.png",
+      "splash": {
+        "image": "./assets/images/splash-screen.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#006A60"
+      }
     },
     "plugins": [
       "expo-notifications",
       "expo-updates",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/pwa-maskable-icon.png",
+          "imageWidth": 192,
+          "backgroundColor": "#006A60"
+        }
+      ],
       [
         "expo-location",
         {

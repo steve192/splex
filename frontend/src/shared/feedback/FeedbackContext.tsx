@@ -156,7 +156,7 @@ const feedbackStyles = StyleSheet.create({
     width: 80
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000

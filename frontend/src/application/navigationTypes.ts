@@ -3,6 +3,7 @@ import { ContextType } from "../shared/types/models";
 export type RootStackParamList = {
   Main: undefined;
   Login: undefined;
+  LoginMagic: { token?: string } | undefined;
   TermsOfService: undefined;
   PrivacyPolicy: undefined;
   Imprint: undefined;

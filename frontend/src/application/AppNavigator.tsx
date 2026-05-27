@@ -291,11 +291,18 @@ export function AppNavigator() {
           </>
         )
       ) : (
-        <Stack.Screen
-          name="Login"
-          component={LoginScreen}
-          options={{ headerShown: false, title: t("auth.title") }}
-        />
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ headerShown: false, title: t("auth.title") }}
+          />
+          <Stack.Screen
+            name="LoginMagic"
+            component={LoginScreen}
+            options={{ headerShown: false, title: t("auth.title") }}
+          />
+        </>
       )}
     </Stack.Navigator>
   );
