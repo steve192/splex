@@ -13,12 +13,17 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
 
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../application/navigationTypes";
+
 type LoginConfig = {
   google: { client_id: string | null; android_client_id: string | null };
   demo_mode_enabled?: boolean;
 };
 
-export function LoginScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, "Login" | "LoginMagic">;
+
+export function LoginScreen({ route }: Props) {
   const { t } = useI18n();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -70,7 +75,9 @@ export function LoginScreen() {
       AsyncStorage.setItem(PENDING_INVITE_STORAGE_KEY, inviteToken).catch(() => undefined);
       setMessage(t("invite.loginRequired"));
     }
-    const token = tokenFromCurrentUrl();
+    // route.params.token comes from the /login/magic deep link on native;
+    // tokenFromCurrentUrl reads the same value from window.location on web.
+    const token = route?.params?.token ?? tokenFromCurrentUrl();
     if (!token) return;
     inviteDebug("login screen found magic token; attempting login");
     setLoading(true);

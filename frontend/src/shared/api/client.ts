@@ -12,7 +12,7 @@ export type Tokens = {
 // Web always uses relative URLs - the PWA is served from the same host as the backend.
 // Native uses a configurable URL stored in AsyncStorage; EXPO_PUBLIC_DEFAULT_API_BASE_URL
 // is the pre-filled default shown on the login screen, baked in at build time.
-const NATIVE_DEFAULT_BASE_URL =
+export const NATIVE_DEFAULT_BASE_URL =
   (process.env as Record<string, string | undefined>).EXPO_PUBLIC_DEFAULT_API_BASE_URL ??
   "https://splex.sterul.com";
 const API_BASE_URL_STORAGE_KEY = "splex.apiBaseUrl";

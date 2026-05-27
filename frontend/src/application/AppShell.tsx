@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinkingOptions, NavigationContainer } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { View, useColorScheme } from "react-native";
@@ -9,7 +10,7 @@ import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../features/auth/AuthContext";
-import { ApiClient } from "../shared/api/client";
+import { ApiClient, NATIVE_DEFAULT_BASE_URL } from "../shared/api/client";
 import { DemoWriteBlockedSnackbar } from "../shared/demo/DemoWriteBlockedSnackbar";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
@@ -58,10 +59,11 @@ export function AppShell() {
 
   const linking = useMemo<LinkingOptions<RootStackParamList>>(
     () => ({
-      prefixes: [],
+      prefixes: [Linking.createURL("/"), NATIVE_DEFAULT_BASE_URL],
       config: {
         screens: {
           Login: "login",
+          LoginMagic: "login/magic",
           TermsOfService: "tos",
           PrivacyPolicy: "privacy",
           Imprint: "imprint",
@@ -129,10 +131,7 @@ export function AppShell() {
                   <PwaInstallPrompt />
                 </View>
               </FeedbackProvider>
-              <StatusBar
-                style={resolvedThemeMode === "dark" ? "light" : "dark"}
-                backgroundColor={paperTheme.colors.background}
-              />
+              <StatusBar style={resolvedThemeMode === "dark" ? "light" : "dark"} />
             </AuthProvider>
           </SafeAreaProvider>
         </PaperProvider>
