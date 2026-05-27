@@ -239,6 +239,19 @@ jobs:
       contents: write
       packages: read
     steps:
+      # ubuntu-latest only ships with ~14 GB free disk. Pulling the prewarmed
+      # builder image plus running two Android builds back-to-back blows past
+      # that, so reclaim ~30 GB by removing preinstalled tooling we don't need.
+      - name: Free runner disk
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+
       - name: Checkout tag
         uses: actions/checkout@v6
         with:
@@ -261,6 +274,12 @@ jobs:
             -v "$(pwd)":/builder \
             ghcr.io/steve192/splex-easbuilder:latest \
             production-apk "splex-${RELEASE_VERSION}.apk"
+
+      # Reclaim disk between the two builds — the APK build leaves Gradle
+      # intermediates inside its container layer (a few GB) which would
+      # otherwise stack with the AAB build's working space.
+      - name: Reclaim disk between builds
+        run: docker system prune -af --volumes
 
       - name: Build Android AAB
         env:

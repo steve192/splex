@@ -71,15 +71,16 @@ ENV GRADLE_USER_HOME=/root/.gradle
 
 COPY frontend /tmp/frontend
 
-# Install JS deps, generate native Android project, and run a release build to
-# pull every Maven artifact / Kotlin compiler / NDK build that real EAS builds
-# need. `|| true` so a failing late step (e.g. signing) still leaves caches
-# populated.
+# Install JS deps, generate native Android project, and compile native sources
+# to populate Gradle's Maven/Kotlin/NDK caches. We deliberately stop before
+# dex/R8/APK packaging — those are the disk-heavy steps and they produce
+# project-build-specific outputs that don't help future builds. `|| true` keeps
+# the image build resilient against a JS/source error in the current frontend.
 RUN cd /tmp/frontend && \
     npm ci && \
     npx expo prebuild --platform android --no-install && \
     cd android && \
-    ./gradlew assembleRelease --no-daemon || true && \
+    ./gradlew --no-daemon compileReleaseSources || true && \
     cd / && rm -rf /tmp/frontend
 
 # ============================================================================

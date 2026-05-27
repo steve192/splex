@@ -30,6 +30,19 @@ jobs:
       id-token: write
 
     steps:
+      # ubuntu-latest only ships with ~14 GB free disk. The Android prewarm
+      # blows past that, so reclaim ~30 GB by removing preinstalled tooling
+      # we don't need for this build.
+      - name: Free runner disk
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+
       - name: Checkout repository
         uses: actions/checkout@v6
 
