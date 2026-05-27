@@ -8,6 +8,13 @@ on:
     paths:
       - Dockerfile.builder
       - scripts/build-android.sh
+      - .dockerignore
+      # The builder image pre-warms Gradle/npm caches from the current frontend
+      # source, so it must rebuild whenever native deps or native config change.
+      - frontend/package.json
+      - frontend/package-lock.json
+      - frontend/app.json
+      - frontend/plugins/**
 
 env:
   REGISTRY: ghcr.io

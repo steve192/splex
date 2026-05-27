@@ -6,6 +6,11 @@ backend/data
 backend/src/static_pwa
 frontend/node_modules
 frontend/dist
+frontend/.expo
+frontend/android
+frontend/ios
 __pycache__
 *.pyc
 .env
+.env.*
+!.env.example
