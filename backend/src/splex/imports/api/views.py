@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -68,6 +69,24 @@ def _connection_from(data: dict) -> SplitProConnection:
     )
 
 
+def _risky_imports_disabled_response() -> Response:
+    """403 returned when ``ENABLE_RISKY_IMPORTS`` is off.
+
+    The Split Pro import opens an outbound database connection from the
+    server, which can be abused to reach resources behind the firewall, and
+    a malicious endpoint could exploit weaknesses in the client library.
+    Operators opt in via the ``ENABLE_RISKY_IMPORTS`` env var.
+    """
+    return Response(
+        {"detail": "Risky imports are disabled by server configuration."},
+        status=status.HTTP_403_FORBIDDEN,
+    )
+
+
+def _risky_imports_enabled() -> bool:
+    return bool(getattr(settings, "ENABLE_RISKY_IMPORTS", False))
+
+
 def _split_pro_error_response(exc: SplitProError) -> Response:
     if isinstance(exc, SplitProAuthError):
         return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
@@ -86,6 +105,8 @@ class SplitProListUsersView(APIView):
     """
 
     def post(self, request):
+        if not _risky_imports_enabled():
+            return _risky_imports_disabled_response()
         serializer = _SplitProCredentialsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -104,6 +125,8 @@ class SplitProImportView(APIView):
     """
 
     def post(self, request):
+        if not _risky_imports_enabled():
+            return _risky_imports_disabled_response()
         serializer = SplitProImportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data

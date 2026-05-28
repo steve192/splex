@@ -91,6 +91,9 @@ class LoginConfigView(APIView):
                     "android_client_id": settings.GOOGLE_ANDROID_CLIENT_ID or None,
                 },
                 "demo_mode_enabled": bool(getattr(settings, "DEMO_MODE_ENABLED", False)),
+                "risky_imports_enabled": bool(
+                    getattr(settings, "ENABLE_RISKY_IMPORTS", False)
+                ),
                 "map_tile_url": getattr(
                     settings,
                     "MAP_TILE_URL",

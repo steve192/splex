@@ -25,6 +25,7 @@
   "importFromService.splitwise.description": "Import groups and expenses from Splitwise using an API key.",
   "importFromService.splitPro.title": "Split Pro (self-hosted)",
   "importFromService.splitPro.description": "Import groups and expenses directly from a self-hosted Split Pro PostgreSQL database.",
+  "importFromService.splitPro.disabledByServer": "Disabled by server configuration.",
   "splitProImport.title": "Import from Split Pro",
   "splitProImport.howToTitle": "How to connect to your Split Pro database",
   "splitProImport.intro": "Splex reads the data directly from Split Pro's PostgreSQL database. Follow these steps to expose it for the import:",

@@ -447,6 +447,44 @@ def test_import_endpoint_validates_payload():
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
+def test_endpoints_return_403_when_risky_imports_disabled(settings):
+    """When ENABLE_RISKY_IMPORTS is off, both Split Pro endpoints refuse the
+    request before touching the database - the credentials never leave the
+    server."""
+    from rest_framework.test import APIClient
+    settings.ENABLE_RISKY_IMPORTS = False
+    actor = _make_user()
+    api_client = APIClient()
+    api_client.force_authenticate(user=actor)
+    payload = {
+        "host": "db", "port": 5432, "dbname": "d", "user": "u", "password": "p",
+    }
+    list_response = api_client.post(
+        "/api/imports/split-pro/users/", payload, format="json",
+    )
+    assert list_response.status_code == 403
+    import_response = api_client.post(
+        "/api/imports/split-pro/",
+        {**payload, "actor_user_id": 1},
+        format="json",
+    )
+    assert import_response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_login_config_exposes_risky_imports_flag(settings):
+    from rest_framework.test import APIClient
+    settings.ENABLE_RISKY_IMPORTS = True
+    response = APIClient().get("/api/login/config/")
+    assert response.status_code == 200
+    assert response.data["risky_imports_enabled"] is True
+
+    settings.ENABLE_RISKY_IMPORTS = False
+    response = APIClient().get("/api/login/config/")
+    assert response.data["risky_imports_enabled"] is False
+
+
 def test_list_split_pro_users_returns_normalized_rows():
     fake = FakeSplitProClient(
         users=[

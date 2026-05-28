@@ -25,6 +25,7 @@
   "importFromService.splitwise.description": "Importiere Gruppen und Ausgaben aus Splitwise mit einem API-Schlüssel.",
   "importFromService.splitPro.title": "Split Pro (selbst gehostet)",
   "importFromService.splitPro.description": "Importiere Gruppen und Ausgaben direkt aus einer selbst gehosteten Split-Pro-PostgreSQL-Datenbank.",
+  "importFromService.splitPro.disabledByServer": "Vom Server deaktiviert.",
   "splitProImport.title": "Aus Split Pro importieren",
   "splitProImport.howToTitle": "So verbindest du dich mit deiner Split-Pro-Datenbank",
   "splitProImport.intro": "Splex liest die Daten direkt aus der Split-Pro-PostgreSQL-Datenbank. Folge diesen Schritten, um sie für den Import erreichbar zu machen:",

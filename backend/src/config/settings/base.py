@@ -288,6 +288,14 @@ GOOGLE_ANDROID_CLIENT_ID = env("GOOGLE_ANDROID_CLIENT_ID", "")
 # runs the app against in-memory mock data without contacting the backend.
 DEMO_MODE_ENABLED = env_bool("DEMO_MODE_ENABLED", False)
 
+# "Risky" import sources are off by default.  These let the user point Splex
+# at an arbitrary network endpoint (e.g. a Split Pro PostgreSQL database) from
+# inside the server's network perimeter.  That can be abused to reach
+# resources behind the firewall, and a malicious endpoint speaking the same
+# wire protocol could exploit weaknesses in the client library, so operators
+# have to opt-in explicitly.
+ENABLE_RISKY_IMPORTS = env_bool("ENABLE_RISKY_IMPORTS", False)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
