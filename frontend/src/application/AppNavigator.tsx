@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import NetInfo from "@react-native-community/netinfo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "../features/auth/AuthContext";
 import { ActivityScreen } from "../screens/activity/ActivityScreen";
@@ -186,6 +186,13 @@ export function AppNavigator() {
   const { tokens, api, initialized } = useAuth();
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
   const [checkedAuthState, setCheckedAuthState] = useState<"guest" | "auth" | null>("guest");
+  // The invite-token handshake only needs to happen once per auth session.
+  // The `tokens` reference changes whenever the API client rotates an expired
+  // access token (which can happen mid-session, e.g. right after the app
+  // re-opens). Without this guard, every rotation would clear
+  // `checkedAuthState`, briefly unmount the Stack.Navigator below, and reset
+  // the user's current screen back to the initial route (Overview).
+  const inviteCheckDoneRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,8 +229,19 @@ export function AppNavigator() {
       inviteDebug("navigator invite check started", { authenticated: Boolean(tokens), authState });
       if (!tokens) {
         inviteDebug("navigator is unauthenticated; login screen will handle invite storage");
+        inviteCheckDoneRef.current = false;
         setPendingInviteToken(null);
         setCheckedAuthState("guest");
+        return;
+      }
+
+      if (inviteCheckDoneRef.current) {
+        // The user is already authed and we ran the invite handshake earlier
+        // in this session.  A subsequent change to `tokens` (typically a
+        // background access-token refresh) should not re-gate the navigator
+        // - clearing `checkedAuthState` below would unmount the Stack and
+        // throw away whatever screen the user just navigated to.
+        inviteDebug("navigator skipping invite re-check after token rotation");
         return;
       }
 
@@ -232,7 +250,10 @@ export function AppNavigator() {
       if (urlInviteToken) {
         inviteDebug("navigator found invite token in current url");
         await useInviteTokenIfValid(urlInviteToken, "url");
-        if (!cancelled) setCheckedAuthState("auth");
+        if (!cancelled) {
+          inviteCheckDoneRef.current = true;
+          setCheckedAuthState("auth");
+        }
         return;
       }
 
@@ -245,6 +266,7 @@ export function AppNavigator() {
       }
       if (!cancelled) {
         inviteDebug("navigator invite check finished");
+        inviteCheckDoneRef.current = true;
         setCheckedAuthState("auth");
       }
     }
@@ -252,7 +274,13 @@ export function AppNavigator() {
     checkInvite().catch((error) => {
       inviteDebug("navigator invite check failed", error);
       setPendingInviteToken(null);
-      setCheckedAuthState(tokens ? "auth" : "guest");
+      if (tokens) {
+        inviteCheckDoneRef.current = true;
+        setCheckedAuthState("auth");
+      } else {
+        inviteCheckDoneRef.current = false;
+        setCheckedAuthState("guest");
+      }
     });
 
     return () => {
