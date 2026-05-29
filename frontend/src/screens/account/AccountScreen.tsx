@@ -9,6 +9,7 @@ import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
+import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { appVersionLabel } from "../../shared/lib/appVersion";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import {
@@ -84,8 +85,7 @@ export function AccountScreen() {
         await api.patch("/api/me/", patch);
         await refreshUser();
       } catch (error) {
-        const message = error instanceof Error && error.message ? error.message : t("common.error");
-        setErrorMessage(message);
+        setErrorMessage(apiErrorMessage(error, t));
       }
     },
     [api, refreshUser, t]

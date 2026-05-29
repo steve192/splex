@@ -164,6 +164,10 @@ export type GroupBalance = {
   participant_id: number;
   display_name: string;
   avatar_url?: string;
+  /** ``null`` when the member is an unregistered placeholder.  The UI uses
+   * this to decide whether the card-level "Remind to settle" button is
+   * available (only registered users have a push endpoint to target). */
+  user_id?: number | null;
   amount: string;
   currency: string;
   details: BalanceDetail[];

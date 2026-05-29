@@ -1,6 +1,35 @@
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  balanceCard: {
+    alignSelf: "center",
+    marginVertical: 6,
+    width: "100%"
+  },
+  balanceCardContent: {
+    gap: 12,
+    paddingBottom: 16,
+    paddingTop: 16
+  },
+  balanceCardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12
+  },
+  balanceDetailActions: {
+    alignItems: "flex-end",
+    gap: 4
+  },
+  balanceDetailList: {
+    gap: 8
+  },
+  balanceDetailRow: {
+    alignItems: "center",
+    borderLeftWidth: 3,
+    flexDirection: "row",
+    gap: 8,
+    paddingLeft: 12
+  },
   authCard: {
     width: "100%",
     maxWidth: 520,

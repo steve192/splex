@@ -7,7 +7,9 @@ from splex.friends.api.views import (
     FriendLedgerView,
     FriendListView,
     FriendSettlementsView,
+    FriendSettleReminderView,
     FriendStatisticsView,
+    FriendTrackExpenseReminderView,
 )
 
 urlpatterns = [
@@ -18,4 +20,12 @@ urlpatterns = [
     path("friends/<int:friendship_id>/expenses/", FriendExpensesView.as_view()),
     path("friends/<int:friendship_id>/settlements/", FriendSettlementsView.as_view()),
     path("friends/<int:friendship_id>/statistics/", FriendStatisticsView.as_view()),
+    path(
+        "friends/<int:friendship_id>/reminders/settle/",
+        FriendSettleReminderView.as_view(),
+    ),
+    path(
+        "friends/<int:friendship_id>/reminders/track-expense/",
+        FriendTrackExpenseReminderView.as_view(),
+    ),
 ]

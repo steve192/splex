@@ -39,6 +39,22 @@ _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
         "friend.invited": ("Friend invited", "{actor} invited you to be friends"),
         "friend.accepted": ("Friend added", "{actor} accepted your friend invite"),
         "invitation.accepted": ("Invitation accepted", "{actor} joined via your invite"),
+        "reminder.settle": (
+            "Settle up reminder",
+            "{actor} kindly reminds you to settle {amount} {currency} in {context}.",
+        ),
+        "reminder.settle.friend": (
+            "Settle up reminder",
+            "{actor} kindly reminds you to settle {amount} {currency}.",
+        ),
+        "reminder.track_expense": (
+            "Track expenses reminder",
+            "{actor} kindly reminds you to add any missing expenses in {context}.",
+        ),
+        "reminder.track_expense.friend": (
+            "Track expenses reminder",
+            "{actor} kindly reminds you to add any missing expenses you split with them.",
+        ),
     },
     "de": {
         "expense.created": (
@@ -91,6 +107,24 @@ _TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
             "{actor} hat deine Freundschaftsanfrage angenommen",
         ),
         "invitation.accepted": ("Einladung angenommen", "{actor} ist über deinen Link beigetreten"),
+        "reminder.settle": (
+            "Erinnerung zum Ausgleichen",
+            "{actor} erinnert dich freundlich daran, in {context} {amount} {currency} "
+            "auszugleichen.",
+        ),
+        "reminder.settle.friend": (
+            "Erinnerung zum Ausgleichen",
+            "{actor} erinnert dich freundlich daran, {amount} {currency} auszugleichen.",
+        ),
+        "reminder.track_expense": (
+            "Erinnerung an Ausgaben",
+            "{actor} erinnert dich freundlich daran, ausstehende Ausgaben in "
+            "{context} einzutragen.",
+        ),
+        "reminder.track_expense.friend": (
+            "Erinnerung an Ausgaben",
+            "{actor} erinnert dich freundlich daran, ausstehende gemeinsame Ausgaben einzutragen.",
+        ),
     },
 }
 

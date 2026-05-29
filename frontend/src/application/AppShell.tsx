@@ -104,14 +104,20 @@ export function AppShell() {
     <GestureHandlerRootView style={styles.flex}>
     <PreferencesContext.Provider value={preferences}>
       <I18nProvider>
-        <PaperProvider
-          theme={paperTheme}
-          settings={{
-            icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
-          }}
-        >
-          <SafeAreaProvider>
-            <AuthProvider api={api}>
+        {/* AuthProvider must sit ABOVE PaperProvider so the Portal host that
+            backs <Dialog>/<Portal>/<Modal> from react-native-paper has access
+            to AuthContext via React context.  Paper's Portal re-parents
+            children under Portal.Host (which lives inside PaperProvider);
+            anything portalled would otherwise lose every context provided
+            below PaperProvider. */}
+        <AuthProvider api={api}>
+          <PaperProvider
+            theme={paperTheme}
+            settings={{
+              icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
+            }}
+          >
+            <SafeAreaProvider>
               <FeedbackProvider>
                 <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
                   <NavigationContainer
@@ -132,9 +138,9 @@ export function AppShell() {
                 </View>
               </FeedbackProvider>
               <StatusBar style={resolvedThemeMode === "dark" ? "light" : "dark"} />
-            </AuthProvider>
-          </SafeAreaProvider>
-        </PaperProvider>
+            </SafeAreaProvider>
+          </PaperProvider>
+        </AuthProvider>
       </I18nProvider>
     </PreferencesContext.Provider>
     </GestureHandlerRootView>

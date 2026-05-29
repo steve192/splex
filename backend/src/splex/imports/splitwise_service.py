@@ -45,11 +45,6 @@ from splex.shared.money import money
 NON_GROUP_BUCKET_ID = 0
 
 
-# Kept for backwards-compatibility with existing imports / tests.  Both names
-# point at the shared dataclass.
-SplitwiseImportSummary = ImportSummary
-
-
 def import_from_splitwise(*, actor, api_key: str,
                           import_friends_as_groups: bool = False,
                           client: SplitwiseClient | None = None

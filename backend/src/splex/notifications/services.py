@@ -88,49 +88,56 @@ def _render_for_user(notification):
     return render_notification(event_type, notification.payload or {}, locale)
 
 
-def _dispatch_one(notification, title, body):
+def dispatch_push_to_user(user, *, title, body, data, log_id=""):
+    """Send ``(title, body, data)`` to every enabled push endpoint for ``user``.
+
+    Dead endpoints (DeviceToken / WebPushSubscription that the upstream
+    push service reports as permanently gone) are deleted so retries don't
+    keep hitting them.  Returns ``(sent_any, [error_strings])``.
+
+    ``log_id`` is a stable identifier (e.g. ``"notification=42"`` or
+    ``"reminder.settle"``) that appears in warning logs to disambiguate
+    which dispatch failed.
+    """
     errors = []
     sent = False
-    for device in DeviceToken.objects.filter(user=notification.user, enabled=True):
+    for device in DeviceToken.objects.filter(user=user, enabled=True):
         try:
-            send_expo_notification(device.token, notification, title, body)
+            send_expo_notification(device.token, title=title, body=body, data=data)
             sent = True
         except TerminalDispatchError as exc:
-            logger.info(
-                "Expo push token gone, deleting (user_id=%s): %s", notification.user_id, exc
-            )
+            logger.info("Expo push token gone, deleting (user_id=%s): %s", user.id, exc)
             errors.append(f"{exc} (token deleted)")
             device.delete()
         except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
             logger.warning(
-                "Expo push failed (user_id=%s, notification_id=%s): %s",
-                notification.user_id,
-                notification.id,
-                exc,
+                "Expo push failed (user_id=%s, %s): %s", user.id, log_id, exc,
             )
             errors.append(str(exc))
-    for subscription in WebPushSubscription.objects.filter(user=notification.user, enabled=True):
+    for subscription in WebPushSubscription.objects.filter(user=user, enabled=True):
         try:
-            send_web_push_notification(subscription, notification, title, body)
+            send_web_push_notification(subscription, title=title, body=body, data=data)
             sent = True
         except TerminalDispatchError as exc:
             logger.info(
-                "Web push subscription gone, deleting (user_id=%s): %s",
-                notification.user_id,
-                exc,
+                "Web push subscription gone, deleting (user_id=%s): %s", user.id, exc,
             )
             errors.append(f"{exc} (subscription deleted)")
             subscription.delete()
         except Exception as exc:  # noqa: BLE001 - external dispatch failures are recorded.
             logger.warning(
-                "Web push failed (user_id=%s, notification_id=%s, endpoint=%s): %s",
-                notification.user_id,
-                notification.id,
-                subscription.endpoint[:80],
-                exc,
+                "Web push failed (user_id=%s, %s, endpoint=%s): %s",
+                user.id, log_id, subscription.endpoint[:80], exc,
             )
             errors.append(str(exc))
     return sent, errors
+
+
+def _dispatch_one(notification, title, body):
+    return dispatch_push_to_user(
+        notification.user, title=title, body=body, data=notification.payload,
+        log_id=f"notification_id={notification.id}",
+    )
 
 
 def dispatch_pending_notifications(notification_ids):
@@ -255,7 +262,7 @@ def get_active_vapid_key() -> VapidKey:
 _EXPO_TERMINAL_ERRORS = {"DeviceNotRegistered", "InvalidCredentials"}
 
 
-def send_expo_notification(token: str, notification: Notification, title: str, body: str):
+def send_expo_notification(token: str, *, title: str, body: str, data: dict | None = None):
     import requests
 
     response = requests.post(
@@ -264,7 +271,7 @@ def send_expo_notification(token: str, notification: Notification, title: str, b
             "to": token,
             "title": title,
             "body": body,
-            "data": notification.payload,
+            "data": data or {},
         },
         headers={"Accept": "application/json", "Content-Type": "application/json"},
         timeout=10,
@@ -282,7 +289,7 @@ def send_expo_notification(token: str, notification: Notification, title: str, b
 
 
 def send_web_push_notification(
-    subscription: WebPushSubscription, notification: Notification, title: str, body: str
+    subscription: WebPushSubscription, *, title: str, body: str, data: dict | None = None,
 ):
     from pywebpush import WebPushException, webpush
 
@@ -298,7 +305,7 @@ def send_web_push_notification(
                 {
                     "title": title,
                     "body": body,
-                    "payload": notification.payload,
+                    "payload": data or {},
                 }
             ),
             vapid_private_key=vapid_signer,

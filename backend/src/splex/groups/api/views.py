@@ -34,6 +34,10 @@ from splex.groups.services import (
     update_group,
 )
 from splex.invitations.services import create_claim_invitation, create_group_invitation
+from splex.notifications.reminders import (
+    send_settle_reminder_in_group,
+    send_track_expense_reminder_in_group,
+)
 from splex.ledger.selectors import paginated_ledger_response
 from splex.ledger.serializers import serialize_expense, serialize_settlement
 from splex.participants.models import Participant
@@ -192,7 +196,68 @@ class GroupBalancesView(APIView):
     def get(self, request, group_id):
         group = get_active_group(group_id)
         assert_group_member(request.user, group)
-        return Response(group_member_balance_rows(group))
+        simplified = (request.query_params.get("simplified") or "").lower() in {"1", "true"}
+        return Response(group_member_balance_rows(group, simplified=simplified))
+
+
+class GroupSettleReminderView(APIView):
+    """Send a "please settle" push to a specific registered group member.
+
+    Body: ``{"participant_id": int, "amount": str, "currency": str}``.  The
+    caller must be a group member, the target participant must be in the same
+    group and backed by a registered user (we can't push to placeholders),
+    and the caller may not nudge themselves.
+    """
+
+    throttle_scope = "reminders"
+
+    def post(self, request, group_id):
+        group = get_active_group(group_id)
+        assert_group_member(request.user, group)
+        participant_id = request.data.get("participant_id")
+        amount = request.data.get("amount")
+        currency = (request.data.get("currency") or group.default_currency).upper()
+        if not participant_id or amount in (None, ""):
+            return Response(
+                {"detail": "participant_id and amount are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        target = get_object_or_404(
+            Participant.objects.select_related("user"),
+            id=participant_id,
+            group_memberships__group=group,
+            group_memberships__removed_at__isnull=True,
+        )
+        if target.user_id is None:
+            return Response(
+                {"detail": "Cannot remind an unregistered member."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target.user_id == request.user.id:
+            return Response(
+                {"detail": "You cannot send yourself a reminder."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        sent, _errors = send_settle_reminder_in_group(
+            actor=request.user, group=group, debtor_user=target.user,
+            amount=amount, currency=currency,
+        )
+        return Response({"sent": bool(sent)})
+
+
+class GroupTrackExpenseReminderView(APIView):
+    """Send a "please track your expenses" push to every other registered
+    member of the group."""
+
+    throttle_scope = "reminders"
+
+    def post(self, request, group_id):
+        group = get_active_group(group_id)
+        assert_group_member(request.user, group)
+        recipients, sent, _errors = send_track_expense_reminder_in_group(
+            actor=request.user, group=group,
+        )
+        return Response({"recipients": recipients, "sent": sent})
 
 
 class GroupStatisticsView(APIView):

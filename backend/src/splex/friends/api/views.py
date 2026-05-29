@@ -2,13 +2,22 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from splex.balances.selectors import friendship_balance_for_participant
 from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
 from splex.friends.serializers import serialize_friend
-from splex.friends.services import accessible_friendships, ensure_friendship_member
+from splex.friends.services import (
+    accessible_friendships,
+    ensure_friendship_member,
+    other_participant,
+)
 from splex.groups.api.serializers import ExpenseCreateSerializer, SettlementCreateSerializer
 from splex.groups.statistics import friendship_statistics
 from splex.invitations.services import create_friend_invitation
+from splex.notifications.reminders import (
+    send_settle_reminder_in_friendship,
+    send_track_expense_reminder_in_friendship,
+)
 from splex.ledger.selectors import paginated_ledger_response
 from splex.ledger.serializers import serialize_expense, serialize_settlement
 from splex.participants.services import get_or_create_user_participant
@@ -101,3 +110,66 @@ class FriendSettlementsView(APIView):
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serialize_settlement(settlement), status=status.HTTP_201_CREATED)
+
+
+class FriendSettleReminderView(APIView):
+    """Send a "please settle" push to the other side of the friendship.
+
+    Body: ``{"amount": str, "currency": str}``.  Refuses to send when the
+    other side is not actually in the red (we don't want the friend to get
+    a nag for money they're owed).
+    """
+
+    throttle_scope = "reminders"
+
+    def post(self, request, friendship_id):
+        friendship, current_participant = ensure_friendship_member(
+            request.user, friendship_id,
+        )
+        other = other_participant(friendship, current_participant)
+        if other.user_id is None:
+            return Response(
+                {"detail": "Cannot remind an unregistered friend."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        amount = request.data.get("amount")
+        currency = (
+            (request.data.get("currency") or friendship.default_currency).upper()
+        )
+        if amount in (None, ""):
+            # Default the amount to whatever the friend currently owes so the
+            # caller doesn't have to compute it - common case is "tap to nudge".
+            balance = friendship_balance_for_participant(friendship, current_participant)
+            if balance <= 0:
+                return Response(
+                    {"detail": "Your friend is not currently in debt."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            amount = str(balance)
+        sent, _errors = send_settle_reminder_in_friendship(
+            actor=request.user, friendship=friendship, debtor_user=other.user,
+            amount=amount, currency=currency,
+        )
+        return Response({"sent": bool(sent)})
+
+
+class FriendTrackExpenseReminderView(APIView):
+    """Send a "please track your expenses" push to the other side of a
+    friendship.  Unregistered friends are rejected (no push endpoint)."""
+
+    throttle_scope = "reminders"
+
+    def post(self, request, friendship_id):
+        friendship, current_participant = ensure_friendship_member(
+            request.user, friendship_id,
+        )
+        other = other_participant(friendship, current_participant)
+        if other.user_id is None:
+            return Response(
+                {"detail": "Cannot remind an unregistered friend."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        sent, _errors = send_track_expense_reminder_in_friendship(
+            actor=request.user, friendship=friendship, other_user=other.user,
+        )
+        return Response({"sent": bool(sent)})

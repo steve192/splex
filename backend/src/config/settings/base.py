@@ -216,6 +216,9 @@ REST_FRAMEWORK = {
         "magic_token": env("THROTTLE_MAGIC_TOKEN_RATE", "20/minute"),
         "invitation_preview": env("THROTTLE_INVITATION_PREVIEW_RATE", "60/minute"),
         "private_media": env("THROTTLE_PRIVATE_MEDIA_RATE", "120/minute"),
+        # User-triggered "remind me" pushes (settle, track expense).  Kept
+        # tight so a frustrated user can't spam their group with nags.
+        "reminders": env("THROTTLE_REMINDERS_RATE", "5/minute"),
     },
     "EXCEPTION_HANDLER": "splex.shared.api.exception_handler",
 }

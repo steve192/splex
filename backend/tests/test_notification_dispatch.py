@@ -44,7 +44,7 @@ def test_dispatch_sends_to_each_device_token_and_marks_sent():
     sent_tokens = []
     with patch(
         "splex.notifications.services.send_expo_notification",
-        side_effect=lambda token, _n, _t, _b: sent_tokens.append(token),
+        side_effect=lambda token, **_kwargs: sent_tokens.append(token),
     ):
         notification = Notification.objects.get(user=receiver)
         dispatch_pending_notifications([notification.id])
@@ -73,7 +73,7 @@ def test_terminal_error_deletes_device_token():
     DeviceToken.objects.create(user=receiver, token="dead-token", platform="android")
     DeviceToken.objects.create(user=receiver, token="live-token", platform="android")
 
-    def side_effect(token, _n, _t, _b):
+    def side_effect(token, **_kwargs):
         if token == "dead-token":
             raise TerminalDispatchError("DeviceNotRegistered")
         # live-token succeeds silently
@@ -217,7 +217,9 @@ def test_send_web_push_uses_vapid_instance_for_generated_pem_key():
     generate_vapid_key()
 
     with patch("pywebpush.webpush") as mock_webpush:
-        send_web_push_notification(subscription, notification, "Title", "Body")
+        send_web_push_notification(
+            subscription, title="Title", body="Body", data=notification.payload,
+        )
 
     assert mock_webpush.call_count == 1
     vapid_private_key = mock_webpush.call_args.kwargs["vapid_private_key"]

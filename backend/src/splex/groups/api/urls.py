@@ -12,7 +12,9 @@ from splex.groups.api.views import (
     GroupParticipantOutstandingView,
     GroupParticipantsView,
     GroupSettlementsView,
+    GroupSettleReminderView,
     GroupStatisticsView,
+    GroupTrackExpenseReminderView,
     OverviewView,
 )
 
@@ -36,4 +38,12 @@ urlpatterns = [
     path("groups/<int:group_id>/expenses/", GroupExpensesView.as_view()),
     path("groups/<int:group_id>/settlements/", GroupSettlementsView.as_view()),
     path("groups/<int:group_id>/invitations/", GroupInvitationsView.as_view()),
+    path(
+        "groups/<int:group_id>/reminders/settle/",
+        GroupSettleReminderView.as_view(),
+    ),
+    path(
+        "groups/<int:group_id>/reminders/track-expense/",
+        GroupTrackExpenseReminderView.as_view(),
+    ),
 ]

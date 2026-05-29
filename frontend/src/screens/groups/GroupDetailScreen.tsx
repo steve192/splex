@@ -2,7 +2,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, IconButton, List, Portal, SegmentedButtons, Snackbar, Text, TouchableRipple } from "react-native-paper";
+import { Button, Dialog, IconButton, Portal, SegmentedButtons, Snackbar, Switch, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
@@ -16,9 +16,13 @@ import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { shareLink } from "../../shared/lib/shareLink";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber } from "../../shared/lib/money";
+import { apiErrorMessage } from "../../shared/lib/apiErrors";
+import { loadSimplifyBalancesPreference, saveSimplifyBalancesPreference } from "../../shared/lib/groupPreferences";
 import { PendingMutation } from "../../shared/sync/queue";
-import { Group, GroupBalance, LedgerItem } from "../../shared/types/models";
+import { BalanceDetail, Group, GroupBalance, LedgerItem } from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
+import { BalanceGraph } from "../../shared/ui/BalanceGraph";
+import { BalanceMemberCard } from "../../shared/ui/BalanceMemberCard";
 import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
@@ -49,20 +53,25 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [snackbar, setSnackbar] = useState("");
   const [manualCopyLink, setManualCopyLink] = useState("");
   const [groupImageVisible, setGroupImageVisible] = useState(false);
+  const [simplifyBalances, setSimplifyBalances] = useState(false);
+  const [simplifyInfoVisible, setSimplifyInfoVisible] = useState(false);
   const balanceSummary = useMemo(
     () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
     [balances, group?.current_participant_id, group?.default_currency]
   );
 
-  async function load(offset = 0) {
+  async function load(offset = 0, simplified = simplifyBalances) {
     if (loadingMore && offset) return;
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("group", groupId));
     try {
       const ledgerPath = `/api/groups/${groupId}/ledger/?offset=${offset}&limit=30`;
+      const balancesPath = `/api/groups/${groupId}/balances/${
+        simplified ? "?simplified=true" : ""
+      }`;
       const [detail, balanceRows, ledgerResponse] = await Promise.all([
         cachedGet<Group>(api, `/api/groups/${groupId}/`),
-        cachedGet<GroupBalance[]>(api, `/api/groups/${groupId}/balances/`),
+        cachedGet<GroupBalance[]>(api, balancesPath),
         offset
           ? api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
           : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
@@ -78,9 +87,20 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
 
   useFocusEffect(
     useCallback(() => {
-      load().catch(() => undefined);
+      loadSimplifyBalancesPreference(groupId)
+        .then((preference) => {
+          setSimplifyBalances(preference);
+          return load(0, preference);
+        })
+        .catch(() => undefined);
     }, [groupId])
   );
+
+  async function handleSimplifyToggle(next: boolean) {
+    setSimplifyBalances(next);
+    await saveSimplifyBalancesPreference(groupId, next);
+    await load(0, next);
+  }
 
   useEffect(() => {
     navigation.setOptions({
@@ -154,6 +174,63 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
     return balances.find((row) => row.participant_id === participantId)?.avatar_url;
   }
 
+  function openSettleDialog(detail: BalanceDetail) {
+    setSettleTarget({
+      amount: detail.amount,
+      currency: detail.currency,
+      payer_participant_id: detail.from_participant_id,
+      payer_display_name: detail.from_display_name,
+      payer_avatar_url: avatarForParticipant(detail.from_participant_id),
+      receiver_participant_id: detail.to_participant_id,
+      receiver_display_name: detail.to_display_name,
+      receiver_avatar_url: avatarForParticipant(detail.to_participant_id)
+    });
+    setSettleAmount(detail.amount);
+    setSettleCurrency(detail.currency);
+  }
+
+  async function remindToSettle(row: GroupBalance) {
+    // The card-level remind action targets the row owner.  The net amount
+    // they owe is stored as a negative number on the row, so we send its
+    // absolute value through the API.
+    const amount = Math.abs(asNumber(row.amount));
+    try {
+      const result = await api.post<{ sent: boolean }>(
+        `/api/groups/${groupId}/reminders/settle/`,
+        {
+          participant_id: row.participant_id,
+          amount: amount.toFixed(2),
+          currency: row.currency
+        }
+      );
+      setSnackbar(
+        result.sent
+          ? t("settlement.reminderSent", { person: row.display_name })
+          : t("settlement.reminderNoPush", { person: row.display_name })
+      );
+    } catch (error) {
+      setSnackbar(apiErrorMessage(error, t));
+    }
+  }
+
+  async function remindToTrackExpenses() {
+    try {
+      const result = await api.post<{ recipients: number; sent: number }>(
+        `/api/groups/${groupId}/reminders/track-expense/`,
+        {}
+      );
+      setSnackbar(
+        result.recipients === 0
+          ? t("invite.trackReminderNobody")
+          : result.sent === 0
+            ? t("invite.trackReminderNoPush")
+            : t("invite.trackReminderSent", { count: result.sent })
+      );
+    } catch (error) {
+      setSnackbar(apiErrorMessage(error, t));
+    }
+  }
+
   const handleScroll = useInfiniteScroll({
     enabled: selectedTab === "expenses",
     loadingMore,
@@ -181,6 +258,9 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           </Button>
           <Button mode="elevated" icon="link-variant" onPress={() => invite()}>
             {t("invite.create")}
+          </Button>
+          <Button mode="elevated" icon="bell-outline" onPress={() => remindToTrackExpenses()}>
+            {t("invite.trackReminder")}
           </Button>
         </View>
 
@@ -265,74 +345,34 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         ) : (
           <>
             <Text variant="titleLarge">{t("balance.title")}</Text>
+            <View style={styles.rowBetween}>
+              <View style={styles.inline}>
+                <Text variant="bodyMedium">{t("balance.simplifyToggle")}</Text>
+                <IconButton
+                  icon="information-outline"
+                  size={18}
+                  onPress={() => setSimplifyInfoVisible(true)}
+                  accessibilityLabel={t("balance.simplifyInfoLabel")}
+                />
+              </View>
+              <Switch value={simplifyBalances} onValueChange={handleSimplifyToggle} />
+            </View>
             {balances.length ? (
-              balances.map((row) => {
-                const expanded = expandedParticipantIds.includes(row.participant_id);
-                return (
-                  <Card key={row.participant_id} mode="elevated" style={styles.card}>
-                    <TouchableRipple style={styles.clickable} onPress={() => toggleExpanded(row.participant_id)}>
-                      <Card.Content style={styles.gap}>
-                        <View style={styles.rowBetween}>
-                          <PersonAvatar name={row.display_name} imageUrl={row.avatar_url} />
-                          <View style={styles.flex}>
-                            <Text variant="titleMedium">
-                              {t(asNumber(row.amount) >= 0 ? "balance.personIsOwed" : "balance.personOwes", {
-                                person: row.display_name,
-                                amount: `${Math.abs(asNumber(row.amount)).toFixed(2)} ${row.currency}`
-                              })}
-                            </Text>
-                          </View>
-                          <List.Icon icon={expanded ? "chevron-up" : "chevron-down"} />
-                        </View>
-                        {expanded ? (
-                          row.details.length ? (
-                            row.details.map((detail) => (
-                              <View
-                                key={`${detail.from_participant_id}-${detail.to_participant_id}`}
-                                style={styles.subtleRow}
-                              >
-                                <Text variant="bodyMedium">
-                                  {t("balance.owesLine", {
-                                    from: detail.from_display_name,
-                                    to: detail.to_display_name,
-                                    amount: `${detail.amount} ${detail.currency}`
-                                  })}
-                                </Text>
-                                <Button
-                                  mode="elevated"
-                                  icon="cash-check"
-                                  compact
-                                  onPress={() => {
-                                    setSettleTarget({
-                                      amount: detail.amount,
-                                      currency: detail.currency,
-                                      payer_participant_id: detail.from_participant_id,
-                                      payer_display_name: detail.from_display_name,
-                                      payer_avatar_url: avatarForParticipant(detail.from_participant_id),
-                                      receiver_participant_id: detail.to_participant_id,
-                                      receiver_display_name: detail.to_display_name,
-                                      receiver_avatar_url: avatarForParticipant(detail.to_participant_id)
-                                    });
-                                    setSettleAmount(detail.amount);
-                                    setSettleCurrency(detail.currency);
-                                  }}
-                                >
-                                  {t("settlement.settle")}
-                                </Button>
-                              </View>
-                            ))
-                          ) : (
-                            <Text variant="bodyMedium">{t("balance.empty")}</Text>
-                          )
-                        ) : null}
-                      </Card.Content>
-                    </TouchableRipple>
-                  </Card>
-                );
-              })
+              balances.map((row) => (
+                <BalanceMemberCard
+                  key={row.participant_id}
+                  row={row}
+                  expanded={expandedParticipantIds.includes(row.participant_id)}
+                  onToggle={() => toggleExpanded(row.participant_id)}
+                  onSettle={(detail) => openSettleDialog(detail)}
+                  onRemindSettle={(targetRow) => remindToSettle(targetRow)}
+                  currentParticipantId={group?.current_participant_id}
+                />
+              ))
             ) : (
               <EmptyState image={appImages.emptyExpenses} text={t("balance.empty")} />
             )}
+            <BalanceGraph rows={balances} />
           </>
         )}
       </Screen>
@@ -354,6 +394,18 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           onDismiss={() => setSettleTarget(null)}
           onSave={settle}
         />
+        <Dialog
+          visible={simplifyInfoVisible}
+          onDismiss={() => setSimplifyInfoVisible(false)}
+        >
+          <Dialog.Title>{t("balance.simplifyInfoTitle")}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">{t("balance.simplifyInfoBody")}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setSimplifyInfoVisible(false)}>{t("common.ok")}</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={8000}>
         {snackbar}

@@ -2,11 +2,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, IconButton, Portal, Text } from "react-native-paper";
+import { Button, IconButton, Portal, Snackbar, Text } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
+import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
@@ -40,6 +41,7 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
+  const [snackbar, setSnackbar] = useState("");
   const balanceSummary = useMemo(() => asNumber(friend?.balance), [friend?.balance]);
 
   async function load(offset = 0) {
@@ -109,6 +111,40 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
     await load();
   }
 
+  async function remindToSettle() {
+    if (!friend) return;
+    try {
+      const result = await api.post<{ sent: boolean }>(
+        `/api/friends/${friendshipId}/reminders/settle/`,
+        { amount: formatMoney(friend.balance), currency: friend.default_currency }
+      );
+      setSnackbar(
+        result.sent
+          ? t("settlement.reminderSent", { person: friend.display_name })
+          : t("settlement.reminderNoPush", { person: friend.display_name })
+      );
+    } catch (error) {
+      setSnackbar(apiErrorMessage(error, t));
+    }
+  }
+
+  async function remindToTrackExpenses() {
+    if (!friend) return;
+    try {
+      const result = await api.post<{ sent: boolean }>(
+        `/api/friends/${friendshipId}/reminders/track-expense/`,
+        {}
+      );
+      setSnackbar(
+        result.sent
+          ? t("invite.trackReminderSent", { count: 1 })
+          : t("invite.trackReminderNoPush")
+      );
+    } catch (error) {
+      setSnackbar(apiErrorMessage(error, t));
+    }
+  }
+
   function openSettlementDialog() {
     if (!friend || !friend.current_participant_id || balanceSummary === 0) return;
     const currentOwesFriend = balanceSummary < 0;
@@ -153,6 +189,22 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
           </Button>
           <Button mode="elevated" icon="cash-check" disabled={!friend || balanceSummary === 0} onPress={openSettlementDialog}>
             {t("settlement.settle")}
+          </Button>
+          <Button
+            mode="elevated"
+            icon="bell-outline"
+            disabled={!friend || balanceSummary <= 0}
+            onPress={remindToSettle}
+          >
+            {t("settlement.remind")}
+          </Button>
+          <Button
+            mode="elevated"
+            icon="bell-outline"
+            disabled={!friend}
+            onPress={remindToTrackExpenses}
+          >
+            {t("invite.trackReminder")}
           </Button>
         </View>
 
@@ -232,6 +284,9 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
           onSave={settle}
         />
       </Portal>
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={6000}>
+        {snackbar}
+      </Snackbar>
     </View>
   );
 }
