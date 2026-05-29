@@ -9,6 +9,7 @@ import { useAuth } from "../features/auth/AuthContext";
 import { ActivityScreen } from "../screens/activity/ActivityScreen";
 import { AccountScreen } from "../screens/account/AccountScreen";
 import { ImportFromServiceScreen } from "../screens/account/ImportFromServiceScreen";
+import { PaymentMethodsScreen } from "../screens/account/PaymentMethodsScreen";
 import { SplitProImportScreen } from "../screens/account/SplitProImportScreen";
 import { SplitwiseImportScreen } from "../screens/account/SplitwiseImportScreen";
 import { LoginScreen } from "../screens/auth/LoginScreen";
@@ -98,6 +99,11 @@ function AccountStackNavigator() {
         name="SplitProImport"
         component={SplitProImportScreen}
         options={{ title: t("splitProImport.title") }}
+      />
+      <AccountStack.Screen
+        name="PaymentMethods"
+        component={PaymentMethodsScreen}
+        options={{ title: t("paymentMethods.title") }}
       />
     </AccountStack.Navigator>
   );

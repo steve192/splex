@@ -54,6 +54,7 @@ export type AccountStackParamList = {
   ImportFromService: undefined;
   SplitwiseImport: undefined;
   SplitProImport: undefined;
+  PaymentMethods: undefined;
 };
 
 export type AddStackParamList = {

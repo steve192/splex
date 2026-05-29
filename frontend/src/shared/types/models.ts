@@ -173,6 +173,25 @@ export type GroupBalance = {
   details: BalanceDetail[];
 };
 
+export type PaymentMethodKind = "paypal_handle" | "paypal_email";
+
+export type PaymentMethod = {
+  id: number;
+  kind: PaymentMethodKind;
+  /** Normalised identifier: bare handle for paypal_handle, lower-cased email
+   * for paypal_email. */
+  identifier: string;
+  is_preferred: boolean;
+  /** Human-readable form for display (``paypal.me/alice`` or the email). */
+  display: string;
+  /** URL safe to open in a new tab.  For handles it deep-links into the
+   * pre-filled paypal.me page; for emails it links to PayPal's send-money
+   * page where the payer pastes the email manually. */
+  url: string;
+  /** True only when the recipient is encoded in the URL itself. */
+  pre_fills_recipient: boolean;
+};
+
 export type GroupSettings = Group & {
   default_split_method: SplitMethod;
   default_split_payload: Record<string, unknown>;

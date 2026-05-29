@@ -10,6 +10,9 @@ from splex.accounts.api.views import (
     MagicTokenVerifyView,
     MeDeleteView,
     MeView,
+    ParticipantPreferredPaymentView,
+    PaymentMethodDetailView,
+    PaymentMethodListCreateView,
     PrivacyPolicyView,
     TermsOfServiceView,
 )
@@ -26,5 +29,14 @@ urlpatterns = [
     path("imprint/", ImprintView.as_view()),
     path("me/", MeView.as_view()),
     path("me/delete/", MeDeleteView.as_view()),
+    path("me/payment-methods/", PaymentMethodListCreateView.as_view()),
+    path(
+        "me/payment-methods/<int:payment_method_id>/",
+        PaymentMethodDetailView.as_view(),
+    ),
+    path(
+        "participants/<int:participant_id>/preferred-payment-method/",
+        ParticipantPreferredPaymentView.as_view(),
+    ),
 ]
 

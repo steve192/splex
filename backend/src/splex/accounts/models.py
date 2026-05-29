@@ -55,6 +55,55 @@ class User(AbstractUser):
         return self.display_name or self.email
 
 
+class PaymentMethod(models.Model):
+    """A payment destination a user is willing to be paid through.
+
+    Today the only supported kind is PayPal, stored as either a paypal.me
+    handle (clickable link) or an email address (best-effort: payer copies it
+    into PayPal's send-money page).  The model is intentionally generic so
+    other payment kinds (e.g. SEPA IBAN, Revolut) can be added later without
+    a schema migration beyond extending the ``Kind`` choices.
+
+    Exactly one payment method per user can carry ``is_preferred=True`` at a
+    time - that invariant is enforced at the service layer; the index just
+    makes the "current preferred" lookup constant-time.
+    """
+
+    class Kind(models.TextChoices):
+        PAYPAL_HANDLE = "paypal_handle", "PayPal handle"
+        PAYPAL_EMAIL = "paypal_email", "PayPal email"
+
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="payment_methods"
+    )
+    kind = models.CharField(max_length=32, choices=Kind.choices)
+    # Normalized identifier.  For PAYPAL_HANDLE this is the bare username
+    # (e.g. "alice123"), stripped of any "paypal.me/" prefix or leading "@".
+    # For PAYPAL_EMAIL it is the canonical lower-cased email address.
+    identifier = models.CharField(max_length=254)
+    is_preferred = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_preferred", "created_at"]
+        indexes = [
+            models.Index(
+                fields=["user", "is_preferred"],
+                name="payment_user_preferred_idx",
+            ),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "kind", "identifier"],
+                name="payment_unique_per_kind_identifier",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()}: {self.identifier}"
+
+
 class MagicLoginChallenge(models.Model):
     email = models.EmailField()
     code_hash = models.CharField(max_length=128)

@@ -219,6 +219,135 @@ class MeDeleteView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class PaymentMethodListCreateView(APIView):
+    """List and create payment methods for the authenticated user."""
+
+    def get(self, request):
+        from splex.accounts.api.serializers import serialize_payment_method
+
+        methods = request.user.payment_methods.all()
+        return Response([serialize_payment_method(m) for m in methods])
+
+    def post(self, request):
+        from splex.accounts.api.serializers import (
+            PaymentMethodCreateSerializer,
+            serialize_payment_method,
+        )
+        from splex.accounts.payment_services import create_payment_method
+        from splex.accounts.payments import PayPalParseError, parse_paypal_input
+
+        serializer = PaymentMethodCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            parsed = parse_paypal_input(serializer.validated_data["paypal"])
+        except PayPalParseError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        method = create_payment_method(
+            user=request.user, parsed=parsed,
+            make_preferred=serializer.validated_data["make_preferred"],
+        )
+        method.refresh_from_db()
+        return Response(
+            serialize_payment_method(method), status=status.HTTP_201_CREATED,
+        )
+
+
+class PaymentMethodDetailView(APIView):
+    """Update (set preferred) or delete one of the user's payment methods."""
+
+    def patch(self, request, payment_method_id):
+        from django.shortcuts import get_object_or_404
+
+        from splex.accounts.api.serializers import (
+            PaymentMethodUpdateSerializer,
+            serialize_payment_method,
+        )
+        from splex.accounts.models import PaymentMethod
+        from splex.accounts.payment_services import set_preferred_payment_method
+
+        method = get_object_or_404(
+            PaymentMethod, id=payment_method_id, user=request.user,
+        )
+        serializer = PaymentMethodUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # The only mutation we support is "promote this row to preferred";
+        # demoting is implicit by promoting another, mirroring how a single
+        # default works in most settings UIs.
+        if serializer.validated_data["is_preferred"]:
+            method = set_preferred_payment_method(user=request.user, method=method)
+        method.refresh_from_db()
+        return Response(serialize_payment_method(method))
+
+    def delete(self, request, payment_method_id):
+        from django.shortcuts import get_object_or_404
+
+        from splex.accounts.models import PaymentMethod
+        from splex.accounts.payment_services import delete_payment_method
+
+        method = get_object_or_404(
+            PaymentMethod, id=payment_method_id, user=request.user,
+        )
+        delete_payment_method(user=request.user, method=method)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ParticipantPreferredPaymentView(APIView):
+    """Return the preferred payment method of a participant the caller can
+    actually pay (i.e. they share a group or friendship with them).
+
+    Used by the settle-up popup so the payer sees a one-tap "Pay with"
+    button next to the amount field.  Unregistered placeholders and
+    participants the caller has no relationship with return 204.
+    """
+
+    def get(self, request, participant_id):
+        from django.shortcuts import get_object_or_404
+
+        from splex.accounts.api.serializers import serialize_payment_method
+        from splex.accounts.payment_services import preferred_payment_method_for
+        from splex.participants.models import Participant
+
+        participant = get_object_or_404(
+            Participant.objects.select_related("user"), id=participant_id,
+        )
+        if participant.user_id is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        if not _shares_context(request.user, participant):
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        method = preferred_payment_method_for(participant.user)
+        if method is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(serialize_payment_method(method))
+
+
+def _shares_context(viewer, target_participant) -> bool:
+    """Permission helper: the viewer is allowed to see ``target``'s preferred
+    payment method only if they could plausibly want to pay them - i.e. they
+    share an active group or friendship.
+    """
+    from django.db.models import Q
+
+    from splex.friends.models import Friendship
+    from splex.groups.models import GroupMembership
+    from splex.participants.services import get_or_create_user_participant
+
+    viewer_participant = get_or_create_user_participant(viewer)
+    if viewer_participant.id == target_participant.id:
+        return True
+    if GroupMembership.objects.filter(
+        participant=target_participant, removed_at__isnull=True,
+        group__memberships__participant=viewer_participant,
+        group__memberships__removed_at__isnull=True,
+        group__deleted_at__isnull=True,
+    ).exists():
+        return True
+    return Friendship.objects.filter(
+        Q(participant_a=viewer_participant, participant_b=target_participant)
+        | Q(participant_a=target_participant, participant_b=viewer_participant),
+        ended_at__isnull=True,
+    ).exists()
+
+
 class LogoutView(APIView):
     def post(self, request):
         refresh = request.data.get("refresh")

@@ -1,9 +1,13 @@
+import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
-import { Button, Dialog, List, Text, TextInput } from "react-native-paper";
+import { Linking, View } from "react-native";
+import { Button, Dialog, List, Text, TextInput, useTheme } from "react-native-paper";
 
+import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
 import { CURRENCIES } from "../lib/currencies";
+import { payUrlWithAmount } from "../lib/paypal";
+import { PaymentMethod } from "../types/models";
 import { ClickableAvatar } from "../ui/ClickableAvatar";
 import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
 import { styles } from "../ui/styles";
@@ -41,12 +45,67 @@ export function SettlementDialog({
   onSave
 }: SettlementDialogProps) {
   const { t } = useI18n();
+  const { api } = useAuth();
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
+  const [preferredMethod, setPreferredMethod] = useState<PaymentMethod | null>(null);
+  const [copiedHint, setCopiedHint] = useState(false);
 
   useEffect(() => {
     if (!visible) setCurrencySheetOpen(false);
   }, [visible]);
+
+  // Fetch the receiver's preferred payment method whenever the dialog opens
+  // on a new target.  The endpoint returns 204 when there's nothing to show
+  // (unregistered receiver, no preferred method, or no shared context); we
+  // surface that as ``null`` so the UI just hides the section.
+  useEffect(() => {
+    if (!visible || !target) {
+      setPreferredMethod(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<PaymentMethod | null>(
+        `/api/participants/${target.receiver_participant_id}/preferred-payment-method/`
+      )
+      .then((value) => {
+        if (!cancelled) setPreferredMethod(value ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setPreferredMethod(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, visible, target]);
+
+  useEffect(() => {
+    if (!copiedHint) return;
+    const timeout = setTimeout(() => setCopiedHint(false), 2500);
+    return () => clearTimeout(timeout);
+  }, [copiedHint]);
+
+  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
+    value: code,
+    label: code
+  }));
+
+  async function openPaypal() {
+    if (!preferredMethod) return;
+    const url = payUrlWithAmount(preferredMethod, amount, currency);
+    try {
+      await Linking.openURL(url);
+    } catch {
+      // Best-effort: openURL throws on web when the URL scheme isn't allowed,
+      // but our targets are https:// so this rarely fires.  Fall through.
+    }
+  }
+
+  async function copyEmail() {
+    if (!preferredMethod) return;
+    await Clipboard.setStringAsync(preferredMethod.display);
+    setCopiedHint(true);
+  }
 
   return (
     <>
@@ -81,10 +140,23 @@ export function SettlementDialog({
               onChangeText={onAmountChange}
               style={styles.flex}
             />
-            <Button mode="elevated" onPress={() => setCurrencySheetOpen(true)} style={styles.selfCenter}>
+            <Button
+              mode="elevated"
+              onPress={() => setCurrencySheetOpen(true)}
+              style={styles.selfCenter}
+            >
               {currency}
             </Button>
           </View>
+          {preferredMethod && target ? (
+            <PaypalSection
+              method={preferredMethod}
+              receiverName={target.receiver_display_name}
+              onOpen={openPaypal}
+              onCopy={copyEmail}
+              copiedHint={copiedHint}
+            />
+          ) : null}
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>{t("common.cancel")}</Button>
@@ -102,5 +174,83 @@ export function SettlementDialog({
         onDismiss={() => setCurrencySheetOpen(false)}
       />
     </>
+  );
+}
+
+type PaypalSectionProps = {
+  method: PaymentMethod;
+  receiverName: string;
+  onOpen: () => void;
+  onCopy: () => void;
+  copiedHint: boolean;
+};
+
+/** Flat (non-Card) PayPal block for the settle dialog.
+ *
+ * Visual layout: a small label, the identifier shown prominently, the
+ * primary "Open" action with the identifier baked into the label, and an
+ * inline copy affordance for the email case where the URL cannot pre-fill
+ * the recipient.  No leading icon - MaterialCommunityIcons (our default
+ * icon set) doesn't ship a PayPal glyph, and a placeholder "?" looks
+ * worse than no icon at all.
+ */
+function PaypalSection({
+  method,
+  receiverName,
+  onOpen,
+  onCopy,
+  copiedHint
+}: PaypalSectionProps) {
+  const { t } = useI18n();
+  const theme = useTheme();
+  const muted = { color: theme.colors.onSurfaceVariant };
+  const surface = {
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 12,
+    gap: 10,
+    marginTop: 16,
+    padding: 12
+  } as const;
+  return (
+    <View style={surface}>
+      <Text variant="labelMedium" style={muted}>
+        {t("settlement.paypalSectionLabel", { person: receiverName })}
+      </Text>
+      <Text variant="titleSmall" selectable>
+        {method.display}
+      </Text>
+      {method.pre_fills_recipient ? (
+        <Button mode="contained" icon="open-in-new" onPress={onOpen}>
+          {t("settlement.openPaypal")}
+        </Button>
+      ) : (
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Button
+            mode="contained-tonal"
+            icon="content-copy"
+            onPress={onCopy}
+            style={styles.flex}
+          >
+            {t("settlement.copyEmail")}
+          </Button>
+          <Button
+            mode="contained"
+            icon="open-in-new"
+            onPress={onOpen}
+            style={styles.flex}
+          >
+            {t("settlement.openPaypal")}
+          </Button>
+        </View>
+      )}
+      {copiedHint ? (
+        <Text variant="bodySmall" style={muted}>
+          {t("settlement.emailCopied")}
+        </Text>
+      ) : null}
+      <Text variant="bodySmall" style={muted}>
+        {t("settlement.paypalDisclaimer")}
+      </Text>
+    </View>
   );
 }

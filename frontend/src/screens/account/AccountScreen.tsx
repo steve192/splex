@@ -197,6 +197,13 @@ export function AccountScreen() {
           <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
           <Button
             mode="elevated"
+            icon="credit-card-outline"
+            onPress={() => navigation.navigate("PaymentMethods")}
+          >
+            {t("account.paymentMethods")}
+          </Button>
+          <Button
+            mode="elevated"
             icon="swap-horizontal"
             onPress={() => navigation.navigate("ImportFromService")}
           >
