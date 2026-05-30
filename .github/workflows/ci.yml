@@ -149,7 +149,18 @@ jobs:
     needs: renovate-release-check
     if: needs.renovate-release-check.outputs.should_release == 'true'
     uses: ./.github/workflows/release.yml
+    with:
+      # The calling workflow IS the CI run that release.yml would otherwise
+      # have to verify, so wait-on-yourself is impossible.  See the
+      # verify-default-branch-ci job in release.yml for details.
+      skip_default_branch_ci_check: true
     permissions:
+      # ``actions: read`` is not needed today because verify-default-branch-ci
+      # bypasses its API calls when ``skip_default_branch_ci_check`` is set,
+      # but the called workflow declares it at the top level.  Granting it
+      # here keeps the permission ceiling consistent so removing the skip
+      # later doesn't trigger a confusing 403 from the GitHub API.
+      actions: read
       contents: write
       issues: write
       pull-requests: write
