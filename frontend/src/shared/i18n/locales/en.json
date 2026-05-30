@@ -214,6 +214,7 @@
   "expense.pendingSync": "Pending sync",
   "expense.pendingSyncCount": "{count} pending sync",
   "expense.percentageLeft": "Percentage left: {amount}",
+  "expense.rememberContext": "Remember group / friend",
   "expense.adjustmentNegativeShare": "Adjustments push someone's share below zero. Reduce them.",
   "expense.queued": "Saved offline and queued for sync.",
   "expense.retrySync": "Retry",

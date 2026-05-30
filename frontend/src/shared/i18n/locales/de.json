@@ -214,6 +214,7 @@
   "expense.pendingSync": "Synchronisierung ausstehend",
   "expense.pendingSyncCount": "{count} ausstehend",
   "expense.percentageLeft": "Verbleibende Prozente: {amount}",
+  "expense.rememberContext": "Gruppe / Freund merken",
   "expense.adjustmentNegativeShare": "Anpassungen würden einen Anteil unter Null drücken. Bitte reduzieren.",
   "expense.queued": "Offline gespeichert und zur Synchronisierung vorgemerkt.",
   "expense.retrySync": "Erneut versuchen",

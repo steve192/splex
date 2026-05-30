@@ -24,6 +24,7 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { useLocationForm } from "../../shared/location/useLocationForm";
 import { cachedGet } from "../../shared/lib/offlineCache";
+import { loadRememberContextPreference, saveRememberContextPreference } from "../../shared/lib/lastContextPreference";
 import { asNumber, buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
@@ -68,6 +69,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const expenseId = route?.params?.expenseId as number | undefined;
   const pendingMutationId = route?.params?.pendingMutationId as string | undefined;
   const editing = Boolean(expenseId || pendingMutationId);
+  // "AddHome" is the navigation tab entry point. Opening the screen from a group
+  // or friend uses the "AddExpense" route with a pre-populated target instead.
+  const calledFromNavigation = route?.name === "AddHome" && !editing;
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -95,6 +99,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [draftClientId] = useState(() => pendingMutationId ?? createClientId());
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [rememberContext, setRememberContext] = useState(false);
 
   // Receipts require a live network connection: a draft upload talks to the
   // backend immediately, and a pending-sync mutation has no server-side expense
@@ -219,6 +224,27 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   useEffect(() => {
     resetForm(route?.params ?? {});
   }, [route?.params?.resetKey]);
+
+  // When opened from the navigation tab, restore the "Remember Group / Friend"
+  // checkbox and, if it is on, pre-populate the last context the user picked.
+  // Re-runs on resetKey so re-tapping the tab re-applies the remembered target.
+  useEffect(() => {
+    if (!calledFromNavigation) return;
+    let cancelled = false;
+    loadRememberContextPreference()
+      .then((pref) => {
+        if (cancelled) return;
+        setRememberContext(pref.remember);
+        if (pref.remember && pref.context) {
+          setContextType(pref.context.type);
+          setContextId(pref.context.id);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [calledFromNavigation, route?.params?.resetKey]);
 
   const loadContexts = useCallback(async () => {
     try {
@@ -354,6 +380,24 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setContextType(option.type);
     setContextId(option.id);
     setCurrency(option.currency);
+    // Only contexts chosen here (i.e. when opened from navigation) are remembered.
+    if (calledFromNavigation && rememberContext) {
+      saveRememberContextPreference({
+        remember: true,
+        context: { type: option.type, id: option.id }
+      }).catch(() => undefined);
+    }
+  }
+
+  function toggleRememberContext() {
+    const next = !rememberContext;
+    setRememberContext(next);
+    // Checking the box captures the current target so it is there next time;
+    // unchecking clears any remembered target so there is no pre-population.
+    saveRememberContextPreference({
+      remember: next,
+      context: next && contextId != null ? { type: contextType, id: contextId } : null
+    }).catch(() => undefined);
   }
 
   function toggleParticipant(participantId: number) {
@@ -738,6 +782,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         friends={friends}
         onSelect={selectContext}
         onDismiss={() => setActiveSheet(null)}
+        showRemember={calledFromNavigation}
+        remember={rememberContext}
+        onToggleRemember={toggleRememberContext}
       />
     </View>
   );

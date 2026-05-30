@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { Button, Divider, List, Modal, Portal, Searchbar, Text, useTheme } from "react-native-paper";
+import { Button, Checkbox, Divider, List, Modal, Portal, Searchbar, Text, TouchableRipple, useTheme } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
@@ -15,9 +15,21 @@ type ContextPickerSheetProps = {
   friends: Friend[];
   onSelect: (option: ContextOption) => void;
   onDismiss: () => void;
+  showRemember?: boolean;
+  remember?: boolean;
+  onToggleRemember?: () => void;
 };
 
-export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismiss }: ContextPickerSheetProps) {
+export function ContextPickerSheet({
+  visible,
+  groups,
+  friends,
+  onSelect,
+  onDismiss,
+  showRemember = false,
+  remember = false,
+  onToggleRemember
+}: ContextPickerSheetProps) {
   const { t } = useI18n();
   const theme = useTheme();
   const keyboardHeight = useKeyboardHeight();
@@ -49,6 +61,14 @@ export function ContextPickerSheet({ visible, groups, friends, onSelect, onDismi
             <Text variant="titleLarge">{t("expense.context")}</Text>
             <Button onPress={onDismiss}>{t("common.cancel")}</Button>
           </View>
+          {showRemember ? (
+            <TouchableRipple onPress={onToggleRemember} style={styles.optionRow}>
+              <View style={styles.inline}>
+                <Checkbox.Android status={remember ? "checked" : "unchecked"} />
+                <Text variant="bodyMedium">{t("expense.rememberContext")}</Text>
+              </View>
+            </TouchableRipple>
+          ) : null}
           <Searchbar
             value={query}
             onChangeText={setQuery}
