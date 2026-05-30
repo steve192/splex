@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor}-ը հիշեցնում է, որ {context}-ում մարեք {amount} {currency}-ը։",
+  "reminder.settle.friend": "{actor}-ը հիշեցնում է, որ մարեք {amount} {currency}-ը։",
+  "reminder.track_expense": "{actor}-ը հիշեցնում է, որ {context}-ում ավելացնեք բացակայող ծախսերը։",
+  "reminder.track_expense.friend": "{actor}-ը հիշեցնում է, որ ավելացնեք բացակայող համատեղ ծախսերը։"
+}

@@ -23,7 +23,7 @@ type AuthContextValue = {
   tokens: Tokens | null;
   initialized: boolean;
   refreshUser(): Promise<void>;
-  requestMagicLink(email: string, inviteToken?: string): Promise<void>;
+  requestMagicLink(email: string, inviteToken?: string, locale?: string): Promise<void>;
   loginWithCode(email: string, code: string): Promise<void>;
   loginWithToken(token: string): Promise<void>;
   loginWithGoogle(idToken: string): Promise<void>;
@@ -111,8 +111,12 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         setUser(freshUser);
         await setStoredUser(freshUser);
       },
-      async requestMagicLink(email: string, inviteToken?: string) {
-        await api.post("/api/auth/magic-link/", { email, invite_token: inviteToken ?? "" });
+      async requestMagicLink(email: string, inviteToken?: string, locale?: string) {
+        await api.post("/api/auth/magic-link/", {
+          email,
+          invite_token: inviteToken ?? "",
+          locale: locale ?? ""
+        });
       },
       async loginWithCode(email: string, code: string) {
         const response = await api.post<{ user: User; tokens: Tokens }>("/api/auth/magic-code/", {

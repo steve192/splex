@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "El compte de Splex de {email} s’ha suprimit permanentment. S’han eliminat el teu perfil, les credencials d’accés i els teus dispositius.",
+  "account_deleted.history": "Les teves despeses compartides anteriors continuaran visibles perquè la resta de persones puguin entendre els saldos.",
+  "account_deleted.recreate": "Pots crear un compte nou en qualsevol moment a {frontend_url}. No es reconnectarà amb les teves dades anteriors.",
+  "account_deleted.subject": "El teu compte de Splex s’ha suprimit",
+  "account_deleted.unexpected": "Si no has sol·licitat aquesta supressió, posa’t en contacte immediatament amb l’administrador de Splex.",
+  "footer_ignore": "Si no has estat tu, pots ignorar aquest correu.",
+  "magic.expiry": "Aquest enllaç i aquest codi caduquen d’aquí a {minutes_valid} minuts.",
+  "magic.instructions": "Fes servir aquest enllaç o el codi de sota per iniciar sessió.",
+  "retention_warning.body": "El compte de Splex de {email} fa temps que està inactiu.",
+  "retention_warning.cta": "Inicia sessió per conservar el compte",
+  "retention_warning.date": "Data d’eliminació: {deletion_date}",
+  "retention_warning.immediate": "Si vols eliminar el compte ara mateix, inicia sessió i obre la configuració del compte.",
+  "retention_warning.subject": "El teu compte de Splex s’eliminarà aviat",
+  "retention_warning.summary": "Si no fas res, s’eliminaran el teu perfil, les credencials d’accés i els teus dispositius. Els grups amb un sol membre s’eliminaran; les despeses compartides es mantindran com a usuari no registrat."
+}

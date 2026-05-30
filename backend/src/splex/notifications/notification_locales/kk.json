@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} сізге {context} ішінде {amount} {currency} өтеуді еске салады.",
+  "reminder.settle.friend": "{actor} сізге {amount} {currency} өтеуді еске салады.",
+  "reminder.track_expense": "{actor} сізге {context} ішінде жетіспейтін шығындарды қосуды еске салады.",
+  "reminder.track_expense.friend": "{actor} сізге жетіспейтін ортақ шығындарды қосуды еске салады."
+}

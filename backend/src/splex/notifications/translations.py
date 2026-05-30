@@ -1,137 +1,34 @@
-"""Push notification text templates keyed by event_type and locale.
+"""Push notification text rendering keyed by event_type and locale.
 
-The frontend has its own i18n table for the in-app activity feed. Push titles/bodies
-are rendered server-side so the OS notification banner has real text instead of an
-i18n key, and per user's stored `locale` field. Falls back to English if the locale
-or event_type is missing.
+Most activity wording is shared with the frontend locale catalog so the activity feed
+and OS-level push banners stay in sync. The backend only owns reminder copy and the
+payload-specific detail formatting.
 """
 
+from __future__ import annotations
+
+import json
+from functools import cache
+from pathlib import Path
 from string import Formatter
 
-_TEMPLATES: dict[str, dict[str, tuple[str, str]]] = {
-    "en": {
-        "expense.created": (
-            "New expense",
-            "{actor} added \"{description}\" ({amount} {currency}) in {context}",
-        ),
-        "expense.updated": (
-            "Expense updated",
-            "{actor} updated \"{description}\" ({amount} {currency}) in {context}",
-        ),
-        "expense.deleted": ("Expense deleted", "{actor} deleted \"{description}\" in {context}"),
-        "settlement.created": (
-            "Settlement recorded",
-            "{actor} settled {amount} {currency} in {context}",
-        ),
-        "settlement.updated": (
-            "Settlement updated",
-            "{actor} updated a settlement ({amount} {currency}) in {context}",
-        ),
-        "settlement.deleted": ("Settlement deleted", "{actor} removed a settlement in {context}"),
-        "group.created": ("Group created", "{actor} created the group {context}"),
-        "group.updated": ("Group updated", "{actor} updated the group {context}"),
-        "group.deleted": ("Group deleted", "{actor} deleted the group {context}"),
-        "group.member_added": ("Member added", "{actor} added a member to {context}"),
-        "group.member_removed": ("Member removed", "{actor} removed a member from {context}"),
-        "group.member_invited": ("Member invited", "{actor} invited someone to {context}"),
-        "group.member_joined": ("Member joined", "Someone joined {context}"),
-        "group.member_renamed": ("Member renamed", "{actor} renamed a member in {context}"),
-        "friend.invited": ("Friend invited", "{actor} invited you to be friends"),
-        "friend.accepted": ("Friend added", "{actor} accepted your friend invite"),
-        "invitation.accepted": ("Invitation accepted", "{actor} joined via your invite"),
-        "reminder.settle": (
-            "Settle up reminder",
-            "{actor} kindly reminds you to settle {amount} {currency} in {context}.",
-        ),
-        "reminder.settle.friend": (
-            "Settle up reminder",
-            "{actor} kindly reminds you to settle {amount} {currency}.",
-        ),
-        "reminder.track_expense": (
-            "Track expenses reminder",
-            "{actor} kindly reminds you to add any missing expenses in {context}.",
-        ),
-        "reminder.track_expense.friend": (
-            "Track expenses reminder",
-            "{actor} kindly reminds you to add any missing expenses you split with them.",
-        ),
-    },
-    "de": {
-        "expense.created": (
-            "Neue Ausgabe",
-            "{actor} hat \"{description}\" ({amount} {currency}) in {context} hinzugefügt",
-        ),
-        "expense.updated": (
-            "Ausgabe aktualisiert",
-            "{actor} hat \"{description}\" ({amount} {currency}) in {context} aktualisiert",
-        ),
-        "expense.deleted": (
-            "Ausgabe gelöscht",
-            "{actor} hat \"{description}\" in {context} gelöscht",
-        ),
-        "settlement.created": (
-            "Ausgleich verbucht",
-            "{actor} hat {amount} {currency} in {context} ausgeglichen",
-        ),
-        "settlement.updated": (
-            "Ausgleich aktualisiert",
-            "{actor} hat einen Ausgleich ({amount} {currency}) in {context} aktualisiert",
-        ),
-        "settlement.deleted": (
-            "Ausgleich entfernt",
-            "{actor} hat einen Ausgleich in {context} entfernt",
-        ),
-        "group.created": ("Gruppe erstellt", "{actor} hat die Gruppe {context} erstellt"),
-        "group.updated": ("Gruppe aktualisiert", "{actor} hat die Gruppe {context} aktualisiert"),
-        "group.deleted": ("Gruppe gelöscht", "{actor} hat die Gruppe {context} gelöscht"),
-        "group.member_added": (
-            "Mitglied hinzugefügt",
-            "{actor} hat ein Mitglied zu {context} hinzugefügt",
-        ),
-        "group.member_removed": (
-            "Mitglied entfernt",
-            "{actor} hat ein Mitglied aus {context} entfernt",
-        ),
-        "group.member_invited": (
-            "Einladung verschickt",
-            "{actor} hat jemanden zu {context} eingeladen",
-        ),
-        "group.member_joined": ("Mitglied beigetreten", "Jemand ist {context} beigetreten"),
-        "group.member_renamed": (
-            "Mitglied umbenannt",
-            "{actor} hat ein Mitglied in {context} umbenannt",
-        ),
-        "friend.invited": ("Freund eingeladen", "{actor} möchte mit dir befreundet sein"),
-        "friend.accepted": (
-            "Freundschaft bestätigt",
-            "{actor} hat deine Freundschaftsanfrage angenommen",
-        ),
-        "invitation.accepted": ("Einladung angenommen", "{actor} ist über deinen Link beigetreten"),
-        "reminder.settle": (
-            "Erinnerung zum Ausgleichen",
-            "{actor} erinnert dich freundlich daran, in {context} {amount} {currency} "
-            "auszugleichen.",
-        ),
-        "reminder.settle.friend": (
-            "Erinnerung zum Ausgleichen",
-            "{actor} erinnert dich freundlich daran, {amount} {currency} auszugleichen.",
-        ),
-        "reminder.track_expense": (
-            "Erinnerung an Ausgaben",
-            "{actor} erinnert dich freundlich daran, ausstehende Ausgaben in "
-            "{context} einzutragen.",
-        ),
-        "reminder.track_expense.friend": (
-            "Erinnerung an Ausgaben",
-            "{actor} erinnert dich freundlich daran, ausstehende gemeinsame Ausgaben einzutragen.",
-        ),
-    },
-}
+from splex.shared.frontend_i18n import lookup_frontend_translation
+from splex.shared.locale import normalize_locale
+
+_NOTIFICATION_LOCALES_DIR = Path(__file__).resolve().parent / 'notification_locales'
+
+
+@cache
+def _load_reminder_locale(locale: str) -> dict[str, str]:
+    locale_file = _NOTIFICATION_LOCALES_DIR / f'{locale}.json'
+    if not locale_file.exists():
+        return {}
+    return json.loads(locale_file.read_text(encoding='utf-8'))
 
 
 class _SafeDict(dict):
     def __missing__(self, key):
-        return "{" + key + "}"
+        return '{' + key + '}'
 
 
 def _render(template: str, payload: dict) -> str:
@@ -141,11 +38,60 @@ def _render(template: str, payload: dict) -> str:
         return template
 
 
+def _compose_segments(*segments: str | None) -> str:
+    return ' · '.join(segment for segment in segments if segment)
+
+
+def _amount_segment(payload: dict) -> str | None:
+    amount = payload.get('amount')
+    currency = payload.get('currency')
+    if amount and currency:
+        return f'{amount} {currency}'
+    return amount or currency or None
+
+
+def _quoted_description(payload: dict) -> str | None:
+    description = payload.get('description')
+    if not description:
+        return None
+    return f'"{description}"'
+
+
+def _activity_title(event_type: str, locale: str, payload: dict) -> str:
+    template = lookup_frontend_translation(f'activity.{event_type}', locale)
+    if template == f'activity.{event_type}':
+        return event_type
+    return _render(template, payload)
+
+
+def _render_detail(event_type: str, payload: dict) -> str:
+    context = payload.get('context')
+    if event_type in {'expense.created', 'expense.updated'}:
+        return _compose_segments(_quoted_description(payload), _amount_segment(payload), context)
+    if event_type == 'expense.deleted':
+        return _compose_segments(_quoted_description(payload), context)
+    if event_type in {'settlement.created', 'settlement.updated'}:
+        return _compose_segments(_amount_segment(payload), context)
+    if event_type == 'settlement.deleted':
+        return _compose_segments(context)
+    if event_type.startswith('group.'):
+        return _compose_segments(context)
+    return ''
+
+
+def _render_reminder(event_type: str, payload: dict, locale: str) -> tuple[str, str]:
+    english = _load_reminder_locale('en')
+    table = dict(english)
+    table.update(_load_reminder_locale(locale))
+    return 'Splex', _render(table.get(event_type, english[event_type]), payload)
+
+
 def render_notification(event_type: str, payload: dict, locale: str) -> tuple[str, str]:
     """Return (title, body) for a notification, falling back to English."""
-    table = _TEMPLATES.get(locale) or _TEMPLATES["en"]
-    title_tmpl, body_tmpl = table.get(event_type) or _TEMPLATES["en"].get(event_type) or (
-        event_type,
-        "",
-    )
-    return _render(title_tmpl, payload), _render(body_tmpl, payload)
+    normalized = normalize_locale(locale)
+    if event_type.startswith('reminder.'):
+        return _render_reminder(event_type, payload or {}, normalized)
+
+    title = _activity_title(event_type, normalized, payload or {})
+    body = _render_detail(event_type, payload or {})
+    return title or event_type, body

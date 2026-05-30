@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} regorda a tai da reglar {amount} {currency} en {context}.",
+  "reminder.settle.friend": "{actor} regorda a tai da reglar {amount} {currency}.",
+  "reminder.track_expense": "{actor} regorda a tai d’agiuntar las novitads mancantas en {context}.",
+  "reminder.track_expense.friend": "{actor} regorda a tai d’agiuntar las novitads communablas mancantas."
+}

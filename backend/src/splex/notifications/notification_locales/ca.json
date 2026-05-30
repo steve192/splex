@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} et recorda que liquidis {amount} {currency} a {context}.",
+  "reminder.settle.friend": "{actor} et recorda que liquidis {amount} {currency}.",
+  "reminder.track_expense": "{actor} et recorda que afegeixis les despeses pendents a {context}.",
+  "reminder.track_expense.friend": "{actor} et recorda que afegeixis les despeses compartides pendents."
+}

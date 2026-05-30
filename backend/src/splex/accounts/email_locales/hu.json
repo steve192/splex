@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "A(z) {email} címhez tartozó Splex-fiók véglegesen törölve lett. A profilját, bejelentkezési adatait és eszközeit eltávolítottuk.",
+  "account_deleted.history": "A korábbi közös kiadásai láthatók maradnak, hogy mások továbbra is átlássák az egyenlegeket.",
+  "account_deleted.recreate": "Bármikor létrehozhat új fiókot a következő oldalon: {frontend_url}. Az nem kapcsolódik majd újra a régi adataihoz.",
+  "account_deleted.subject": "A Splex-fiókja törölve lett",
+  "account_deleted.unexpected": "Ha nem Ön kérte ezt a törlést, azonnal lépjen kapcsolatba a Splex rendszergazdájával.",
+  "footer_ignore": "Ha nem Ön kérte ezt, nyugodtan figyelmen kívül hagyhatja ezt az e-mailt.",
+  "magic.expiry": "Ez a hivatkozás és a kód {minutes_valid} perc múlva lejár.",
+  "magic.instructions": "A bejelentkezéshez használja ezt a hivatkozást vagy az alábbi kódot.",
+  "retention_warning.body": "A(z) {email} címhez tartozó Splex-fiók egy ideje inaktív.",
+  "retention_warning.cta": "Bejelentkezés a fiók megtartásához",
+  "retention_warning.date": "Törlés dátuma: {deletion_date}",
+  "retention_warning.immediate": "Ha azonnal törölni szeretné a fiókot, jelentkezzen be, és nyissa meg a fiókbeállításokat.",
+  "retention_warning.subject": "A Splex-fiókja hamarosan törlődik",
+  "retention_warning.summary": "Ha nem tesz semmit, a profilját, a bejelentkezési adatait és az eszközeit eltávolítjuk. Az egyszemélyes csoportok törlődnek; a közös kiadások nem regisztrált felhasználóként maradnak meg."
+}

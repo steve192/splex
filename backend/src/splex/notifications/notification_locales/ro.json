@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} îți amintește să achiți {amount} {currency} în {context}.",
+  "reminder.settle.friend": "{actor} îți amintește să achiți {amount} {currency}.",
+  "reminder.track_expense": "{actor} îți amintește să adaugi cheltuielile lipsă în {context}.",
+  "reminder.track_expense.friend": "{actor} îți amintește să adaugi cheltuielile comune lipsă."
+}

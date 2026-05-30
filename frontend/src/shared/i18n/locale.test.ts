@@ -1,6 +1,8 @@
+import { readdirSync, readFileSync } from "node:fs";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { detectDeviceLocale, interpolate, lookupTranslation } from "./locale";
+import { detectDeviceLocale, interpolate, lookupTranslation, normalizeLocaleTag } from "./locale";
 
 vi.mock("expo-localization", () => ({
   getLocales: vi.fn()
@@ -9,6 +11,45 @@ vi.mock("expo-localization", () => ({
 import * as Localization from "expo-localization";
 
 const getLocalesMock = vi.mocked(Localization.getLocales);
+const LOCALES_DIR = new URL("./locales/", import.meta.url);
+
+const readTranslations = (fileName: string): Record<string, string> => {
+  return JSON.parse(readFileSync(new URL(fileName, LOCALES_DIR), "utf8")) as Record<string, string>;
+};
+
+const getPlaceholders = (value: string): string[] => {
+  return Array.from(value.matchAll(/\{(\w+)\}/g), ([, name]) => name);
+};
+
+const sortStrings = (values: string[]): string[] => {
+  return [...values].sort((left, right) => left.localeCompare(right));
+};
+
+describe("locale files", () => {
+  const english = readTranslations("en.json");
+  const englishKeys = Object.keys(english);
+  const localeFiles = readdirSync(LOCALES_DIR)
+    .filter((fileName) => fileName.endsWith(".json") && fileName !== "en.json")
+    .sort((left, right) => left.localeCompare(right));
+
+  it.each(localeFiles)("%s preserves english keys and placeholders", (fileName) => {
+    const translations = readTranslations(fileName);
+    const translationKeys = Object.keys(translations);
+
+    if ("de.json" === fileName) {
+      expect(sortStrings(translationKeys)).toEqual(sortStrings(englishKeys));
+    } else {
+      expect(translationKeys).toEqual(englishKeys);
+    }
+
+    englishKeys.forEach((key) => {
+      expect(sortStrings(getPlaceholders(translations[key] ?? ""))).toEqual(
+        sortStrings(getPlaceholders(english[key] ?? ""))
+      );
+    });
+  });
+
+});
 
 describe("interpolate", () => {
   it("leaves template unchanged when params is undefined", () => {
@@ -65,26 +106,26 @@ describe("detectDeviceLocale", () => {
     expect(detectDeviceLocale()).toBe("de");
   });
 
-  it("returns 'en' for en-US", () => {
+  it("returns 'fr' for fr-FR", () => {
     getLocalesMock.mockReturnValue([
-      { languageTag: "en-US", languageCode: "en" } as Localization.Locale
+      { languageTag: "fr-FR", languageCode: "fr" } as Localization.Locale
     ]);
-    expect(detectDeviceLocale()).toBe("en");
+    expect(detectDeviceLocale()).toBe("fr");
   });
 
   it("falls back to 'en' for unsupported locales", () => {
     getLocalesMock.mockReturnValue([
-      { languageTag: "fr-FR", languageCode: "fr" } as Localization.Locale
+      { languageTag: "ja-JP", languageCode: "ja" } as Localization.Locale
     ]);
     expect(detectDeviceLocale()).toBe("en");
   });
 
-  it("picks first supported tag when device returns a list", () => {
+  it("picks the first supported tag when device returns a list", () => {
     getLocalesMock.mockReturnValue([
       { languageTag: "fr-FR", languageCode: "fr" } as Localization.Locale,
       { languageTag: "de-AT", languageCode: "de" } as Localization.Locale
     ]);
-    expect(detectDeviceLocale()).toBe("de");
+    expect(detectDeviceLocale()).toBe("fr");
   });
 
   it("falls back to 'en' when device returns empty list", () => {
@@ -98,5 +139,22 @@ describe("detectDeviceLocale", () => {
       { languageTag: "de", languageCode: "de" } as Localization.Locale
     ]);
     expect(detectDeviceLocale()).toBe("de");
+  });
+
+  it("maps norwegian bokmal to 'no'", () => {
+    getLocalesMock.mockReturnValue([
+      { languageTag: "nb-NO", languageCode: "nb" } as Localization.Locale
+    ]);
+    expect(detectDeviceLocale()).toBe("no");
+  });
+});
+
+describe("normalizeLocaleTag", () => {
+  it("returns null for unknown tags", () => {
+    expect(normalizeLocaleTag("ja-JP")).toBeNull();
+  });
+
+  it("normalizes aliases", () => {
+    expect(normalizeLocaleTag("nn-NO")).toBe("no");
   });
 });

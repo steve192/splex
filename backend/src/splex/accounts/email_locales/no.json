@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex-kontoen for {email} er slettet permanent. Profilen din, innloggingsopplysningene dine og enhetene dine er fjernet.",
+  "account_deleted.history": "Dine tidligere delte utgifter forblir synlige, slik at andre fortsatt kan forstå saldoene.",
+  "account_deleted.recreate": "Du kan opprette en ny konto når som helst på {frontend_url}. Den blir ikke koblet til de gamle dataene dine igjen.",
+  "account_deleted.subject": "Splex-kontoen din er slettet",
+  "account_deleted.unexpected": "Hvis du ikke ba om denne slettingen, må du kontakte Splex-administratoren din umiddelbart.",
+  "footer_ignore": "Hvis dette ikke var deg, kan du se bort fra denne e-posten.",
+  "magic.expiry": "Denne lenken og koden utløper om {minutes_valid} minutter.",
+  "magic.instructions": "Bruk denne lenken eller koden nedenfor for å logge inn.",
+  "retention_warning.body": "Splex-kontoen for {email} har vært inaktiv en stund.",
+  "retention_warning.cta": "Logg inn for å beholde kontoen min",
+  "retention_warning.date": "Slettedato: {deletion_date}",
+  "retention_warning.immediate": "Hvis du vil slette kontoen med en gang, logger du inn og åpner kontoinnstillingene.",
+  "retention_warning.subject": "Splex-kontoen din vil snart bli slettet",
+  "retention_warning.summary": "Hvis du ikke gjør noe, blir profilen din, innloggingsopplysningene dine og enhetene dine fjernet. Grupper med bare deg blir slettet; delte utgifter blir stående som en uregistrert bruker."
+}

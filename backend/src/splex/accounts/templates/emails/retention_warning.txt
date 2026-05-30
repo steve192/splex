@@ -1,26 +1,14 @@
-Your Splex account will be deleted in {{ days_remaining }} day{{ days_remaining|pluralize }}
-=============================================================================
+{{ subject }}
 
-{% if display_name %}Hi {{ display_name }},{% else %}Hi,{% endif %}
+{{ body }}
 
-Your Splex account for {{ email }} has been inactive for a while.
-To protect your privacy we automatically delete accounts that haven't been
-used for an extended period.
+{{ date_line }}
 
-DELETION DATE: {{ deletion_date }}
+{{ summary }}
 
-Simply log in before that date to keep your account:
+{{ cta }}:
 {{ frontend_url }}
 
-What happens if my account is deleted?
-- Your profile and login credentials are permanently removed.
-- Groups where you are the only registered member are deleted.
-- In shared groups your past expenses remain visible to other members,
-  but are no longer linked to a Splex account.
-- You can create a new account at any time - it will not be linked to
-  the data from your previous account.
+{{ immediate }}
 
-If you want to delete your account right now you can do so from your
-account settings at {{ frontend_url }}.
-
-- Splex
+{{ footer_ignore }}

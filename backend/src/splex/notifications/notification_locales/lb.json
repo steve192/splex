@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} erënnert dech drun, {amount} {currency} an {context} auszegläichen.",
+  "reminder.settle.friend": "{actor} erënnert dech drun, {amount} {currency} auszegläichen.",
+  "reminder.track_expense": "{actor} erënnert dech drun, feelend Ausgaben an {context} dobäizesetzen.",
+  "reminder.track_expense.friend": "{actor} erënnert dech drun, feelend gemeinsam Ausgaben dobäizesetzen."
+}

@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splexi konto aadressiga {email} on jäädavalt kustutatud. Sinu profiil, sisselogimisandmed ja seadmed on eemaldatud.",
+  "account_deleted.history": "Sinu varasemad ühised kulud jäävad nähtavaks, et saldod oleksid teistele endiselt arusaadavad.",
+  "account_deleted.recreate": "Saad igal ajal aadressil {frontend_url} uue konto luua. Seda ei seota sinu vanade andmetega uuesti.",
+  "account_deleted.subject": "Sinu Splexi konto on kustutatud",
+  "account_deleted.unexpected": "Kui sa ei taotlenud seda kustutamist, võta kohe ühendust oma Splexi administraatoriga.",
+  "footer_ignore": "Kui see ei olnud sina, võid selle e-kirja tähelepanuta jätta.",
+  "magic.expiry": "See link ja kood aeguvad {minutes_valid} minuti pärast.",
+  "magic.instructions": "Sisselogimiseks kasuta seda linki või allolevat koodi.",
+  "retention_warning.body": "Splexi konto aadressiga {email} on olnud juba mõnda aega passiivne.",
+  "retention_warning.cta": "Logi sisse, et konto alles jätta",
+  "retention_warning.date": "Kustutamise kuupäev: {deletion_date}",
+  "retention_warning.immediate": "Kui soovid konto kohe kustutada, logi sisse ja ava oma konto seaded.",
+  "retention_warning.subject": "Sinu Splexi konto kustutatakse peagi",
+  "retention_warning.summary": "Kui sa midagi ei tee, eemaldatakse sinu profiil, sisselogimisandmed ja seadmed. Üheliikmelised grupid kustutatakse; ühised kulud jäävad alles registreerimata kasutajana."
+}

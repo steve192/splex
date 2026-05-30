@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} të kujton të shlyesh {amount} {currency} në {context}.",
+  "reminder.settle.friend": "{actor} të kujton të shlyesh {amount} {currency}.",
+  "reminder.track_expense": "{actor} të kujton të shtosh shpenzimet që mungojnë në {context}.",
+  "reminder.track_expense.friend": "{actor} të kujton të shtosh shpenzimet e përbashkëta që mungojnë."
+}

@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex račun za {email} trajno je obrisan. Vaš profil, podaci za prijavu i vaši uređaji su uklonjeni.",
+  "account_deleted.history": "Vaši dosadašnji zajednički troškovi ostaju vidljivi kako bi salda ostala razumljiva drugim osobama.",
+  "account_deleted.recreate": "Novi račun možete napraviti u bilo kojem trenutku na {frontend_url}. Neće biti ponovo povezan s vašim starim podacima.",
+  "account_deleted.subject": "Vaš Splex račun je obrisan",
+  "account_deleted.unexpected": "Ako niste tražili ovo brisanje, odmah kontaktirajte administratora svog Splexa.",
+  "footer_ignore": "Ako ovo niste bili vi, možete zanemariti ovaj email.",
+  "magic.expiry": "Ovaj link i kod ističu za {minutes_valid} minuta.",
+  "magic.instructions": "Koristite ovaj link ili kod ispod da se prijavite.",
+  "retention_warning.body": "Splex račun za {email} neko vrijeme nije aktivan.",
+  "retention_warning.cta": "Prijavi se da zadržim račun",
+  "retention_warning.date": "Datum brisanja: {deletion_date}",
+  "retention_warning.immediate": "Ako želite odmah obrisati račun, prijavite se i otvorite postavke računa.",
+  "retention_warning.subject": "Vaš Splex račun uskoro će biti obrisan",
+  "retention_warning.summary": "Ako ništa ne poduzmete, vaš profil, podaci za prijavu i uređaji bit će uklonjeni. Grupe u kojima ste sami bit će obrisane, a zajednički troškovi ostat će kao neregistrirani član."
+}

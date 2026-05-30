@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} primena jums atsiskaityti {amount} {currency} kontekste {context}.",
+  "reminder.settle.friend": "{actor} primena jums atsiskaityti {amount} {currency}.",
+  "reminder.track_expense": "{actor} primena jums pridėti trūkstamas išlaidas kontekste {context}.",
+  "reminder.track_expense.friend": "{actor} primena jums pridėti trūkstamas bendras išlaidas."
+}

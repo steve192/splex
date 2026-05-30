@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Il conto Splex per {email} è vegnì stizzà definitivamain. Tes profil, tias datas d’annunzia e tes apparats èn vegnids allontanads.",
+  "account_deleted.history": "Tias expensas communablas passadas restan visiblas, uschia che autras persunas pon vinavant chapir ils bilants.",
+  "account_deleted.recreate": "Ti pos crear in nov conto da tut temp sin {frontend_url}. El na vegn betg puspè collià cun tias veglias datas.",
+  "account_deleted.subject": "Tes conto Splex è vegnì stizzà",
+  "account_deleted.unexpected": "Sche ti na has betg dumandà questa stizzada, contactescha immediatamain l’administratur da Splex.",
+  "footer_ignore": "Sche ti na has betg fatg quai, pos ignorar quest e-mail.",
+  "magic.expiry": "Questa colliaziun ed il code scadan entaifer {minutes_valid} minutas.",
+  "magic.instructions": "Utilisescha questa colliaziun u il code sutvart per s’annunziar.",
+  "retention_warning.body": "Il conto Splex per {email} è inactiv dapi in tschert temp.",
+  "retention_warning.cta": "S’annunziar per mantegnair mes conto",
+  "retention_warning.date": "Data da stizzada: {deletion_date}",
+  "retention_warning.immediate": "Sche ti vuls stizzar il conto gist ussa, annunzia-te e avra las preferenzas dal conto.",
+  "retention_warning.subject": "Tes conto Splex vegn prest stizzà",
+  "retention_warning.summary": "Sche ti na fas nagut, vegnan tes profil, tias datas d’annunzia e tes apparats allontanads. Gruppas cun mo in commember vegnan stizzadas; expensas communablas restan sco in utilisader betg registrà."
+}

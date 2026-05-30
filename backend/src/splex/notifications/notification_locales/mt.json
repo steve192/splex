@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} ifakkrek biex tħallas {amount} {currency} f’{context}.",
+  "reminder.settle.friend": "{actor} ifakkrek biex tħallas {amount} {currency}.",
+  "reminder.track_expense": "{actor} ifakkrek biex iżżid l-ispejjeż neqsin f’{context}.",
+  "reminder.track_expense.friend": "{actor} ifakkrek biex iżżid l-ispejjeż kondiviżi neqsin."
+}

@@ -36,6 +36,10 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"splex.accounts" = ["email_locales/*.json"]
+"splex.notifications" = ["notification_locales/*.json"]
+
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 pythonpath = ["src"]

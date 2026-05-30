@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex-kontot för {email} har raderats permanent. Din profil, dina inloggningsuppgifter och dina enheter har tagits bort.",
+  "account_deleted.history": "Dina tidigare delade utgifter fortsätter att vara synliga så att andra fortfarande kan förstå saldona.",
+  "account_deleted.recreate": "Du kan skapa ett nytt konto när som helst på {frontend_url}. Det kopplas inte ihop med dina gamla uppgifter igen.",
+  "account_deleted.subject": "Ditt Splex-konto har raderats",
+  "account_deleted.unexpected": "Om du inte begärde denna radering ska du kontakta din Splex-administratör omedelbart.",
+  "footer_ignore": "Om det inte var du kan du ignorera det här mejlet.",
+  "magic.expiry": "Den här länken och koden gäller i {minutes_valid} minuter till.",
+  "magic.instructions": "Använd den här länken eller koden nedan för att logga in.",
+  "retention_warning.body": "Splex-kontot för {email} har varit inaktivt ett tag.",
+  "retention_warning.cta": "Logga in för att behålla mitt konto",
+  "retention_warning.date": "Raderingsdatum: {deletion_date}",
+  "retention_warning.immediate": "Om du vill radera kontot direkt, logga in och öppna kontoinställningarna.",
+  "retention_warning.subject": "Ditt Splex-konto kommer snart att raderas",
+  "retention_warning.summary": "Om du inte gör något tas din profil, dina inloggningsuppgifter och dina enheter bort. Grupper med bara dig tas bort; delade utgifter blir kvar som en oregistrerad användare."
+}

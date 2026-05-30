@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "The Splex account for {email} has been permanently deleted. Your profile, login credentials, and devices have been removed.",
+  "account_deleted.history": "Your past shared expenses stay visible so balances remain readable for other people.",
+  "account_deleted.recreate": "You can create a new account at any time at {frontend_url}. It will not reconnect to your old data.",
+  "account_deleted.subject": "Your Splex account has been deleted",
+  "account_deleted.unexpected": "If you did not request this deletion, contact your Splex administrator immediately.",
+  "footer_ignore": "If this wasn't you, you can ignore this email.",
+  "magic.expiry": "This link and code expire in {minutes_valid} minutes.",
+  "magic.instructions": "Use this link or the code below to sign in.",
+  "retention_warning.body": "The Splex account for {email} has been inactive for a while.",
+  "retention_warning.cta": "Log in to keep my account",
+  "retention_warning.date": "Deletion date: {deletion_date}",
+  "retention_warning.immediate": "If you want to delete the account right away, sign in and open your account settings.",
+  "retention_warning.subject": "Your Splex account will be deleted soon",
+  "retention_warning.summary": "If you do nothing, your profile, login credentials, and devices will be removed. Solo groups will be deleted; shared expenses remain as an unregistered placeholder."
+}

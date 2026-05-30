@@ -144,16 +144,16 @@ class Command(BaseCommand):
 
             try:
                 _send_template_email(
-                    subject=f"Your Splex account will be deleted in {days_remaining} days",
                     recipient=user.email,
                     template_base="retention_warning",
                     context={
                         "display_name": (user.display_name or "").strip(),
                         "email": user.email,
                         "days_remaining": days_remaining,
-                        "deletion_date": deletion_date.strftime("%B %-d, %Y"),
+                        "deletion_date": deletion_date,
                         "frontend_url": settings.FRONTEND_PUBLIC_URL,
                     },
+                    locale=user.locale,
                 )
                 setattr(user, flag_field, now)
                 user.save(update_fields=[flag_field])

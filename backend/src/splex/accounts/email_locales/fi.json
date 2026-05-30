@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex-tili osoitteelle {email} on poistettu pysyvästi. Profiilisi, kirjautumistietosi ja laitteesi on poistettu.",
+  "account_deleted.history": "Aiemmat yhteiset menosi jäävät näkyviin, jotta muut näkevät saldot edelleen ymmärrettävästi.",
+  "account_deleted.recreate": "Voit luoda uuden tilin milloin tahansa osoitteessa {frontend_url}. Sitä ei yhdistetä uudelleen vanhoihin tietoihisi.",
+  "account_deleted.subject": "Splex-tilisi on poistettu",
+  "account_deleted.unexpected": "Jos et pyytänyt tätä poistoa, ota heti yhteyttä Splex-järjestelmänvalvojaasi.",
+  "footer_ignore": "Jos tämä et ollut sinä, voit jättää tämän sähköpostin huomiotta.",
+  "magic.expiry": "Tämä linkki ja koodi vanhenevat {minutes_valid} minuutin kuluttua.",
+  "magic.instructions": "Kirjaudu sisään tällä linkillä tai alla olevalla koodilla.",
+  "retention_warning.body": "Splex-tili osoitteelle {email} on ollut jonkin aikaa käyttämättä.",
+  "retention_warning.cta": "Kirjaudu sisään säilyttääksesi tilini",
+  "retention_warning.date": "Poistopäivä: {deletion_date}",
+  "retention_warning.immediate": "Jos haluat poistaa tilin heti, kirjaudu sisään ja avaa tiliasetukset.",
+  "retention_warning.subject": "Splex-tilisi poistetaan pian",
+  "retention_warning.summary": "Jos et tee mitään, profiilisi, kirjautumistietosi ja laitteesi poistetaan. Yhden hengen ryhmät poistetaan; yhteiset menot jäävät näkyviin rekisteröimättömänä käyttäjänä."
+}

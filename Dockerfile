@@ -18,6 +18,7 @@ COPY backend /app/backend
 RUN pip install --no-cache-dir /app/backend
 COPY --from=frontend-build /app/frontend/dist /app/backend/static_pwa
 COPY --from=frontend-build /app/frontend/src/shared/legal/openSourceComponents.generated.json /app/backend/src/splex/shared/openSourceComponents.generated.json
+COPY frontend/src/shared/i18n/locales /app/backend/src/splex/shared/frontend_locales
 WORKDIR /app/backend
 RUN python manage.py collectstatic --noinput
 RUN adduser --system --group --home /app splex \

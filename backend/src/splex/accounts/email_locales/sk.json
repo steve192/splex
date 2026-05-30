@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Účet Splex pre {email} bol natrvalo odstránený. Váš profil, prihlasovacie údaje aj zariadenia boli odstránené.",
+  "account_deleted.history": "Vaše doterajšie spoločné výdavky zostanú viditeľné, aby ostatní ľudia naďalej rozumeli zostatkom.",
+  "account_deleted.recreate": "Nový účet si môžete kedykoľvek vytvoriť na {frontend_url}. Znova sa neprepojí s vašimi starými údajmi.",
+  "account_deleted.subject": "Váš účet Splex bol odstránený",
+  "account_deleted.unexpected": "Ak ste o toto odstránenie nežiadali, okamžite kontaktujte svojho správcu Splexu.",
+  "footer_ignore": "Ak ste to neboli vy, môžete tento e-mail ignorovať.",
+  "magic.expiry": "Platnosť tohto odkazu a kódu vyprší o {minutes_valid} minút.",
+  "magic.instructions": "Na prihlásenie použite tento odkaz alebo kód nižšie.",
+  "retention_warning.body": "Účet Splex pre {email} je už nejaký čas neaktívny.",
+  "retention_warning.cta": "Prihlásiť sa a ponechať si účet",
+  "retention_warning.date": "Dátum odstránenia: {deletion_date}",
+  "retention_warning.immediate": "Ak chcete účet odstrániť hneď, prihláste sa a otvorte nastavenia účtu.",
+  "retention_warning.subject": "Váš účet Splex bude čoskoro odstránený",
+  "retention_warning.summary": "Ak nič neurobíte, váš profil, prihlasovacie údaje aj zariadenia budú odstránené. Jednočlenné skupiny budú zmazané; spoločné výdavky zostanú ako neregistrovaný používateľ."
+}

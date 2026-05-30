@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex konts lietotājam {email} ir neatgriezeniski dzēsts. Jūsu profils, pieslēgšanās dati un ierīces ir noņemtas.",
+  "account_deleted.history": "Jūsu iepriekšējie kopīgie izdevumi paliek redzami, lai citi cilvēki joprojām varētu saprast bilances.",
+  "account_deleted.recreate": "Jaunu kontu varat izveidot jebkurā laikā vietnē {frontend_url}. Tas netiks atkārtoti sasaistīts ar jūsu vecajiem datiem.",
+  "account_deleted.subject": "Jūsu Splex konts ir dzēsts",
+  "account_deleted.unexpected": "Ja jūs nepieprasījāt šo dzēšanu, nekavējoties sazinieties ar savu Splex administratoru.",
+  "footer_ignore": "Ja tas nebijāt jūs, šo e-pastu varat ignorēt.",
+  "magic.expiry": "Šī saite un kods beigsies pēc {minutes_valid} minūtēm.",
+  "magic.instructions": "Izmantojiet šo saiti vai zemāk redzamo kodu, lai pieteiktos.",
+  "retention_warning.body": "Splex konts lietotājam {email} jau kādu laiku ir neaktīvs.",
+  "retention_warning.cta": "Pieteikties, lai paturētu savu kontu",
+  "retention_warning.date": "Dzēšanas datums: {deletion_date}",
+  "retention_warning.immediate": "Ja vēlaties kontu dzēst uzreiz, piesakieties un atveriet konta iestatījumus.",
+  "retention_warning.subject": "Jūsu Splex konts drīz tiks dzēsts",
+  "retention_warning.summary": "Ja neko nedarīsiet, jūsu profils, pieslēgšanās dati un ierīces tiks noņemtas. Viena dalībnieka grupas tiks dzēstas; kopīgie izdevumi paliks kā nereģistrēts lietotājs."
+}

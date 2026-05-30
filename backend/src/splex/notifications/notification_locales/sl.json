@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} te opominja, da poravnaš {amount} {currency} v {context}.",
+  "reminder.settle.friend": "{actor} te opominja, da poravnaš {amount} {currency}.",
+  "reminder.track_expense": "{actor} te opominja, da dodaš manjkajoče stroške v {context}.",
+  "reminder.track_expense.friend": "{actor} te opominja, da dodaš manjkajoče skupne stroške."
+}

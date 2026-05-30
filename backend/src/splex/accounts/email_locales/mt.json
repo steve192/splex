@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Il-kont ta’ Splex għal {email} tħassar b’mod permanenti. Il-profil tiegħek, id-dettalji tal-login u l-apparati tiegħek tneħħew.",
+  "account_deleted.history": "L-ispejjeż kondiviżi tiegħek tal-passat jibqgħu viżibbli biex nies oħra jkunu għadhom jistgħu jifhmu l-bilanċi.",
+  "account_deleted.recreate": "Tista’ toħloq kont ġdid fi kwalunkwe ħin fuq {frontend_url}. Dan mhux se jerġa’ jingħaqad mad-data l-qadima tiegħek.",
+  "account_deleted.subject": "Il-kont tiegħek ta’ Splex tħassar",
+  "account_deleted.unexpected": "Jekk ma tlabtx dan it-tħassir, ikkuntattja minnufih lill-amministratur ta’ Splex.",
+  "footer_ignore": "Jekk ma kontx inti, tista’ tinjora din l-email.",
+  "magic.expiry": "Din il-link u dan il-kodiċi jiskadu fi {minutes_valid} minuta.",
+  "magic.instructions": "Uża din il-link jew il-kodiċi t’hawn taħt biex tidħol.",
+  "retention_warning.body": "Il-kont ta’ Splex għal {email} ilu inattiv għal xi żmien.",
+  "retention_warning.cta": "Idħol biex inżomm il-kont tiegħi",
+  "retention_warning.date": "Data tat-tħassir: {deletion_date}",
+  "retention_warning.immediate": "Jekk trid tħassar il-kont minnufih, idħol u iftaħ is-settings tal-kont.",
+  "retention_warning.subject": "Il-kont tiegħek ta’ Splex dalwaqt se jitħassar",
+  "retention_warning.summary": "Jekk ma tagħmel xejn, il-profil tiegħek, id-dettalji tal-login u l-apparati tiegħek jitneħħew. Il-gruppi b’membru wieħed jitħassru; l-ispejjeż kondiviżi jibqgħu bħala utent mhux irreġistrat."
+}

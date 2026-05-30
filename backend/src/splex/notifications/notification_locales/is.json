@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} minnir þig á að gera upp {amount} {currency} í {context}.",
+  "reminder.settle.friend": "{actor} minnir þig á að gera upp {amount} {currency}.",
+  "reminder.track_expense": "{actor} minnir þig á að bæta við útgjöldum sem vantar í {context}.",
+  "reminder.track_expense.friend": "{actor} minnir þig á að bæta við sameiginlegum útgjöldum sem vantar."
+}

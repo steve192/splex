@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Contul Splex pentru {email} a fost șters definitiv. Profilul tău, datele de autentificare și dispozitivele tale au fost eliminate.",
+  "account_deleted.history": "Cheltuielile tale partajate din trecut rămân vizibile, astfel încât ceilalți să poată înțelege în continuare soldurile.",
+  "account_deleted.recreate": "Poți crea un cont nou oricând la {frontend_url}. Acesta nu va fi reconectat la datele tale vechi.",
+  "account_deleted.subject": "Contul tău Splex a fost șters",
+  "account_deleted.unexpected": "Dacă nu ai cerut această ștergere, contactează imediat administratorul Splex.",
+  "footer_ignore": "Dacă nu tu ai făcut asta, poți ignora acest email.",
+  "magic.expiry": "Acest link și acest cod expiră în {minutes_valid} minute.",
+  "magic.instructions": "Folosește acest link sau codul de mai jos pentru a te autentifica.",
+  "retention_warning.body": "Contul Splex pentru {email} este inactiv de ceva timp.",
+  "retention_warning.cta": "Autentifică-te pentru a-mi păstra contul",
+  "retention_warning.date": "Data ștergerii: {deletion_date}",
+  "retention_warning.immediate": "Dacă vrei să ștergi contul imediat, autentifică-te și deschide setările contului.",
+  "retention_warning.subject": "Contul tău Splex va fi șters în curând",
+  "retention_warning.summary": "Dacă nu faci nimic, profilul tău, datele de autentificare și dispozitivele tale vor fi eliminate. Grupurile cu un singur membru vor fi șterse; cheltuielile partajate vor rămâne ca utilizator neînregistrat."
+}

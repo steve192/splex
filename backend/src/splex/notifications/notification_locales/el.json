@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} σας υπενθυμίζει να εξοφλήσετε {amount} {currency} στο {context}.",
+  "reminder.settle.friend": "{actor} σας υπενθυμίζει να εξοφλήσετε {amount} {currency}.",
+  "reminder.track_expense": "{actor} σας υπενθυμίζει να προσθέσετε τα έξοδα που λείπουν στο {context}.",
+  "reminder.track_expense.friend": "{actor} σας υπενθυμίζει να προσθέσετε τα κοινά έξοδα που λείπουν."
+}

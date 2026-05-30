@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Le compte Splex associé à {email} a été supprimé définitivement. Votre profil, vos identifiants de connexion et vos appareils ont été supprimés.",
+  "account_deleted.history": "Vos anciennes dépenses partagées restent visibles afin que les autres personnes puissent toujours comprendre les soldes.",
+  "account_deleted.recreate": "Vous pouvez créer un nouveau compte à tout moment sur {frontend_url}. Il ne sera pas reconnecté à vos anciennes données.",
+  "account_deleted.subject": "Votre compte Splex a été supprimé",
+  "account_deleted.unexpected": "Si vous n’avez pas demandé cette suppression, contactez immédiatement votre administrateur Splex.",
+  "footer_ignore": "Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet e-mail.",
+  "magic.expiry": "Ce lien et ce code expirent dans {minutes_valid} minutes.",
+  "magic.instructions": "Utilisez ce lien ou le code ci-dessous pour vous connecter.",
+  "retention_warning.body": "Le compte Splex associé à {email} est inactif depuis un certain temps.",
+  "retention_warning.cta": "Me connecter pour conserver mon compte",
+  "retention_warning.date": "Date de suppression : {deletion_date}",
+  "retention_warning.immediate": "Si vous voulez supprimer le compte tout de suite, connectez-vous et ouvrez les paramètres de votre compte.",
+  "retention_warning.subject": "Votre compte Splex sera bientôt supprimé",
+  "retention_warning.summary": "Si vous ne faites rien, votre profil, vos identifiants de connexion et vos appareils seront supprimés. Les groupes ne contenant que vous seront supprimés ; les dépenses partagées resteront visibles sous la forme d’un utilisateur non inscrit."
+}

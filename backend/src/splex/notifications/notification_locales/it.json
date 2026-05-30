@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} ti ricorda di saldare {amount} {currency} in {context}.",
+  "reminder.settle.friend": "{actor} ti ricorda di saldare {amount} {currency}.",
+  "reminder.track_expense": "{actor} ti ricorda di aggiungere le spese mancanti in {context}.",
+  "reminder.track_expense.friend": "{actor} ti ricorda di aggiungere le spese condivise mancanti."
+}

@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} emlékeztet, hogy rendezd a(z) {amount} {currency} összeget itt: {context}.",
+  "reminder.settle.friend": "{actor} emlékeztet, hogy rendezd a(z) {amount} {currency} összeget.",
+  "reminder.track_expense": "{actor} emlékeztet, hogy add hozzá a hiányzó kiadásokat itt: {context}.",
+  "reminder.track_expense.friend": "{actor} emlékeztet, hogy add hozzá a hiányzó közös kiadásokat."
+}

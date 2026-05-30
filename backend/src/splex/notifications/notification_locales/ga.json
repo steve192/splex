@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "Cuireann {actor} i gcuimhne duit {amount} {currency} a shocrú in {context}.",
+  "reminder.settle.friend": "Cuireann {actor} i gcuimhne duit {amount} {currency} a shocrú.",
+  "reminder.track_expense": "Cuireann {actor} i gcuimhne duit na costais atá in easnamh in {context} a chur leis.",
+  "reminder.track_expense.friend": "Cuireann {actor} i gcuimhne duit na costais chomhroinnte atá in easnamh a chur leis."
+}

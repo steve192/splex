@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from splex.accounts.email_copy import build_email_content
 from splex.accounts.models import MagicLoginChallenge
 from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.services import get_or_create_user_participant
@@ -16,22 +17,38 @@ from splex.participants.services import get_or_create_user_participant
 MAGIC_LOGIN_VALID_MINUTES = 15
 
 
-def _send_template_email(*, subject, recipient, template_base, context):
+def _build_template_email(*, recipient, template_base, context, locale):
     """Render a paired .txt + .html template and dispatch as a multipart email."""
-    text_body = render_to_string(f"emails/{template_base}.txt", context)
-    html_body = render_to_string(f"emails/{template_base}.html", context)
+    email_context = dict(context)
+    email_context.update(build_email_content(template_base, locale, context))
+    text_body = render_to_string(f"emails/{template_base}.txt", email_context)
+    html_body = render_to_string(f"emails/{template_base}.html", email_context)
     message = EmailMultiAlternatives(
-        subject=subject,
+        subject=email_context['subject'],
         body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[recipient],
     )
     message.attach_alternative(html_body, "text/html")
+    return message
+
+
+def _send_template_email(*, recipient, template_base, context, locale):
+    message = _build_template_email(
+        recipient=recipient,
+        template_base=template_base,
+        context=context,
+        locale=locale,
+    )
     message.send(fail_silently=False)
 
 
-def request_magic_login(email: str, invite_token: str = ""):
+def request_magic_login(email: str, invite_token: str = "", locale: str = ""):
     email = email.strip().lower()
+    user_locale = locale.strip()
+    existing_user = get_user_model().objects.filter(email=email).only('locale').first()
+    if not user_locale and existing_user is not None:
+        user_locale = existing_user.locale or ''
     with transaction.atomic():
         MagicLoginChallenge.objects.filter(
             email=email,
@@ -43,7 +60,6 @@ def request_magic_login(email: str, invite_token: str = ""):
         query["inviteToken"] = invite_token
     magic_url = f"{settings.FRONTEND_PUBLIC_URL}/login/magic?{urlencode(query)}"
     _send_template_email(
-        subject="Your Splex login code",
         recipient=email,
         template_base="magic_login",
         context={
@@ -51,6 +67,7 @@ def request_magic_login(email: str, invite_token: str = ""):
             "magic_url": magic_url,
             "minutes_valid": MAGIC_LOGIN_VALID_MINUTES,
         },
+        locale=user_locale,
     )
     return challenge
 
@@ -125,15 +142,15 @@ def authenticate_with_google(*, id_token: str):
     if not email:
         raise ValueError("No email address in Google token.")
 
-    User = get_user_model()
+    user_model = get_user_model()
     if not settings.ALLOW_REGISTRATION:
         try:
-            user = User.objects.get(email=email)
+            user = user_model.objects.get(email=email)
             created = False
-        except User.DoesNotExist:
+        except user_model.DoesNotExist:
             raise ValueError("Registration is disabled on this server.")
     else:
-        user, created = User.objects.get_or_create(
+        user, created = user_model.objects.get_or_create(
             email=email,
             defaults={"display_name": payload.get("name", email.split("@")[0])},
         )
@@ -144,15 +161,15 @@ def authenticate_with_google(*, id_token: str):
 
 
 def consume_challenge(challenge):
-    User = get_user_model()
+    user_model = get_user_model()
     if not settings.ALLOW_REGISTRATION:
         try:
-            user = User.objects.get(email=challenge.email)
+            user = user_model.objects.get(email=challenge.email)
             created = False
-        except User.DoesNotExist:
+        except user_model.DoesNotExist:
             raise ValueError("Registration is disabled on this server.")
     else:
-        user, created = User.objects.get_or_create(
+        user, created = user_model.objects.get_or_create(
             email=challenge.email,
             defaults={"display_name": challenge.email.split("@")[0]},
         )
@@ -173,7 +190,6 @@ def delete_account(*, actor) -> None:
     if email:
         try:
             _send_template_email(
-                subject="Your Splex account has been deleted",
                 recipient=email,
                 template_base="account_deleted",
                 context={
@@ -181,6 +197,7 @@ def delete_account(*, actor) -> None:
                     "display_name": display_name,
                     "frontend_url": settings.FRONTEND_PUBLIC_URL,
                 },
+                locale=actor.locale,
             )
         except Exception:
             # Best-effort: account is already gone; don't surface mail errors to the API.

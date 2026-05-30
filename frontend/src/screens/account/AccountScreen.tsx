@@ -8,6 +8,7 @@ import { AccountStackParamList } from "../../application/navigationTypes";
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { getLocaleLabel, Locale, SUPPORTED_LOCALES } from "../../shared/i18n/locale";
 import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
 import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { appVersionLabel } from "../../shared/lib/appVersion";
@@ -26,6 +27,18 @@ import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
+
+import { isDeleteConfirmationMatch } from './accountHelpers';
+
+type PushToggleProps = Readonly<{
+  value: boolean;
+  disabled: boolean;
+  onValueChange: (value: boolean) => void;
+}>;
+
+const PushToggle = ({ value, disabled, onValueChange }: PushToggleProps) => (
+  <Switch value={value} onValueChange={onValueChange} disabled={disabled} />
+);
 
 export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
@@ -58,12 +71,12 @@ export function AccountScreen() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const deleteKeyword = t("account.deleteAccountKeyword");
-  const deleteEnabled = deleteConfirm.trim().toUpperCase() === deleteKeyword.toUpperCase();
+  const deleteEnabled = isDeleteConfirmationMatch(deleteConfirm, deleteKeyword, locale);
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
-  const languageOptions: SelectionOption<"de" | "en">[] = [
-    { value: "de", label: t("account.languageGerman") },
-    { value: "en", label: t("account.languageEnglish") }
-  ];
+  const languageOptions: SelectionOption<Locale>[] = SUPPORTED_LOCALES.map((value) => ({
+    value,
+    label: getLocaleLabel(value)
+  }));
   const themeOptions: SelectionOption<ThemeMode>[] = [
     { value: "system", label: t("account.themeSystem") },
     { value: "light", label: t("account.themeLight") },
@@ -71,6 +84,7 @@ export function AccountScreen() {
   ];
   const selectedThemeLabel =
     themeOptions.find((option) => option.value === themeMode)?.label ?? t("account.themeSystem");
+  const selectedLocaleLabel = getLocaleLabel(locale);
 
   useEffect(() => {
     getLocalPushPreference().then((pref) => setPushOn(pref === "on"));
@@ -100,6 +114,11 @@ export function AccountScreen() {
     setPushBusy(false);
   }
 
+  const renderPushToggle = useCallback(
+    () => <PushToggle value={pushOn} onValueChange={togglePush} disabled={pushBusy} />,
+    [pushBusy, pushOn]
+  );
+
   async function handleLocationTrackingToggle(enabled: boolean) {
     setLocationTrackingEnabled(enabled);
     await saveFields({ location_tracking_enabled: enabled });
@@ -116,7 +135,7 @@ export function AccountScreen() {
     saveFields({ default_currency: next });
   }
 
-  function handleLocaleSelect(next: "de" | "en") {
+  function handleLocaleSelect(next: Locale) {
     setLocale(next);
     saveFields({ locale: next });
   }
@@ -174,16 +193,14 @@ export function AccountScreen() {
             {t("account.defaultCurrency")}: {currency}
           </Button>
           <Button mode="elevated" onPress={() => setLanguageSheetOpen(true)}>
-            {t("account.language")}: {locale === "de" ? t("account.languageGerman") : t("account.languageEnglish")}
+            {t("account.language")}: {selectedLocaleLabel}
           </Button>
           <Button mode="elevated" onPress={() => setThemeSheetOpen(true)}>
             {t("account.theme")}: {selectedThemeLabel}
           </Button>
           <List.Item
             title={t("notifications.deviceToggle")}
-            right={() => (
-              <Switch value={pushOn} onValueChange={togglePush} disabled={pushBusy} />
-            )}
+            right={renderPushToggle}
           />
           {pushHelper ? <HelperText type="info">{pushHelper}</HelperText> : null}
           {pushStatus === "error" && pushError ? (
@@ -279,6 +296,7 @@ export function AccountScreen() {
         visible={languageSheetOpen}
         title={t("account.language")}
         options={languageOptions}
+        searchable
         value={locale}
         onSelect={handleLocaleSelect}
         onDismiss={() => setLanguageSheetOpen(false)}

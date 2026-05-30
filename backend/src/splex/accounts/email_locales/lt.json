@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex paskyra, susieta su {email}, buvo visam laikui ištrinta. Jūsų profilis, prisijungimo duomenys ir įrenginiai buvo pašalinti.",
+  "account_deleted.history": "Ankstesnės bendros išlaidos liks matomos, kad kiti žmonės vis dar galėtų suprasti balansus.",
+  "account_deleted.recreate": "Bet kada galite susikurti naują paskyrą adresu {frontend_url}. Ji nebus vėl susieta su jūsų senais duomenimis.",
+  "account_deleted.subject": "Jūsų Splex paskyra buvo ištrinta",
+  "account_deleted.unexpected": "Jei neprašėte šio ištrynimo, nedelsdami susisiekite su savo Splex administratoriumi.",
+  "footer_ignore": "Jei tai buvote ne jūs, galite nekreipti dėmesio į šį laišką.",
+  "magic.expiry": "Ši nuoroda ir kodas nustos galioti po {minutes_valid} minučių.",
+  "magic.instructions": "Prisijunkite naudodami šią nuorodą arba toliau pateiktą kodą.",
+  "retention_warning.body": "Splex paskyra, susieta su {email}, jau kurį laiką yra neaktyvi.",
+  "retention_warning.cta": "Prisijungti, kad išsaugočiau paskyrą",
+  "retention_warning.date": "Ištrynimo data: {deletion_date}",
+  "retention_warning.immediate": "Jei norite ištrinti paskyrą iš karto, prisijunkite ir atidarykite paskyros nustatymus.",
+  "retention_warning.subject": "Jūsų Splex paskyra netrukus bus ištrinta",
+  "retention_warning.summary": "Jei nieko nedarysite, jūsų profilis, prisijungimo duomenys ir įrenginiai bus pašalinti. Vieno nario grupės bus ištrintos, o bendros išlaidos liks kaip neregistruotas naudotojas."
+}

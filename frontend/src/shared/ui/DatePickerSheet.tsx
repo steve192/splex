@@ -1,6 +1,7 @@
 import { DatePickerModal } from "react-native-paper-dates";
 
 import { useI18n } from "../i18n/I18nContext";
+import { getDatePickerLocale } from "../i18n/locale";
 
 function parseDate(value?: string): Date {
   if (!value) return new Date();
@@ -18,18 +19,18 @@ export function DatePickerSheet({
   title,
   onSelect,
   onDismiss
-}: {
+}: Readonly<{
   visible: boolean;
   value?: string;
   title: string;
   onSelect: (value: string) => void;
   onDismiss: () => void;
-}) {
+}>) {
   const { locale, t } = useI18n();
 
   return (
     <DatePickerModal
-      locale={locale === "de" ? "de" : "en"}
+      locale={getDatePickerLocale(locale)}
       mode="single"
       visible={visible}
       date={parseDate(value)}

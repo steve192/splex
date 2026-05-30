@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} reminds you to settle {amount} {currency} in {context}.",
+  "reminder.settle.friend": "{actor} reminds you to settle {amount} {currency}.",
+  "reminder.track_expense": "{actor} reminds you to add any missing expenses in {context}.",
+  "reminder.track_expense.friend": "{actor} reminds you to add any missing shared expenses."
+}

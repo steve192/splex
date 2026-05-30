@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "{email} için Splex hesabı kalıcı olarak silindi. Profiliniz, giriş bilgileriniz ve cihazlarınız kaldırıldı.",
+  "account_deleted.history": "Geçmiş ortak harcamalarınız, diğer kişilerin bakiyeleri anlayabilmesi için görünür kalır.",
+  "account_deleted.recreate": "{frontend_url} adresinde istediğiniz zaman yeni bir hesap oluşturabilirsiniz. Eski verilerinizle yeniden bağlanmaz.",
+  "account_deleted.subject": "Splex hesabınız silindi",
+  "account_deleted.unexpected": "Bu silme işlemini siz istemediyseniz hemen Splex yöneticinizle iletişime geçin.",
+  "footer_ignore": "Bu işlem size ait değilse bu e-postayı yok sayabilirsiniz.",
+  "magic.expiry": "Bu bağlantı ve kod {minutes_valid} dakika içinde geçerliliğini yitirir.",
+  "magic.instructions": "Giriş yapmak için bu bağlantıyı veya aşağıdaki kodu kullanın.",
+  "retention_warning.body": "{email} için Splex hesabı bir süredir etkin değil.",
+  "retention_warning.cta": "Hesabımı korumak için giriş yap",
+  "retention_warning.date": "Silinme tarihi: {deletion_date}",
+  "retention_warning.immediate": "Hesabı hemen silmek istiyorsanız giriş yapın ve hesap ayarlarını açın.",
+  "retention_warning.subject": "Splex hesabınız yakında silinecek",
+  "retention_warning.summary": "Hiçbir şey yapmazsanız profiliniz, giriş bilgileriniz ve cihazlarınız kaldırılır. Tek üyeli gruplar silinir; ortak harcamalar kayıtlı olmayan bir kullanıcı olarak kalır."
+}

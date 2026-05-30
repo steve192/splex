@@ -41,6 +41,7 @@ class PaymentMethodUpdateSerializer(serializers.Serializer):
 class MagicLinkRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     invite_token = serializers.CharField(required=False, allow_blank=True)
+    locale = serializers.CharField(max_length=8, required=False, allow_blank=True)
 
 
 class MagicCodeVerifySerializer(serializers.Serializer):

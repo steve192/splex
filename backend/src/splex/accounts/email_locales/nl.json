@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Het Splex-account voor {email} is permanent verwijderd. Je profiel, inloggegevens en apparaten zijn verwijderd.",
+  "account_deleted.history": "Je eerdere gedeelde uitgaven blijven zichtbaar, zodat anderen de saldi kunnen blijven begrijpen.",
+  "account_deleted.recreate": "Je kunt op elk moment een nieuw account aanmaken op {frontend_url}. Het wordt niet opnieuw gekoppeld aan je oude gegevens.",
+  "account_deleted.subject": "Je Splex-account is verwijderd",
+  "account_deleted.unexpected": "Als je deze verwijdering niet hebt aangevraagd, neem dan direct contact op met je Splex-beheerder.",
+  "footer_ignore": "Als jij dit niet was, kun je deze e-mail negeren.",
+  "magic.expiry": "Deze link en code verlopen over {minutes_valid} minuten.",
+  "magic.instructions": "Gebruik deze link of onderstaande code om in te loggen.",
+  "retention_warning.body": "Het Splex-account voor {email} is al een tijdje inactief.",
+  "retention_warning.cta": "Inloggen om mijn account te behouden",
+  "retention_warning.date": "Verwijderdatum: {deletion_date}",
+  "retention_warning.immediate": "Als je het account meteen wilt verwijderen, log dan in en open je accountinstellingen.",
+  "retention_warning.subject": "Je Splex-account wordt binnenkort verwijderd",
+  "retention_warning.summary": "Als je niets doet, worden je profiel, inloggegevens en apparaten verwijderd. Groepen met alleen jou worden verwijderd; gedeelde uitgaven blijven zichtbaar als niet-geregistreerde gebruiker."
+}

@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Scriosadh an cuntas Splex do {email} go buan. Baineadh do phróifíl, do shonraí logála isteach agus do ghléasanna.",
+  "account_deleted.history": "Fanfaidh na costais chomhroinnte a bhí agat roimhe seo le feiceáil ionas go mbeidh na hiarmhéideanna intuigthe ag daoine eile fós.",
+  "account_deleted.recreate": "Is féidir leat cuntas nua a chruthú am ar bith ag {frontend_url}. Ní nascfar arís é le do sheanshonraí.",
+  "account_deleted.subject": "Scriosadh do chuntas Splex",
+  "account_deleted.unexpected": "Mura ndearna tú an scriosadh seo a iarraidh, déan teagmháil láithreach le riarthóir do Splex.",
+  "footer_ignore": "Murab é tusa a rinne é seo, is féidir neamhaird a dhéanamh den ríomhphost seo.",
+  "magic.expiry": "Rachaidh an nasc agus an cód seo in éag i gceann {minutes_valid} nóiméad.",
+  "magic.instructions": "Úsáid an nasc seo nó an cód thíos chun síniú isteach.",
+  "retention_warning.body": "Tá an cuntas Splex do {email} neamhghníomhach le tamall anuas.",
+  "retention_warning.cta": "Sínigh isteach chun mo chuntas a choinneáil",
+  "retention_warning.date": "Dáta scriosta: {deletion_date}",
+  "retention_warning.immediate": "Más mian leat an cuntas a scriosadh láithreach, sínigh isteach agus oscail socruithe do chuntais.",
+  "retention_warning.subject": "Scriosfar do chuntas Splex go luath",
+  "retention_warning.summary": "Mura ndéanann tú faic, bainfear do phróifíl, do shonraí logála isteach agus do ghléasanna. Scriosfar grúpaí aonair; fanfaidh costais chomhroinnte mar úsáideoir neamhchláraithe."
+}

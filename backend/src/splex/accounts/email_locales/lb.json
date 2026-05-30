@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "De Splex-Konto fir {email} gouf dauerhaft geläscht. Däi Profil, deng Umeldungsdaten an deng Apparater goufen ewechgeholl.",
+  "account_deleted.history": "Deng fréier gedeelt Ausgabe bleiwen siichtbar, sou datt aner Leit d’Saldë weider verstoe kënnen.",
+  "account_deleted.recreate": "Du kanns zu all Ament op {frontend_url} en neie Konto erstellen. Hie gëtt net erëm mat deng alen Date verbonnen.",
+  "account_deleted.subject": "Däi Splex-Konto gouf geläscht",
+  "account_deleted.unexpected": "Wanns du dës Läschtung net ugefrot hues, kontaktéier direkt däi Splex-Administrator.",
+  "footer_ignore": "Wann dat net vun dir koum, kanns du dës E-Mail ignoréieren.",
+  "magic.expiry": "Dëse Link an dëse Code lafen an {minutes_valid} Minutten of.",
+  "magic.instructions": "Benotz dëse Link oder de Code hei drënner, fir dech unzemellen.",
+  "retention_warning.body": "De Splex-Konto fir {email} ass schonn zanter enger Zäit inaktiv.",
+  "retention_warning.cta": "Umellen, fir mäi Konto ze behalen",
+  "retention_warning.date": "Läschdatum: {deletion_date}",
+  "retention_warning.immediate": "Wanns du de Konto direkt läsche wëlls, mell dech un an maach deng Kontastellungen op.",
+  "retention_warning.subject": "Däi Splex-Konto gëtt geschwënn geläscht",
+  "retention_warning.summary": "Wanns du näischt méchs, ginn däi Profil, deng Umeldungsdaten an deng Apparater ewechgeholl. Gruppen, an deenen s du eleng bass, ginn geläscht; gedeelt Ausgabe bleiwen als net registréierte Benotzer bestoen."
+}

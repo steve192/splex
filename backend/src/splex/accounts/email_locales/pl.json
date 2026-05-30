@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Konto Splex dla {email} zostało trwale usunięte. Twój profil, dane logowania i urządzenia zostały usunięte.",
+  "account_deleted.history": "Twoje wcześniejsze wspólne wydatki pozostają widoczne, aby inne osoby nadal mogły zrozumieć salda.",
+  "account_deleted.recreate": "W każdej chwili możesz utworzyć nowe konto na {frontend_url}. Nie zostanie ono ponownie połączone z Twoimi starymi danymi.",
+  "account_deleted.subject": "Twoje konto Splex zostało usunięte",
+  "account_deleted.unexpected": "Jeśli nie zlecałeś tego usunięcia, natychmiast skontaktuj się z administratorem Splex.",
+  "footer_ignore": "Jeśli to nie Ty, możesz zignorować tę wiadomość.",
+  "magic.expiry": "Ten link i kod wygasną za {minutes_valid} minut.",
+  "magic.instructions": "Użyj tego linku lub poniższego kodu, aby się zalogować.",
+  "retention_warning.body": "Konto Splex dla {email} jest nieaktywne już od pewnego czasu.",
+  "retention_warning.cta": "Zaloguj się, aby zachować konto",
+  "retention_warning.date": "Data usunięcia: {deletion_date}",
+  "retention_warning.immediate": "Jeśli chcesz usunąć konto od razu, zaloguj się i otwórz ustawienia konta.",
+  "retention_warning.subject": "Twoje konto Splex wkrótce zostanie usunięte",
+  "retention_warning.summary": "Jeśli nic nie zrobisz, Twój profil, dane logowania i urządzenia zostaną usunięte. Grupy jednoosobowe zostaną usunięte, a wspólne wydatki pozostaną jako niezarejestrowany użytkownik."
+}

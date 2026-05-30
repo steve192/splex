@@ -14,6 +14,7 @@
 - Helpers should handle their own `None`/empty inputs. Don't make every caller write `helper(x) if x else ""`.
 - Preserve existing project conventions before adding new patterns.
 - Keep user-facing text translatable. Do not hard-code UI strings in components.
+- During implementation, only English and German copy are maintained actively. Other locale files may lag and must fall back to English for any missing keys.
 - Use typed, structured data instead of ad hoc string parsing where reasonable.
 - Handle loading, empty, error, and success states explicitly for user-facing flows.
 - Do not introduce cloud-only infrastructure requirements unless explicitly requested.

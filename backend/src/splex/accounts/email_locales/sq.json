@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Llogaria Splex për {email} është fshirë përgjithmonë. Profili juaj, të dhënat e hyrjes dhe pajisjet tuaja janë hequr.",
+  "account_deleted.history": "Shpenzimet tuaja të mëparshme të përbashkëta mbeten të dukshme që të tjerët të vazhdojnë t’i kuptojnë balancat.",
+  "account_deleted.recreate": "Mund të krijoni një llogari të re në çdo kohë te {frontend_url}. Ajo nuk do të lidhet sërish me të dhënat tuaja të vjetra.",
+  "account_deleted.subject": "Llogaria juaj Splex është fshirë",
+  "account_deleted.unexpected": "Nëse nuk e keni kërkuar këtë fshirje, kontaktoni menjëherë administratorin tuaj të Splex.",
+  "footer_ignore": "Nëse kjo nuk ishit ju, mund ta shpërfillni këtë email.",
+  "magic.expiry": "Kjo lidhje dhe ky kod skadojnë pas {minutes_valid} minutash.",
+  "magic.instructions": "Përdorni këtë lidhje ose kodin më poshtë për t’u hyrë.",
+  "retention_warning.body": "Llogaria Splex për {email} ka qenë joaktive prej një kohe.",
+  "retention_warning.cta": "Hyr për të mbajtur llogarinë time",
+  "retention_warning.date": "Data e fshirjes: {deletion_date}",
+  "retention_warning.immediate": "Nëse doni ta fshini llogarinë menjëherë, hyni dhe hapni cilësimet e llogarisë.",
+  "retention_warning.subject": "Llogaria juaj Splex do të fshihet së shpejti",
+  "retention_warning.summary": "Nëse nuk bëni asgjë, profili juaj, të dhënat e hyrjes dhe pajisjet tuaja do të hiqen. Grupet me një anëtar do të fshihen; shpenzimet e përbashkëta do të mbeten si përdorues i paregjistruar."
+}

@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} გახსენებთ, რომ {context}-ში გაასწოროთ {amount} {currency}.",
+  "reminder.settle.friend": "{actor} გახსენებთ, რომ გაასწოროთ {amount} {currency}.",
+  "reminder.track_expense": "{actor} გახსენებთ, რომ {context}-ში დაამატოთ გამოტოვებული ხარჯები.",
+  "reminder.track_expense.friend": "{actor} გახსენებთ, რომ დაამატოთ გამოტოვებული საერთო ხარჯები."
+}

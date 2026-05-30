@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Ratio Splex pro {email} in perpetuum deleta est. Profilum tuum, documenta aditum praebentia atque machinamenta tua removentur.",
+  "account_deleted.history": "Sumptus tui communes pristini manent visibiles, ut staterae aliis intellegibiles permaneant.",
+  "account_deleted.recreate": "Novam rationem quovis tempore apud {frontend_url} creare potes. Ea cum veteribus tuis datis iterum non coniungetur.",
+  "account_deleted.subject": "Ratio tua Splex deleta est",
+  "account_deleted.unexpected": "Si hanc deletionem non postulasti, statim administratorem Splex tuum continge.",
+  "footer_ignore": "Si tu hoc non fecisti, hanc inscriptionem electronicam neglegere potes.",
+  "magic.expiry": "Hic nexus et hic codex intra {minutes_valid} minuta exspirant.",
+  "magic.instructions": "Utere hoc nexu aut codice infra scripto ut in rationem ingrediaris.",
+  "retention_warning.body": "Ratio Splex pro {email} iam aliquamdiu otiosa est.",
+  "retention_warning.cta": "Ingredere ut rationem meam serves",
+  "retention_warning.date": "Dies deletionis: {deletion_date}",
+  "retention_warning.immediate": "Si rationem statim delere vis, ingredere et rationis tuae occasus aperi.",
+  "retention_warning.subject": "Ratio tua Splex mox delebitur",
+  "retention_warning.summary": "Si nihil facis, profilum tuum, documenta aditus atque machinamenta tua removebuntur. Circuli unius membri delebuntur; sumptus communes manebunt velut usor non adscriptus."
+}

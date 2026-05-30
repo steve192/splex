@@ -1,0 +1,16 @@
+{
+  "account_deleted.body": "Splex-aðganginum fyrir {email} hefur verið eytt varanlega. Prófíllinn þinn, innskráningarupplýsingar og tæki hafa verið fjarlægð.",
+  "account_deleted.history": "Fyrri sameiginleg útgjöld þín halda sér sýnileg svo aðrir geti enn skilið stöðuna.",
+  "account_deleted.recreate": "Þú getur búið til nýjan aðgang hvenær sem er á {frontend_url}. Hann verður ekki tengdur aftur við gömlu gögnin þín.",
+  "account_deleted.subject": "Splex-aðganginum þínum hefur verið eytt",
+  "account_deleted.unexpected": "Ef þú baðst ekki um þessa eyðingu skaltu hafa strax samband við Splex-stjórnandann þinn.",
+  "footer_ignore": "Ef þetta varst ekki þú geturðu hunsað þennan tölvupóst.",
+  "magic.expiry": "Þessi hlekkur og kóði renna út eftir {minutes_valid} mínútur.",
+  "magic.instructions": "Notaðu þennan hlekk eða kóðann hér að neðan til að skrá þig inn.",
+  "retention_warning.body": "Splex-aðgangurinn fyrir {email} hefur verið óvirkur um nokkurt skeið.",
+  "retention_warning.cta": "Skrá inn til að halda aðgangnum mínum",
+  "retention_warning.date": "Eyðingardagur: {deletion_date}",
+  "retention_warning.immediate": "Ef þú vilt eyða aðgangnum strax skaltu skrá þig inn og opna stillingar aðgangsins.",
+  "retention_warning.subject": "Splex-aðganginum þínum verður eytt bráðlega",
+  "retention_warning.summary": "Ef þú gerir ekkert verða prófíllinn þinn, innskráningarupplýsingar og tæki fjarlægð. Hópar með einum meðlim verða eyddir; sameiginleg útgjöld verða áfram sýnileg sem óskráður notandi."
+}

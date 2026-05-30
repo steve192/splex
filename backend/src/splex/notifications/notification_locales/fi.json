@@ -1,0 +1,6 @@
+{
+  "reminder.settle": "{actor} muistuttaa sinua tasaamaan {amount} {currency} kohteessa {context}.",
+  "reminder.settle.friend": "{actor} muistuttaa sinua tasaamaan {amount} {currency}.",
+  "reminder.track_expense": "{actor} muistuttaa sinua lisäämään puuttuvat kulut kohteessa {context}.",
+  "reminder.track_expense.friend": "{actor} muistuttaa sinua lisäämään puuttuvat yhteiset kulut."
+}

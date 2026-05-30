@@ -127,6 +127,7 @@ class MagicLinkRequestView(APIView):
         request_magic_login(
             serializer.validated_data["email"],
             invite_token=serializer.validated_data.get("invite_token", ""),
+            locale=serializer.validated_data.get("locale", ""),
         )
         return Response({"status": "sent"})
 

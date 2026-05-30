@@ -10,6 +10,7 @@ import { appImages } from "../../shared/assets/images";
 import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
 import { consumeGoogleOAuthResponse } from "../../shared/auth/googleOAuthWeb";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { detectDeviceLocale } from "../../shared/i18n/locale";
 import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
 
@@ -97,10 +98,11 @@ export function LoginScreen({ route }: Props) {
     inviteDebug("magic link request started");
     setLoading(true);
     try {
+      const requestLocale = detectDeviceLocale();
       const inviteToken =
         inviteTokenFromCurrentUrl() || (await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY));
       inviteDebug("magic link request using invite token", { hasInviteToken: Boolean(inviteToken) });
-      await requestMagicLink(email, inviteToken || undefined);
+      await requestMagicLink(email, inviteToken || undefined, requestLocale);
       setLoginRequested(true);
       setCode("");
       setMessage(t("auth.sent"));
