@@ -19,6 +19,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { PaymentMethod } from "../../shared/types/models";
+import { KeyboardAvoidingDialog } from "../../shared/ui/KeyboardAvoidingDialog";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -135,7 +136,7 @@ export function PaymentMethodsScreen() {
       </Card>
       <HelperText type="info">{t("paymentMethods.preferredHint")}</HelperText>
       <Portal>
-        <Dialog
+        <KeyboardAvoidingDialog
           visible={add.visible}
           onDismiss={() => setAdd(EMPTY_ADD_STATE)}
         >
@@ -178,7 +179,7 @@ export function PaymentMethodsScreen() {
               {t("common.save")}
             </Button>
           </Dialog.Actions>
-        </Dialog>
+        </KeyboardAvoidingDialog>
       </Portal>
       <Snackbar
         visible={!!snackbar}

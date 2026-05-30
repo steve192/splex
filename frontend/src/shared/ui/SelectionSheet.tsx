@@ -94,7 +94,7 @@ export function SelectionSheet<T extends string | number>(props: SelectionSheetP
               style={styles.searchbarInSheet}
             />
           ) : null}
-          <ScrollView keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.sheetScroll} keyboardShouldPersistTaps="handled">
             {filteredOptions.length ? (
               filteredOptions.map((option) => (
                 <View key={String(option.value)}>

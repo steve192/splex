@@ -145,6 +145,11 @@ export const styles = StyleSheet.create({
   },
   contentWidth: {
     alignSelf: "center",
+    // flexShrink lets the wrapper stay within a bounded parent (e.g. a bottom
+    // sheet with maxHeight) so its scrollable child can shrink and scroll
+    // instead of pushing the header out of the sheet. It has no effect inside a
+    // vertical ScrollView (the normal Screen case), where height is unbounded.
+    flexShrink: 1,
     gap: 16,
     maxWidth: 960,
     width: "100%"
@@ -224,6 +229,11 @@ export const styles = StyleSheet.create({
   searchbarInSheet: {
     marginBottom: 8,
     marginTop: 8
+  },
+  // Bounds a sheet's scrollable list so it scrolls internally rather than
+  // pushing the sheet's fixed header (title, search) off-screen on long lists.
+  sheetScroll: {
+    flexShrink: 1
   },
   suggestionList: {
     gap: 4,

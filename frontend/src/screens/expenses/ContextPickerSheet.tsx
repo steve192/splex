@@ -75,7 +75,7 @@ export function ContextPickerSheet({
             placeholder={t("expense.searchContext")}
             style={styles.searchbarInSheet}
           />
-          <ScrollView keyboardShouldPersistTaps="handled">
+          <ScrollView style={styles.sheetScroll} keyboardShouldPersistTaps="handled">
             {!groups.length && !friends.length ? (
               <Text variant="bodyMedium">{t("expense.noContexts")}</Text>
             ) : (

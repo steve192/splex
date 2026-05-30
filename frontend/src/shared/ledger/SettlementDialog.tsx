@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Linking, View } from "react-native";
 import { Button, Dialog, List, Text, TextInput, useTheme } from "react-native-paper";
 
+import { KeyboardAvoidingDialog } from "../ui/KeyboardAvoidingDialog";
+
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
 import { CURRENCIES } from "../lib/currencies";
@@ -109,7 +111,7 @@ export function SettlementDialog({
 
   return (
     <>
-      <Dialog visible={visible} onDismiss={onDismiss}>
+      <KeyboardAvoidingDialog visible={visible} onDismiss={onDismiss}>
         <Dialog.Title>{t("settlement.title")}</Dialog.Title>
         <Dialog.Content>
           {target ? (
@@ -164,7 +166,7 @@ export function SettlementDialog({
             {t("settlement.save")}
           </Button>
         </Dialog.Actions>
-      </Dialog>
+      </KeyboardAvoidingDialog>
       <SelectionSheet
         visible={visible && currencySheetOpen}
         title={t("expense.currency")}
