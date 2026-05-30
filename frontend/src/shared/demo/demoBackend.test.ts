@@ -14,7 +14,7 @@ import { DemoWriteBlockedError, onDemoWriteBlocked } from "./demoMode";
 describe("demoBackend GET", () => {
   it("returns the demo user for /api/me/", async () => {
     const user = await handleDemoRequest<{ email: string }>("GET", "/api/me/");
-    expect(user.email).toBe("demo@splex.app");
+    expect(user.email).toBe("demo@splex.sterul.com");
   });
 
   it("returns overview items", async () => {

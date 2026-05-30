@@ -21,9 +21,10 @@ function matchInt(part: string): number | null {
 
 export function handleDemoRequest<T>(method: Method, fullPath: string): Promise<T> {
   const path = pathOnly(fullPath);
+  const query = fullPath.slice(path.length);
 
   if (method === "GET") {
-    const result = handleGet(path);
+    const result = handleGet(path, query);
     if (result !== undefined) return Promise.resolve(result as T);
   }
 
@@ -72,13 +73,18 @@ const STATIC_GET_RESPONSES: Record<string, () => unknown> = {
     rates: { USD: "1.08", GBP: "0.86", EUR: "1.00" }
   }),
   "/api/notifications/config/": () => ({ web_push_enabled: false, vapid_public_key: "" }),
-  "/api/expenses/location-suggestions/": () => ({ suggestions: [] })
+  "/api/expenses/location-suggestions/": () => ({ suggestions: [] }),
+  "/api/me/payment-methods/": () => demoFixtures.paymentMethods
 };
 
-function handleGroupSubpath(groupId: number, segments: string[]): unknown {
+function handleGroupSubpath(groupId: number, segments: string[], query: string): unknown {
   if (segments.length === 3) return groupDetail(groupId);
   const tail = segments.slice(3).join("/");
-  if (tail === "balances") return demoFixtures.balancesByGroup[groupId] ?? [];
+  if (tail === "balances") {
+    const simplified = /[?&]simplified=true\b/.test(query);
+    const source = simplified ? demoFixtures.balancesByGroupSimplified : demoFixtures.balancesByGroup;
+    return source[groupId] ?? [];
+  }
   if (tail === "statistics") return statisticsForGroup(groupId);
   if (tail === "expenses") return demoFixtures.expensesByGroup[groupId] ?? [];
   if (tail === "ledger") {
@@ -91,17 +97,19 @@ function handleGroupSubpath(groupId: number, segments: string[]): unknown {
 }
 
 function handleFriendSubpath(friendId: number, segments: string[]): unknown {
-  if (segments.length === 3) return demoFixtures.friendship;
+  if (segments.length === 3) return demoFixtures.friendshipById[friendId] ?? demoFixtures.friendship;
   const tail = segments.slice(3).join("/");
   if (tail === "expenses") return demoFixtures.expensesByFriend[friendId] ?? [];
   if (tail === "ledger") {
     return { results: demoFixtures.ledgerByFriend[friendId] ?? [], next_offset: null };
   }
-  if (tail === "statistics") return demoFixtures.statisticsFriend;
+  if (tail === "statistics") {
+    return demoFixtures.statisticsByFriend[friendId] ?? demoFixtures.statisticsFriend;
+  }
   return undefined;
 }
 
-function handleGet(path: string): unknown {
+function handleGet(path: string, query: string): unknown {
   const staticResponse = STATIC_GET_RESPONSES[path];
   if (staticResponse) return staticResponse();
 
@@ -110,10 +118,13 @@ function handleGet(path: string): unknown {
   const resource = segments[1];
   const id = matchInt(segments[2] ?? "");
 
-  if (resource === "groups" && id !== null) return handleGroupSubpath(id, segments);
+  if (resource === "groups" && id !== null) return handleGroupSubpath(id, segments, query);
   if (resource === "friends" && id !== null) return handleFriendSubpath(id, segments);
   if (resource === "expenses" && id !== null) return demoFixtures.expensesById[id];
   if (resource === "settlements" && id !== null) return demoFixtures.settlementsById[id];
+  if (resource === "participants" && id !== null && segments[3] === "preferred-payment-method") {
+    return demoFixtures.preferredPaymentMethodByParticipant[id] ?? null;
+  }
   if (resource === "invitations") return { valid: false };
 
   return undefined;

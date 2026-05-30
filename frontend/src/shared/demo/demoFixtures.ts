@@ -1,12 +1,18 @@
 /**
- * Canned, read-only demo data. Every response is a static fixture that matches
- * the shape returned by the real backend. No business logic is reimplemented
- * here - balances, statistics, etc. are all precomputed values.
+ * Canned, read-only demo data. Every response matches the shape returned by the
+ * real backend.
+ *
+ * The source of truth is the expense + settlement fixtures. Derived figures
+ * (group/friend balances, overview totals, statistics) are computed from those
+ * via small helpers that mirror the backend's algorithms, so the demo can never
+ * show numbers that contradict its own ledger. This intentionally duplicates a
+ * little backend logic (the real implementation lives server-side in Python and
+ * isn't importable here).
  */
 
 export const DEMO_USER = {
   id: 1,
-  email: "demo@splex.app",
+  email: "demo@splex.sterul.com",
   display_name: "Demo User",
   default_currency: "EUR",
   avatar_url: "",
@@ -48,6 +54,13 @@ const PARTICIPANT_CARLA = {
   display_name: "Carla",
   kind: "registered",
   user_id: 3,
+  avatar_url: ""
+};
+const PARTICIPANT_DANA = {
+  id: 104,
+  display_name: "Dana",
+  kind: "registered",
+  user_id: 4,
   avatar_url: ""
 };
 
@@ -109,6 +122,22 @@ const GROUP_PARTICIPANTS = {
   [ARCHIVED_GROUP.id]: ARCHIVED_PARTICIPANTS
 };
 
+type ExpenseOptions = {
+  latitude?: number;
+  longitude?: number;
+  approximate_location?: string;
+  /** Settlement currency (applies to converted + owed/payment amounts, and to
+   * the original amount unless overridden below). Defaults to EUR. */
+  currency?: string;
+  /** Set together to model an expense entered in a foreign currency that was
+   * converted into ``currency`` for splitting. */
+  original_amount?: string;
+  original_currency?: string;
+  split_method?: string;
+  split_payload?: Record<string, unknown>;
+  receipts?: Array<ReturnType<typeof receipt>>;
+};
+
 function expense(
   id: number,
   ctx: { group_id?: number | null; friendship_id?: number | null },
@@ -117,8 +146,9 @@ function expense(
   date: string,
   payer: { id: number; name: string },
   owed: Array<{ id: number; name: string; amount: string }>,
-  options: { latitude?: number; longitude?: number; approximate_location?: string } = {}
+  options: ExpenseOptions = {}
 ) {
+  const currency = options.currency ?? "EUR";
   return {
     id,
     client_id: "",
@@ -126,12 +156,12 @@ function expense(
     friendship_id: ctx.friendship_id ?? null,
     description,
     date,
-    original_amount: amount,
-    original_currency: "EUR",
+    original_amount: options.original_amount ?? amount,
+    original_currency: options.original_currency ?? currency,
     converted_amount: amount,
-    converted_currency: "EUR",
-    split_method: "equal_all",
-    split_payload: {},
+    converted_currency: currency,
+    split_method: options.split_method ?? "equal_all",
+    split_payload: options.split_payload ?? {},
     latitude: options.latitude ?? null,
     longitude: options.longitude ?? null,
     approximate_location: options.approximate_location ?? null,
@@ -144,7 +174,25 @@ function expense(
       display_name: row.name,
       avatar_url: "",
       amount: row.amount
-    }))
+    })),
+    receipts: options.receipts ?? []
+  };
+}
+
+function receipt(
+  id: number,
+  expenseId: number,
+  filename: string,
+  options: { content_type?: string; size_bytes?: number; created_at?: string } = {}
+) {
+  return {
+    id,
+    expense_id: expenseId,
+    original_filename: filename,
+    content_type: options.content_type ?? "image/jpeg",
+    size_bytes: options.size_bytes ?? 248_000,
+    created_at: options.created_at ?? `${TODAY}T18:05:00Z`,
+    uploaded_by_id: PARTICIPANT_ME.user_id
   };
 }
 
@@ -161,7 +209,12 @@ const TRIP_EXPENSES = [
       { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name, amount: "40.00" },
       { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name, amount: "40.00" }
     ],
-    { latitude: 41.9028, longitude: 12.4964, approximate_location: "Rome, Italy" }
+    {
+      latitude: 41.9028,
+      longitude: 12.4964,
+      approximate_location: "Rome, Italy",
+      receipts: [receipt(5001, 2001, "trattoria-receipt.jpg")]
+    }
   ),
   expense(
     2002,
@@ -188,6 +241,69 @@ const TRIP_EXPENSES = [
       { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name, amount: "15.00" },
       { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name, amount: "15.00" }
     ]
+  ),
+  // Multi-currency: paid in USD on the trip, converted to EUR for splitting.
+  expense(
+    2004,
+    { group_id: TRIP_GROUP.id },
+    "Souvenirs",
+    "30.00",
+    LAST_WEEK,
+    { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "10.00" },
+      { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name, amount: "10.00" },
+      { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name, amount: "10.00" }
+    ],
+    { original_amount: "32.40", original_currency: "USD" }
+  ),
+  // Exact split: everyone owes a hand-entered amount.
+  expense(
+    2005,
+    { group_id: TRIP_GROUP.id },
+    "Boat tour",
+    "100.00",
+    LAST_WEEK,
+    { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "50.00" },
+      { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name, amount: "30.00" },
+      { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name, amount: "20.00" }
+    ],
+    {
+      split_method: "exact",
+      split_payload: {
+        shares: [
+          { participant_id: PARTICIPANT_ME.id, amount: "50.00" },
+          { participant_id: PARTICIPANT_ALEX.id, amount: "30.00" },
+          { participant_id: PARTICIPANT_BEN.id, amount: "20.00" }
+        ]
+      }
+    }
+  ),
+  // Percentage split: 40 / 30 / 30 of the hotel bill.
+  expense(
+    2006,
+    { group_id: TRIP_GROUP.id },
+    "Hotel",
+    "300.00",
+    LAST_MONTH,
+    { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "120.00" },
+      { id: PARTICIPANT_ALEX.id, name: PARTICIPANT_ALEX.display_name, amount: "90.00" },
+      { id: PARTICIPANT_BEN.id, name: PARTICIPANT_BEN.display_name, amount: "90.00" }
+    ],
+    {
+      split_method: "percentage",
+      split_payload: {
+        shares: [
+          { participant_id: PARTICIPANT_ME.id, percentage: "40" },
+          { participant_id: PARTICIPANT_ALEX.id, percentage: "30" },
+          { participant_id: PARTICIPANT_BEN.id, percentage: "30" }
+        ]
+      }
+    }
   )
 ];
 
@@ -215,6 +331,40 @@ const FLAT_EXPENSES = [
       { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "20.00" },
       { id: PARTICIPANT_CARLA.id, name: PARTICIPANT_CARLA.display_name, amount: "20.00" }
     ]
+  ),
+  // Adjusted-equal: split equally, then Carla covers 10 extra (she used more).
+  expense(
+    2103,
+    { group_id: FLAT_GROUP.id },
+    "Electricity",
+    "80.00",
+    LAST_MONTH,
+    { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "35.00" },
+      { id: PARTICIPANT_CARLA.id, name: PARTICIPANT_CARLA.display_name, amount: "45.00" }
+    ],
+    {
+      split_method: "adjusted_equal",
+      split_payload: {
+        participant_ids: [PARTICIPANT_ME.id, PARTICIPANT_CARLA.id],
+        adjustments: [{ participant_id: PARTICIPANT_CARLA.id, amount: "10.00" }]
+      }
+    }
+  ),
+  // Equal between a selected subset (here only Carla is on the hook).
+  expense(
+    2104,
+    { group_id: FLAT_GROUP.id },
+    "Carla's parking fine",
+    "25.00",
+    YESTERDAY,
+    { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name },
+    [{ id: PARTICIPANT_CARLA.id, name: PARTICIPANT_CARLA.display_name, amount: "25.00" }],
+    {
+      split_method: "equal_selected",
+      split_payload: { participant_ids: [PARTICIPANT_CARLA.id] }
+    }
   )
 ];
 
@@ -251,8 +401,39 @@ const EXPENSES_BY_GROUP = {
   [ARCHIVED_GROUP.id]: []
 };
 
+// A second friend kept entirely in USD, to exercise non-EUR formatting.
+const DANA_FRIEND_EXPENSES = [
+  expense(
+    2301,
+    { friendship_id: 3002 },
+    "Lunch",
+    "24.00",
+    LAST_WEEK,
+    { id: PARTICIPANT_DANA.id, name: PARTICIPANT_DANA.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "12.00" },
+      { id: PARTICIPANT_DANA.id, name: PARTICIPANT_DANA.display_name, amount: "12.00" }
+    ],
+    { currency: "USD" }
+  ),
+  expense(
+    2302,
+    { friendship_id: 3002 },
+    "Cinema",
+    "30.00",
+    LAST_MONTH,
+    { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name },
+    [
+      { id: PARTICIPANT_ME.id, name: PARTICIPANT_ME.display_name, amount: "15.00" },
+      { id: PARTICIPANT_DANA.id, name: PARTICIPANT_DANA.display_name, amount: "15.00" }
+    ],
+    { currency: "USD" }
+  )
+];
+
 const EXPENSES_BY_FRIEND: Record<number, typeof FRIEND_EXPENSES> = {
-  3001: FRIEND_EXPENSES
+  3001: FRIEND_EXPENSES,
+  3002: DANA_FRIEND_EXPENSES
 };
 
 const ALL_EXPENSES_BY_ID = Object.fromEntries(
@@ -273,7 +454,8 @@ function settlement(
   payer: DemoParticipant,
   receiver: DemoParticipant,
   amount: string,
-  createdAt: string
+  createdAt: string,
+  currency = "EUR"
 ) {
   return {
     id,
@@ -286,7 +468,7 @@ function settlement(
     payer_avatar_url: "",
     receiver_avatar_url: "",
     amount,
-    currency: "EUR",
+    currency,
     kind: "manual",
     created_at: createdAt,
     deleted_at: null
@@ -315,8 +497,20 @@ const FRIEND_SETTLEMENTS = [
   )
 ];
 
+const DANA_FRIEND_SETTLEMENTS = [
+  settlement(
+    4201,
+    { friendship_id: 3002 },
+    PARTICIPANT_ME,
+    PARTICIPANT_DANA,
+    "9.00",
+    "2026-04-28T19:00:00Z",
+    "USD"
+  )
+];
+
 const ALL_SETTLEMENTS_BY_ID = Object.fromEntries(
-  [...TRIP_SETTLEMENTS, ...FRIEND_SETTLEMENTS].map((s) => [s.id, s])
+  [...TRIP_SETTLEMENTS, ...FRIEND_SETTLEMENTS, ...DANA_FRIEND_SETTLEMENTS].map((s) => [s.id, s])
 );
 
 function ledger(expenses: typeof TRIP_EXPENSES, settlements: typeof TRIP_SETTLEMENTS) {
@@ -338,8 +532,167 @@ const LEDGER_BY_GROUP = {
 };
 
 const LEDGER_BY_FRIEND: Record<number, ReturnType<typeof ledger>> = {
-  3001: ledger(FRIEND_EXPENSES, FRIEND_SETTLEMENTS)
+  3001: ledger(FRIEND_EXPENSES, FRIEND_SETTLEMENTS),
+  3002: ledger(DANA_FRIEND_EXPENSES, DANA_FRIEND_SETTLEMENTS)
 };
+
+// --- Derived balances/statistics ------------------------------------------
+// These are computed from the expense + settlement fixtures (rather than
+// hand-set) so the demo never shows numbers that contradict its own ledger.
+// The algorithm mirrors the backend: each owed share is a debt to the (single)
+// payer, settlements net it down, opposing edges cancel, and every pairwise
+// debt detail is attached to both the debtor and the creditor.
+
+type BalanceParticipant = { id: number; display_name: string; user_id: number | null };
+
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+// Greedy "net everyone out, then settle largest creditor against largest
+// debtor" reduction - the minimum set of transactions with identical net
+// positions. Mirrors the backend's simplified_debts(). Returns debtor->creditor
+// edges keyed "debtor:creditor".
+function simplifiedDebts(net: Map<string, number>): Map<string, number> {
+  const EPS = 0.005;
+  const nets = new Map<number, number>();
+  for (const [key, amount] of net) {
+    const [d, c] = key.split(":").map(Number);
+    nets.set(d, round2((nets.get(d) ?? 0) - amount));
+    nets.set(c, round2((nets.get(c) ?? 0) + amount));
+  }
+  // Deterministic ordering (largest first, lower id breaking ties) so the demo
+  // renders a stable breakdown.
+  const creditors = [...nets.entries()]
+    .filter(([, amt]) => amt > EPS)
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  const debtors = [...nets.entries()]
+    .filter(([, amt]) => amt < -EPS)
+    .sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+
+  const result = new Map<string, number>();
+  let ci = 0;
+  let di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const [creditorId, creditorAmt] = creditors[ci];
+    const [debtorId, debtorAmt] = debtors[di];
+    const pay = round2(Math.min(creditorAmt, -debtorAmt));
+    if (pay <= 0) break;
+    result.set(`${debtorId}:${creditorId}`, pay);
+    const nextCreditor = round2(creditorAmt - pay);
+    const nextDebtor = round2(debtorAmt + pay);
+    if (nextCreditor <= EPS) ci += 1;
+    else creditors[ci] = [creditorId, nextCreditor];
+    if (nextDebtor >= -EPS) di += 1;
+    else debtors[di] = [debtorId, nextDebtor];
+  }
+  return result;
+}
+
+function computeBalances(
+  participants: BalanceParticipant[],
+  expenses: ReturnType<typeof expense>[],
+  settlements: ReturnType<typeof settlement>[],
+  currency: string,
+  simplified = false
+) {
+  const debts = new Map<string, number>();
+  const addDebt = (debtor: number, creditor: number, amount: number) => {
+    if (debtor === creditor || amount === 0) return;
+    const key = `${debtor}:${creditor}`;
+    debts.set(key, round2((debts.get(key) ?? 0) + amount));
+  };
+  // Demo expenses always have a single payer, so each owed share is a straight
+  // debt from that participant to the payer.
+  for (const e of expenses) {
+    const payerId = e.payments[0].participant_id;
+    for (const owed of e.owed) addDebt(owed.participant_id, payerId, Number(owed.amount));
+  }
+  for (const s of settlements) {
+    addDebt(s.payer_participant_id, s.receiver_participant_id, -Number(s.amount));
+  }
+
+  // Net each pair down to a single direction.
+  const net = new Map<string, number>();
+  const handled = new Set<string>();
+  for (const key of debts.keys()) {
+    const [d, c] = key.split(":").map(Number);
+    const reverse = `${c}:${d}`;
+    if (handled.has(key) || handled.has(reverse)) continue;
+    handled.add(key);
+    handled.add(reverse);
+    const value = round2((debts.get(key) ?? 0) - (debts.get(reverse) ?? 0));
+    if (value > 0) net.set(`${d}:${c}`, value);
+    else if (value < 0) net.set(`${c}:${d}`, round2(-value));
+  }
+
+  const nameById = new Map(participants.map((p) => [p.id, p.display_name]));
+  const userIdById = new Map(participants.map((p) => [p.id, p.user_id]));
+
+  // Totals always come from the raw netted graph; simplification only
+  // rearranges the breakdown edges, never anyone's net position.
+  const totals = new Map<number, number>(participants.map((p) => [p.id, 0]));
+  for (const [key, amount] of net) {
+    const [d, c] = key.split(":").map(Number);
+    totals.set(d, round2((totals.get(d) ?? 0) - amount));
+    totals.set(c, round2((totals.get(c) ?? 0) + amount));
+  }
+
+  const breakdown = simplified ? simplifiedDebts(net) : net;
+  const detailsById = new Map<number, object[]>(participants.map((p) => [p.id, []]));
+  for (const [key, amount] of breakdown) {
+    const [d, c] = key.split(":").map(Number);
+    const detail = {
+      from_participant_id: d,
+      from_display_name: nameById.get(d) ?? "",
+      from_user_id: userIdById.get(d) ?? null,
+      to_participant_id: c,
+      to_display_name: nameById.get(c) ?? "",
+      to_user_id: userIdById.get(c) ?? null,
+      amount: amount.toFixed(2),
+      currency
+    };
+    detailsById.get(d)?.push(detail);
+    detailsById.get(c)?.push(detail);
+  }
+
+  return participants.map((p) => ({
+    participant_id: p.id,
+    display_name: p.display_name,
+    avatar_url: "",
+    user_id: p.user_id,
+    amount: (totals.get(p.id) ?? 0).toFixed(2),
+    currency,
+    details: detailsById.get(p.id) ?? []
+  }));
+}
+
+function meBalance(rows: ReturnType<typeof computeBalances>): string {
+  return rows.find((row) => row.participant_id === PARTICIPANT_ME.id)?.amount ?? "0.00";
+}
+
+const TRIP_BALANCES = computeBalances(TRIP_PARTICIPANTS, TRIP_EXPENSES, TRIP_SETTLEMENTS, "EUR");
+const TRIP_BALANCES_SIMPLIFIED = computeBalances(
+  TRIP_PARTICIPANTS,
+  TRIP_EXPENSES,
+  TRIP_SETTLEMENTS,
+  "EUR",
+  true
+);
+const FLAT_BALANCES = computeBalances(FLAT_PARTICIPANTS, FLAT_EXPENSES, [], "EUR");
+const FLAT_BALANCES_SIMPLIFIED = computeBalances(FLAT_PARTICIPANTS, FLAT_EXPENSES, [], "EUR", true);
+const FRIEND_BALANCES = computeBalances(
+  [PARTICIPANT_ME, PARTICIPANT_ALEX],
+  FRIEND_EXPENSES,
+  FRIEND_SETTLEMENTS,
+  "EUR"
+);
+const DANA_BALANCES = computeBalances(
+  [PARTICIPANT_ME, PARTICIPANT_DANA],
+  DANA_FRIEND_EXPENSES,
+  DANA_FRIEND_SETTLEMENTS,
+  "USD"
+);
 
 const FRIENDSHIP = {
   id: 3001,
@@ -348,13 +701,32 @@ const FRIENDSHIP = {
   participant_id: PARTICIPANT_ALEX.id,
   current_participant_id: PARTICIPANT_ME.id,
   default_currency: "EUR",
-  balance: "-13.50",
+  balance: meBalance(FRIEND_BALANCES),
   last_expense_date: YESTERDAY
 };
 
-const FRIENDS_LIST = [FRIENDSHIP];
+const FRIENDSHIP_DANA = {
+  id: 3002,
+  display_name: PARTICIPANT_DANA.display_name,
+  avatar_url: "",
+  participant_id: PARTICIPANT_DANA.id,
+  current_participant_id: PARTICIPANT_ME.id,
+  default_currency: "USD",
+  balance: meBalance(DANA_BALANCES),
+  last_expense_date: LAST_WEEK
+};
+
+const FRIENDSHIP_BY_ID: Record<number, typeof FRIENDSHIP> = {
+  [FRIENDSHIP.id]: FRIENDSHIP,
+  [FRIENDSHIP_DANA.id]: FRIENDSHIP_DANA
+};
+
+const FRIENDS_LIST = [FRIENDSHIP, FRIENDSHIP_DANA];
 
 const OVERVIEW = {
+  // The real overview endpoint returns only the user's groups (friends are
+  // listed separately via /api/friends/). Each group's balance is the user's
+  // own net position, which is exactly their row in the computed balances.
   items: [
     {
       type: "group",
@@ -362,7 +734,7 @@ const OVERVIEW = {
       name: TRIP_GROUP.name,
       icon_url: "",
       currency: "EUR",
-      balance: "70.00",
+      balance: meBalance(TRIP_BALANCES),
       archived_at: null
     },
     {
@@ -371,7 +743,7 @@ const OVERVIEW = {
       name: FLAT_GROUP.name,
       icon_url: "",
       currency: "EUR",
-      balance: "10.00",
+      balance: meBalance(FLAT_BALANCES),
       archived_at: null
     },
     {
@@ -388,162 +760,216 @@ const OVERVIEW = {
 
 const GROUPS_LIST = [TRIP_GROUP, FLAT_GROUP];
 
-const TRIP_BALANCES = [
-  {
-    participant_id: PARTICIPANT_ME.id,
-    display_name: PARTICIPANT_ME.display_name,
-    avatar_url: "",
-    amount: "70.00",
-    currency: "EUR",
-    details: [
-      {
-        from_participant_id: PARTICIPANT_ALEX.id,
-        from_display_name: PARTICIPANT_ALEX.display_name,
-        to_participant_id: PARTICIPANT_ME.id,
-        to_display_name: PARTICIPANT_ME.display_name,
-        amount: "25.00",
-        currency: "EUR"
-      },
-      {
-        from_participant_id: PARTICIPANT_BEN.id,
-        from_display_name: PARTICIPANT_BEN.display_name,
-        to_participant_id: PARTICIPANT_ME.id,
-        to_display_name: PARTICIPANT_ME.display_name,
-        amount: "45.00",
-        currency: "EUR"
-      }
-    ]
-  },
-  {
-    participant_id: PARTICIPANT_ALEX.id,
-    display_name: PARTICIPANT_ALEX.display_name,
-    avatar_url: "",
-    amount: "-25.00",
-    currency: "EUR",
-    details: []
-  },
-  {
-    participant_id: PARTICIPANT_BEN.id,
-    display_name: PARTICIPANT_BEN.display_name,
-    avatar_url: "",
-    amount: "-45.00",
-    currency: "EUR",
-    details: []
-  }
-];
-
-const FLAT_BALANCES = [
-  {
-    participant_id: PARTICIPANT_ME.id,
-    display_name: PARTICIPANT_ME.display_name,
-    avatar_url: "",
-    amount: "10.00",
-    currency: "EUR",
-    details: [
-      {
-        from_participant_id: PARTICIPANT_CARLA.id,
-        from_display_name: PARTICIPANT_CARLA.display_name,
-        to_participant_id: PARTICIPANT_ME.id,
-        to_display_name: PARTICIPANT_ME.display_name,
-        amount: "10.00",
-        currency: "EUR"
-      }
-    ]
-  },
-  {
-    participant_id: PARTICIPANT_CARLA.id,
-    display_name: PARTICIPANT_CARLA.display_name,
-    avatar_url: "",
-    amount: "-10.00",
-    currency: "EUR",
-    details: []
-  }
-];
-
 const BALANCES_BY_GROUP: Record<number, typeof TRIP_BALANCES> = {
   [TRIP_GROUP.id]: TRIP_BALANCES,
   [FLAT_GROUP.id]: FLAT_BALANCES,
   [ARCHIVED_GROUP.id]: []
 };
 
-function statisticsFor(label: string, totalAmount: string) {
+// Breakdown shown when the user flips the "simplify balances" toggle. Net totals
+// are identical to BALANCES_BY_GROUP; only the who-pays-whom edges differ.
+const BALANCES_BY_GROUP_SIMPLIFIED: Record<number, typeof TRIP_BALANCES> = {
+  [TRIP_GROUP.id]: TRIP_BALANCES_SIMPLIFIED,
+  [FLAT_GROUP.id]: FLAT_BALANCES_SIMPLIFIED,
+  [ARCHIVED_GROUP.id]: []
+};
+
+type ExpenseFixture = ReturnType<typeof expense>;
+
+function isoWeekday(dateStr: string): number {
+  // JS getUTCDay() is 0=Sun..6=Sat; the UI labels weekdays Mon=0..Sun=6.
+  return (new Date(`${dateStr}T00:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+// Mirror of the backend's statistics aggregation, so the figures always agree
+// with the expense fixtures they're built from.
+function computeStatistics(
+  expenses: ExpenseFixture[],
+  participants: BalanceParticipant[],
+  currency: string,
+  latestMonth: string
+) {
+  const nameById = new Map(participants.map((p) => [p.id, p.display_name]));
+  const total = round2(expenses.reduce((sum, e) => sum + Number(e.converted_amount), 0));
+  const count = expenses.length;
+  const sortedDates = expenses.map((e) => e.date).sort();
+  const firstDate = sortedDates[0] ?? null;
+  const lastDate = sortedDates[sortedDates.length - 1] ?? null;
+  const average = count ? round2(total / count) : 0;
+
+  let spendPerWeek = 0;
+  if (count && firstDate && lastDate && total > 0) {
+    const spanDays =
+      Math.max(0, Math.round((Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000)) + 1;
+    const weeks = spanDays / 7;
+    if (weeks > 0) spendPerWeek = round2(total / weeks);
+  }
+
+  // currency_breakdown is grouped by the *original* (entered) currency.
+  const byOriginalCurrency = new Map<string, { total: number; count: number }>();
+  for (const e of expenses) {
+    const row = byOriginalCurrency.get(e.original_currency) ?? { total: 0, count: 0 };
+    row.total = round2(row.total + Number(e.original_amount));
+    row.count += 1;
+    byOriginalCurrency.set(e.original_currency, row);
+  }
+  const currencyBreakdown = [...byOriginalCurrency.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([cur, row]) => ({ currency: cur, total: row.total.toFixed(2), count: row.count }));
+
+  // 12 months ending at latestMonth, like the backend's rolling window.
+  const byMonth = new Map<string, number>();
+  for (const e of expenses) {
+    const key = e.date.slice(0, 7);
+    byMonth.set(key, round2((byMonth.get(key) ?? 0) + Number(e.converted_amount)));
+  }
+  let [year, month] = latestMonth.split("-").map(Number);
+  const monthly: Array<{ month: string; total: string }> = [];
+  for (let i = 0; i < 12; i += 1) {
+    const key = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+    monthly.push({ month: `${key}-01`, total: (byMonth.get(key) ?? 0).toFixed(2) });
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+  monthly.reverse();
+
+  const paidById = new Map<number, number>();
+  const shareById = new Map<number, number>();
+  for (const e of expenses) {
+    for (const p of e.payments) {
+      paidById.set(p.participant_id, round2((paidById.get(p.participant_id) ?? 0) + Number(p.amount)));
+    }
+    for (const o of e.owed) {
+      shareById.set(o.participant_id, round2((shareById.get(o.participant_id) ?? 0) + Number(o.amount)));
+    }
+  }
+  const contributions = participants
+    .map((p) => ({
+      participant_id: p.id,
+      display_name: p.display_name,
+      paid: (paidById.get(p.id) ?? 0).toFixed(2),
+      share: (shareById.get(p.id) ?? 0).toFixed(2)
+    }))
+    .sort((a, b) => Number(b.paid) - Number(a.paid));
+
+  const descBuckets = new Map<string, { display: string; count: number; total: number }>();
+  for (const e of expenses) {
+    const key = e.description.trim().toLowerCase();
+    if (!key) continue;
+    const bucket = descBuckets.get(key) ?? { display: e.description.trim(), count: 0, total: 0 };
+    bucket.count += 1;
+    bucket.total = round2(bucket.total + Number(e.converted_amount));
+    descBuckets.set(key, bucket);
+  }
+  const topDescriptions = [...descBuckets.values()]
+    .sort((a, b) => b.count - a.count || b.total - a.total)
+    .slice(0, 8)
+    .map((b) => ({ description: b.display, count: b.count, total: b.total.toFixed(2) }));
+
+  const biggestExpenses = [...expenses]
+    .sort((a, b) => Number(b.converted_amount) - Number(a.converted_amount))
+    .slice(0, 5)
+    .map((e) => ({
+      id: e.id,
+      description: e.description,
+      amount: Number(e.original_amount).toFixed(2),
+      currency: e.original_currency,
+      converted_amount: Number(e.converted_amount).toFixed(2),
+      converted_currency: e.converted_currency,
+      date: e.date
+    }));
+
+  const locations = [...expenses]
+    .filter((e) => e.latitude != null && e.longitude != null)
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((e) => ({
+      id: e.id,
+      description: e.description,
+      latitude: e.latitude as number,
+      longitude: e.longitude as number,
+      amount: Number(e.original_amount).toFixed(2),
+      currency: e.original_currency,
+      date: e.date
+    }));
+
+  const dowTotals = Array.from({ length: 7 }, () => 0);
+  const dowCounts = Array.from({ length: 7 }, () => 0);
+  for (const e of expenses) {
+    const idx = isoWeekday(e.date);
+    dowTotals[idx] = round2(dowTotals[idx] + Number(e.converted_amount));
+    dowCounts[idx] += 1;
+  }
+  const dayOfWeek = dowTotals.map((t, i) => ({ weekday: i, count: dowCounts[i], total: t.toFixed(2) }));
+
+  // pair_stats: for each (payer, beneficiary) pair, how much the payer covered.
+  const pairs = new Map<string, { payer: number; beneficiary: number; count: number; amount: number }>();
+  for (const e of expenses) {
+    const payerId = e.payments[0].participant_id;
+    for (const o of e.owed) {
+      if (o.participant_id === payerId) continue;
+      const key = `${payerId}:${o.participant_id}`;
+      const row = pairs.get(key) ?? { payer: payerId, beneficiary: o.participant_id, count: 0, amount: 0 };
+      row.count += 1;
+      row.amount = round2(row.amount + Number(o.amount));
+      pairs.set(key, row);
+    }
+  }
+  const pairStats = [...pairs.values()]
+    .sort((a, b) => b.amount - a.amount || b.count - a.count)
+    .slice(0, 10)
+    .map((row) => ({
+      payer_id: row.payer,
+      payer_name: nameById.get(row.payer) ?? "",
+      beneficiary_id: row.beneficiary,
+      beneficiary_name: nameById.get(row.beneficiary) ?? "",
+      count: row.count,
+      amount: row.amount.toFixed(2)
+    }));
+
   return {
     summary: {
-      currency: "EUR",
-      total_amount: totalAmount,
-      expense_count: 3,
-      average_amount: "85.00",
-      first_expense_date: LAST_WEEK,
-      last_expense_date: TODAY,
-      spend_per_week: totalAmount,
-      currency_breakdown: [{ currency: "EUR", total: totalAmount, count: 3 }]
+      currency,
+      total_amount: total.toFixed(2),
+      expense_count: count,
+      average_amount: average.toFixed(2),
+      first_expense_date: firstDate,
+      last_expense_date: lastDate,
+      spend_per_week: spendPerWeek.toFixed(2),
+      currency_breakdown: currencyBreakdown
     },
-    monthly: [
-      { month: "2026-04", total: "45.00" },
-      { month: "2026-05", total: totalAmount }
-    ],
-    contributions: [
-      {
-        participant_id: PARTICIPANT_ME.id,
-        display_name: `${PARTICIPANT_ME.display_name} (${label})`,
-        paid: "165.00",
-        share: "85.00"
-      },
-      {
-        participant_id: PARTICIPANT_ALEX.id,
-        display_name: PARTICIPANT_ALEX.display_name,
-        paid: "90.00",
-        share: "85.00"
-      }
-    ],
-    top_descriptions: [
-      { description: "Dinner", count: 1, total: "120.00" },
-      { description: "Train tickets", count: 1, total: "90.00" },
-      { description: "Museum tickets", count: 1, total: "45.00" }
-    ],
-    biggest_expenses: [
-      {
-        id: 2001,
-        description: "Dinner in Rome",
-        amount: "120.00",
-        currency: "EUR",
-        converted_amount: "120.00",
-        converted_currency: "EUR",
-        date: TODAY
-      }
-    ],
-    locations: [
-      {
-        id: 2001,
-        description: "Dinner in Rome",
-        latitude: 41.9028,
-        longitude: 12.4964,
-        amount: "120.00",
-        currency: "EUR",
-        date: TODAY
-      }
-    ],
-    day_of_week: [
-      { weekday: 0, count: 1, total: "45.00" },
-      { weekday: 4, count: 1, total: "90.00" },
-      { weekday: 5, count: 1, total: "120.00" }
-    ],
-    pair_stats: [
-      {
-        payer_id: PARTICIPANT_ME.id,
-        payer_name: PARTICIPANT_ME.display_name,
-        beneficiary_id: PARTICIPANT_ALEX.id,
-        beneficiary_name: PARTICIPANT_ALEX.display_name,
-        count: 2,
-        amount: "55.00"
-      }
-    ]
+    monthly,
+    contributions,
+    top_descriptions: topDescriptions,
+    biggest_expenses: biggestExpenses,
+    locations,
+    day_of_week: dayOfWeek,
+    pair_stats: pairStats
   };
 }
 
-const STATS_TRIP = statisticsFor("Trip", "255.00");
-const STATS_FLAT = statisticsFor("Flat", "100.00");
-const STATS_FRIEND = statisticsFor("Friend", "83.00");
+const CURRENT_MONTH = TODAY.slice(0, 7);
+const STATS_TRIP = computeStatistics(TRIP_EXPENSES, TRIP_PARTICIPANTS, "EUR", CURRENT_MONTH);
+const STATS_FLAT = computeStatistics(FLAT_EXPENSES, FLAT_PARTICIPANTS, "EUR", CURRENT_MONTH);
+const STATS_FRIEND = computeStatistics(
+  FRIEND_EXPENSES,
+  [PARTICIPANT_ME, PARTICIPANT_ALEX],
+  "EUR",
+  CURRENT_MONTH
+);
+const STATS_FRIEND_DANA = computeStatistics(
+  DANA_FRIEND_EXPENSES,
+  [PARTICIPANT_ME, PARTICIPANT_DANA],
+  "USD",
+  CURRENT_MONTH
+);
+
+const STATS_BY_FRIEND: Record<number, ReturnType<typeof computeStatistics>> = {
+  [FRIENDSHIP.id]: STATS_FRIEND,
+  [FRIENDSHIP_DANA.id]: STATS_FRIEND_DANA
+};
 
 const ACTIVITY_EVENTS = [
   {
@@ -605,6 +1031,81 @@ const ACTIVITY_EVENTS = [
     friendship_id: null,
     expense_id: null,
     settlement_id: null
+  },
+  {
+    id: 9005,
+    event_type: "expense.created",
+    actor: PARTICIPANT_DANA.display_name,
+    actor_avatar_url: "",
+    payload: { description: "Lunch", amount: "24.00", currency: "USD" },
+    subject_name: "",
+    created_at: `${LAST_WEEK}T13:00:00Z`,
+    context_type: "friend",
+    context_name: PARTICIPANT_DANA.display_name,
+    group_id: null,
+    friendship_id: FRIENDSHIP_DANA.id,
+    expense_id: 2301,
+    settlement_id: null
+  },
+  {
+    id: 9006,
+    event_type: "expense.updated",
+    actor: PARTICIPANT_ALEX.display_name,
+    actor_avatar_url: "",
+    payload: { description: "Hotel", amount: "300.00", currency: "EUR" },
+    subject_name: "",
+    created_at: `${YESTERDAY}T09:30:00Z`,
+    context_type: "group",
+    context_name: TRIP_GROUP.name,
+    group_id: TRIP_GROUP.id,
+    friendship_id: null,
+    expense_id: 2006,
+    settlement_id: null
+  },
+  {
+    id: 9007,
+    event_type: "group.member_added",
+    actor: PARTICIPANT_ME.display_name,
+    actor_avatar_url: "",
+    payload: {},
+    subject_name: PARTICIPANT_BEN.display_name,
+    created_at: "2026-04-02T11:00:00Z",
+    context_type: "group",
+    context_name: TRIP_GROUP.name,
+    group_id: TRIP_GROUP.id,
+    friendship_id: null,
+    expense_id: null,
+    settlement_id: null
+  },
+  {
+    id: 9008,
+    event_type: "expense.deleted",
+    actor: PARTICIPANT_CARLA.display_name,
+    actor_avatar_url: "",
+    payload: { description: "Duplicate groceries", amount: "12.00", currency: "EUR" },
+    subject_name: "",
+    created_at: `${LAST_MONTH}T16:00:00Z`,
+    context_type: "group",
+    context_name: FLAT_GROUP.name,
+    group_id: FLAT_GROUP.id,
+    friendship_id: null,
+    expense_id: null,
+    settlement_id: null
+  },
+  {
+    id: 9009,
+    event_type: "settlement.created",
+    actor: PARTICIPANT_ME.display_name,
+    actor_avatar_url: "",
+    payload: { fromName: PARTICIPANT_ME.display_name, toName: PARTICIPANT_DANA.display_name, amount: "9.00", currency: "USD" },
+    subject_name: "",
+    created_at: "2026-04-28T19:00:00Z",
+    context_type: "friend",
+    context_name: PARTICIPANT_DANA.display_name,
+    group_id: null,
+    friendship_id: FRIENDSHIP_DANA.id,
+    expense_id: null,
+    settlement_id: 4201
   }
 ];
 
@@ -612,6 +1113,71 @@ const PARTICIPANT_OUTSTANDING_EMPTY = {
   currency: "EUR",
   owes: [],
   owed_by: []
+};
+
+// Payment methods (Account > Payment methods) and the per-participant preferred
+// method that powers the "Pay with PayPal" button in the settle dialog.
+type DemoPaymentMethod = {
+  id: number;
+  kind: "paypal_handle" | "paypal_email";
+  identifier: string;
+  is_preferred: boolean;
+  display: string;
+  url: string;
+  pre_fills_recipient: boolean;
+};
+
+// Handles are deliberately non-real, sandbox-looking strings so the demo never
+// deep-links into a stranger's actual paypal.me page.
+const PAYMENT_METHODS: DemoPaymentMethod[] = [
+  {
+    id: 6001,
+    kind: "paypal_handle",
+    identifier: "splexdemo-me-x7f3a9",
+    is_preferred: true,
+    display: "paypal.me/splexdemo-me-x7f3a9",
+    url: "https://www.paypal.com/paypalme/splexdemo-me-x7f3a9",
+    pre_fills_recipient: true
+  },
+  {
+    id: 6002,
+    kind: "paypal_email",
+    identifier: "demo@splex.sterul.com",
+    is_preferred: false,
+    display: "demo@splex.sterul.com",
+    url: "https://www.paypal.com/myaccount/transfer/homepage/pay",
+    pre_fills_recipient: false
+  }
+];
+
+const PREFERRED_PAYMENT_METHOD_BY_PARTICIPANT: Record<number, DemoPaymentMethod> = {
+  [PARTICIPANT_ALEX.id]: {
+    id: 6101,
+    kind: "paypal_handle",
+    identifier: "splexdemo-alex-a4k2p9",
+    is_preferred: true,
+    display: "paypal.me/splexdemo-alex-a4k2p9",
+    url: "https://www.paypal.com/paypalme/splexdemo-alex-a4k2p9",
+    pre_fills_recipient: true
+  },
+  [PARTICIPANT_CARLA.id]: {
+    id: 6102,
+    kind: "paypal_email",
+    identifier: "carla@splex.sterul.com",
+    is_preferred: true,
+    display: "carla@splex.sterul.com",
+    url: "https://www.paypal.com/myaccount/transfer/homepage/pay",
+    pre_fills_recipient: false
+  },
+  [PARTICIPANT_DANA.id]: {
+    id: 6103,
+    kind: "paypal_handle",
+    identifier: "splexdemo-dana-d8m5q1",
+    is_preferred: true,
+    display: "paypal.me/splexdemo-dana-d8m5q1",
+    url: "https://www.paypal.com/paypalme/splexdemo-dana-d8m5q1",
+    pre_fills_recipient: true
+  }
 };
 
 export const demoFixtures = {
@@ -629,12 +1195,17 @@ export const demoFixtures = {
   ledgerByFriend: LEDGER_BY_FRIEND,
   friendsList: FRIENDS_LIST,
   friendship: FRIENDSHIP,
+  friendshipById: FRIENDSHIP_BY_ID,
   balancesByGroup: BALANCES_BY_GROUP,
+  balancesByGroupSimplified: BALANCES_BY_GROUP_SIMPLIFIED,
   statisticsTrip: STATS_TRIP,
   statisticsFlat: STATS_FLAT,
   statisticsFriend: STATS_FRIEND,
+  statisticsByFriend: STATS_BY_FRIEND,
   activityEvents: ACTIVITY_EVENTS,
-  participantOutstandingEmpty: PARTICIPANT_OUTSTANDING_EMPTY
+  participantOutstandingEmpty: PARTICIPANT_OUTSTANDING_EMPTY,
+  paymentMethods: PAYMENT_METHODS,
+  preferredPaymentMethodByParticipant: PREFERRED_PAYMENT_METHOD_BY_PARTICIPANT
 };
 
 export function groupDetail(groupId: number) {
