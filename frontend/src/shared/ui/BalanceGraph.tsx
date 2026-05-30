@@ -67,7 +67,13 @@ export function BalanceGraph({ rows }: BalanceGraphProps) {
               refY="5"
               markerWidth="6"
               markerHeight="6"
-              orient="auto-start-reverse"
+              // ``orient="auto"`` rotates the marker to follow the path's
+              // tangent at the attachment point.  The SVG 2 ``auto-start-reverse``
+              // keyword crashes on Android (react-native-svg's MarkerView
+              // tries ``Double.parseDouble("auto-start-reverse")``), and we
+              // only ever use this marker via ``markerEnd`` so the reverse
+              // semantics aren't needed.
+              orient="auto"
               markerUnits="userSpaceOnUse"
             >
               <Polygon points="0,0 10,5 0,10" fill={arrowColor} />
