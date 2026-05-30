@@ -7,12 +7,15 @@
  * enable/disable preference in AsyncStorage so toggling on one device doesn't
  * silence the others.
  *
- * Bootstrap flow (called once auth is ready):
- *   - If user has never seen the prompt and the OS permission is already
- *     granted, register silently.
- *   - If the user has explicitly disabled push on this device, do nothing.
- *   - If registration fails (e.g. revoked permission), record the failure so
- *     the Account screen can prompt the user to re-enable.
+ * Login flow (called on every login / once per launch with a stored session):
+ *   - Logging in always (re-)enables push on this device: a fresh token /
+ *     subscription is requested and registered as enabled.
+ *   - If the OS permission is still askable, the prompt is shown; if it was
+ *     permanently denied, we record that (so the Account screen can offer a
+ *     manual re-enable) but do NOT re-prompt on every login.
+ *   - A previous explicit "off" on this device is intentionally ignored at
+ *     login — the Account toggle only suppresses push until the next login.
+ *   - Demo sessions never touch the real push stack.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
@@ -156,9 +159,9 @@ export async function setDevicePushEnabled(api: ApiClient, enabled: boolean): Pr
 /**
  * Called on logout: mark this device's push token / web-push subscription as
  * disabled on the backend.  Must be called *before* the auth token is cleared
- * so the request can still authenticate.  Best-effort - never throws.  The
- * local preference is intentionally left unchanged: if the same user logs back
- * in, the bootstrap flow will re-enable the subscription automatically.
+ * so the request can still authenticate.  Best-effort - never throws.  We only
+ * mark the subscription disabled (not deleted): the next login re-registers
+ * this same token/subscription and flips it back to enabled.
  */
 export async function deregisterPushOnLogout(api: ApiClient): Promise<void> {
   try {
@@ -169,40 +172,50 @@ export async function deregisterPushOnLogout(api: ApiClient): Promise<void> {
   }
 }
 
-/** Run once on app startup. Silently re-registers if the user previously opted in. */
+/**
+ * (Re-)enable push for this device on login. Always attempts registration so a
+ * fresh login is reliably notification-enabled; see the file header for the
+ * full contract.
+ */
 export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePushState> {
-  const preference = await getLocalPushPreference();
-  if (preference === "off") {
+  if (api.isDemoMode()) {
     return { preference: "off", lastStatus: "idle" };
   }
-  // "unset" (first launch) and "on" both attempt registration, but only "unset" should be
-  // *silent* - we don't want to surprise the user with a permission prompt on first launch.
-  const silent = preference === "unset";
   try {
-    if (silent) {
-      const already = await hasPermissionAlready();
-      if (!already) {
-        return { preference: "unset", lastStatus: "idle" };
-      }
+    if ((await getPermissionDecision()) === "denied") {
+      // OS won't show the prompt again - record it for the Account screen's
+      // re-enable button instead of looping a prompt the user can't answer.
+      return { preference: "off", lastStatus: "permission_denied" };
     }
     const result = await registerForPlatform(api, true);
     await setLocalPushPreference(result.preference);
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { preference, lastStatus: "error", lastError: message };
+    console.warn("[splex:push] login registration failed", error);
+    return { preference: "off", lastStatus: "error", lastError: message };
   }
 }
 
-async function hasPermissionAlready(): Promise<boolean> {
+type PermissionDecision = "granted" | "denied" | "undetermined";
+
+/**
+ * Current OS notification-permission state, collapsed to three cases.
+ * "denied" means the OS will no longer surface the prompt (iOS after the first
+ * denial, Android after "don't ask again", web after a block), so callers must
+ * not re-prompt; "undetermined" is still askable.
+ */
+async function getPermissionDecision(): Promise<PermissionDecision> {
   if (Platform.OS === "android" || Platform.OS === "ios") {
     const Notifications = require("expo-notifications") as typeof import("expo-notifications");
     const current = await Notifications.getPermissionsAsync();
-    return current.granted;
+    if (current.granted) return "granted";
+    return current.canAskAgain ? "undetermined" : "denied";
   }
   if (Platform.OS === "web") {
-    if (typeof Notification === "undefined") return false;
-    return Notification.permission === "granted";
+    if (typeof Notification === "undefined") return "denied";
+    if (Notification.permission === "granted") return "granted";
+    return Notification.permission === "denied" ? "denied" : "undetermined";
   }
-  return false;
+  return "denied";
 }
