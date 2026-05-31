@@ -28,6 +28,7 @@ def serialize_friend(
         "default_currency": friendship.default_currency,
         "balance": str(friendship_balance_for_participant(friendship, current_participant)),
         "last_expense_date": latest_expense.date if latest_expense else None,
+        "archived_at": friendship.archived_at_for(current_participant),
     }
     if include_current:
         payload["current_participant_id"] = current_participant.id

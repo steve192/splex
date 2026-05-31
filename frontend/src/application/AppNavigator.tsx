@@ -16,6 +16,7 @@ import { LoginScreen } from "../screens/auth/LoginScreen";
 import { AddScreen } from "../screens/expenses/AddScreen";
 import { ExpenseDetailScreen } from "../screens/expenses/ExpenseDetailScreen";
 import { FriendDetailScreen } from "../screens/friends/FriendDetailScreen";
+import { FriendSettingsScreen } from "../screens/friends/FriendSettingsScreen";
 import { FriendStatisticsScreen } from "../screens/friends/FriendStatisticsScreen";
 import { CreateGroupScreen } from "../screens/groups/CreateGroupScreen";
 import { GroupDetailScreen } from "../screens/groups/GroupDetailScreen";
@@ -53,6 +54,7 @@ function OverviewStackNavigator() {
       <OverviewStack.Screen name="GroupStatistics" component={GroupStatisticsScreen} options={{ title: t("statistics.title") }} />
       <OverviewStack.Screen name="FriendStatistics" component={FriendStatisticsScreen} options={{ title: t("statistics.title") }} />
       <OverviewStack.Screen name="FriendDetail" component={FriendDetailScreen} options={{ title: t("friend.title") }} />
+      <OverviewStack.Screen name="FriendSettings" component={FriendSettingsScreen} options={{ title: t("friend.settings") }} />
       <OverviewStack.Screen name="AddExpense" component={AddScreen} options={{ title: t("expense.add") }} />
       <OverviewStack.Screen name="ExpenseDetail" component={ExpenseDetailScreen} options={{ title: t("expense.details") }} />
       <OverviewStack.Screen name="SettlementDetail" component={SettlementDetailScreen} options={{ title: t("settlement.title") }} />

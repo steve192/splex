@@ -18,6 +18,7 @@ export type OverviewStackParamList = {
   GroupSettings: { id: number };
   GroupStatistics: { id: number };
   FriendDetail: { id: number };
+  FriendSettings: { id: number };
   FriendStatistics: { id: number };
   AddExpense:
     | {

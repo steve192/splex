@@ -30,8 +30,8 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
   const [manualCopyLink, setManualCopyLink] = useState("");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
   const groups = items.filter((item) => item.type === "group" && !item.archived_at);
-  const archivedGroups = items.filter((item) => item.type === "group" && item.archived_at);
-  const friends = items.filter((item) => item.type === "friend");
+  const friends = items.filter((item) => item.type === "friend" && !item.archived_at);
+  const archivedItems = items.filter((item) => item.archived_at);
   const [showArchived, setShowArchived] = useState(false);
 
   async function load() {
@@ -49,7 +49,8 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
           name: friend.display_name,
           avatar_url: friend.avatar_url,
           currency: friend.default_currency,
-          balance: friend.balance
+          balance: friend.balance,
+          archived_at: friend.archived_at
         }))
       ]);
     } finally {
@@ -133,14 +134,14 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
           <Text variant="titleLarge">{t("overview.groups")}</Text>
           {groups.length ? groups.map(renderItem) : <Text variant="bodyMedium">{t("overview.noGroups")}</Text>}
         </View>
-        {archivedGroups.length ? (
+        {archivedItems.length ? (
           <View style={styles.listSection}>
             <List.Accordion
               title={t("overview.archived")}
               expanded={showArchived}
               onPress={() => setShowArchived((current) => !current)}
             >
-              {archivedGroups.map(renderItem)}
+              {archivedItems.map(renderItem)}
             </List.Accordion>
           </View>
         ) : null}

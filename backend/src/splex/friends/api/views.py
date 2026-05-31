@@ -8,8 +8,10 @@ from splex.expenses.services import create_expense
 from splex.friends.serializers import serialize_friend
 from splex.friends.services import (
     accessible_friendships,
+    end_friendship,
     ensure_friendship_member,
     other_participant,
+    set_friendship_archived,
 )
 from splex.groups.api.serializers import ExpenseCreateSerializer, SettlementCreateSerializer
 from splex.groups.statistics import friendship_statistics
@@ -44,6 +46,22 @@ class FriendDetailView(APIView):
         return Response(
             serialize_friend(friendship, current_participant=participant, include_current=True)
         )
+
+    def patch(self, request, friendship_id):
+        friendship, participant = ensure_friendship_member(request.user, friendship_id)
+        if "archived" in request.data:
+            set_friendship_archived(friendship, participant, bool(request.data["archived"]))
+        return Response(
+            serialize_friend(friendship, current_participant=participant, include_current=True)
+        )
+
+    def delete(self, request, friendship_id):
+        friendship, participant = ensure_friendship_member(request.user, friendship_id)
+        try:
+            end_friendship(request.user, friendship, participant)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class FriendStatisticsView(APIView):

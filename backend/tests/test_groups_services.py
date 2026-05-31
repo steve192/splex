@@ -262,6 +262,79 @@ def test_delete_group_is_idempotent():
 
 
 @pytest.mark.django_db
+def test_delete_group_blocked_while_balance_outstanding():
+    """A group cannot be deleted while a pair still owes money, mirroring friend
+    removal - deletion must never silently drop an unsettled balance."""
+    from splex.expenses.services import create_expense
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+
+    # Owner paid 20 EUR for both → Bob owes Owner 10 EUR.
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Dinner",
+            "amount": "20",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "20"}],
+        },
+    )
+
+    with pytest.raises(ValueError, match="Settle up"):
+        delete_group(actor=owner, group=group)
+
+    group.refresh_from_db()
+    assert group.deleted_at is None
+
+
+@pytest.mark.django_db
+def test_delete_group_allowed_once_settled():
+    """Once the outstanding balance is settled, deletion proceeds."""
+    from splex.expenses.services import create_expense
+    from splex.settlements.services import create_settlement
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Dinner",
+            "amount": "20",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "20"}],
+        },
+    )
+    # Bob pays Owner the 10 EUR they owe → group nets to zero.
+    create_settlement(
+        actor=owner,
+        group=group,
+        data={
+            "payer_participant_id": bob.id,
+            "receiver_participant_id": owner_p.id,
+            "amount": "10",
+            "currency": "EUR",
+        },
+    )
+
+    delete_group(actor=owner, group=group)
+
+    group.refresh_from_db()
+    assert group.deleted_at is not None
+
+
+@pytest.mark.django_db
 def test_leave_group_converts_to_placeholder_when_others_remain():
     """Leaving a group converts the leaver to an unregistered placeholder; the
     other registered member's membership stays active."""
@@ -301,6 +374,41 @@ def test_leave_group_deletes_group_for_last_member():
 
     leave_group(actor=owner, group=group)
 
+    group.refresh_from_db()
+    assert group.deleted_at is not None
+
+
+@pytest.mark.django_db
+def test_leave_group_as_last_member_succeeds_with_outstanding_placeholder_balance():
+    """The last member can always leave (which deletes the group), even with an
+    unsettled balance against an unregistered placeholder - unlike an explicit
+    delete, leaving is not gated on settling up."""
+    from splex.expenses.services import create_expense
+
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+    # Owner paid 20 for both → Bob (placeholder) owes Owner 10; group is unsettled.
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Dinner",
+            "amount": "20",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "20"}],
+        },
+    )
+
+    # An explicit delete is refused while unsettled...
+    with pytest.raises(ValueError, match="Settle up"):
+        delete_group(actor=owner, group=group)
+
+    # ...but leaving as the last member still works and deletes the group.
+    leave_group(actor=owner, group=group)
     group.refresh_from_db()
     assert group.deleted_at is not None
 

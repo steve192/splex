@@ -148,10 +148,19 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
 
 
 @transaction.atomic
-def delete_group(*, actor, group: Group) -> None:
+def delete_group(*, actor, group: Group, require_settled: bool = True) -> None:
+    # Local import avoids a circular dependency (balances.selectors imports from
+    # expenses/settlements which transitively reach back into groups).
+    from splex.balances.selectors import group_has_outstanding_balance
+
     assert_group_member(actor, group)
     if group.deleted_at:
         return
+    # Explicit deletion must be settled first (parity with friend removal), but
+    # leaving as the last member abandons the group outright - the only balances
+    # left are with unregistered placeholders, so we don't force a settle-up.
+    if require_settled and group_has_outstanding_balance(group):
+        raise ValueError("Settle up before deleting this group.")
     now = timezone.now()
     group.deleted_at = now
     if not group.archived_at:
@@ -288,7 +297,7 @@ def leave_group(*, actor, group: Group) -> None:
         participant__user__isnull=False,
     ).exists()
     if not has_other_registered_members:
-        delete_group(actor=actor, group=group)
+        delete_group(actor=actor, group=group, require_settled=False)
         return
 
     placeholder = _convert_participant_in_group(group=group, participant=participant)

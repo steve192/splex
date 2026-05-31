@@ -79,10 +79,16 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
         </View>
       ),
       headerRight: () => (
-        <IconButton
-          icon="chart-bar"
-          onPress={() => navigation.navigate("FriendStatistics", { id: friendshipId })}
-        />
+        <View style={{ flexDirection: "row" }}>
+          <IconButton
+            icon="chart-bar"
+            onPress={() => navigation.navigate("FriendStatistics", { id: friendshipId })}
+          />
+          <IconButton
+            icon="cog-outline"
+            onPress={() => navigation.navigate("FriendSettings", { id: friendshipId })}
+          />
+        </View>
       )
     });
   }, [friend, friendshipId, navigation, t]);

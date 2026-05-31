@@ -21,8 +21,27 @@ class Friendship(TimeStampedModel):
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.EXPLICIT)
     default_currency = models.CharField(max_length=3, default="EUR")
     ended_at = models.DateTimeField(null=True, blank=True)
+    # Archiving is a *personal* preference: each side decides independently
+    # whether the friend is tucked away in their own list, so it is stored
+    # per participant rather than as a single shared flag (unlike Group).
+    participant_a_archived_at = models.DateTimeField(null=True, blank=True)
+    participant_b_archived_at = models.DateTimeField(null=True, blank=True)
 
     objects = SoftDeletableManager()
+
+    def archived_at_for(self, participant):
+        return (
+            self.participant_a_archived_at
+            if self.participant_a_id == participant.id
+            else self.participant_b_archived_at
+        )
+
+    def set_archived_for(self, participant, value):
+        if self.participant_a_id == participant.id:
+            self.participant_a_archived_at = value
+            return "participant_a_archived_at"
+        self.participant_b_archived_at = value
+        return "participant_b_archived_at"
 
     class Meta:
         constraints = [

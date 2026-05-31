@@ -262,6 +262,40 @@ def delete_receipts_for_group(group: Group) -> int:
     return count
 
 
+def delete_receipts_for_expense(expense: Expense) -> int:
+    """Hard-delete every receipt attached to ``expense`` plus its on-disk file.
+
+    Used by the retention purge before a soft-deleted expense is removed for
+    good, so its receipt blobs don't outlive the row.
+    """
+    count = 0
+    for receipt in Receipt.objects.filter(expense=expense).iterator():
+        _remove_storage_blob(receipt.storage_path)
+        receipt.delete()
+        count += 1
+    if count:
+        logger.info("Deleted %s receipt(s) for expense_id=%s", count, expense.id)
+    return count
+
+
+def delete_receipts_for_friendship(friendship: Friendship) -> int:
+    """Hard-delete every receipt belonging to ``friendship`` plus its on-disk file.
+
+    Returns the number of receipts removed.  Safe to call on a friendship that
+    has no receipts.  Friendship receipts are not cleaned when a friendship is
+    merely ended (soft-deleted), so the retention purge calls this before the
+    row is removed for good.
+    """
+    count = 0
+    for receipt in Receipt.objects.filter(friendship=friendship).iterator():
+        _remove_storage_blob(receipt.storage_path)
+        receipt.delete()
+        count += 1
+    if count:
+        logger.info("Deleted %s receipt(s) for friendship_id=%s", count, friendship.id)
+    return count
+
+
 def _remove_storage_blob(path: str) -> None:
     if not path:
         return

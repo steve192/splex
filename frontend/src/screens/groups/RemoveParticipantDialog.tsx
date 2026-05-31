@@ -30,6 +30,13 @@ type RemoveParticipantDialogProps = {
   title?: string;
   confirmLabel?: string;
   extraMessage?: string;
+  /**
+   * When the action deletes the whole group (last member leaving) rather than
+   * converting the participant to a placeholder, the per-participant balance
+   * warning ("they remain as a placeholder…") is wrong, so we suppress it and
+   * rely on `extraMessage` to explain the deletion.
+   */
+  groupWillBeDeleted?: boolean;
   onDismiss(): void;
   onConfirm(): Promise<void> | void;
 };
@@ -42,6 +49,7 @@ export function RemoveParticipantDialog({
   title,
   confirmLabel,
   extraMessage,
+  groupWillBeDeleted,
   onDismiss,
   onConfirm
 }: Readonly<RemoveParticipantDialogProps>) {
@@ -71,7 +79,9 @@ export function RemoveParticipantDialog({
     };
   }, [api, groupId, target]);
 
-  const hasOutstanding = Boolean(outstanding && (outstanding.owes.length || outstanding.owed_by.length));
+  const hasOutstanding =
+    !groupWillBeDeleted &&
+    Boolean(outstanding && (outstanding.owes.length || outstanding.owed_by.length));
   // Registered users get converted into an unregistered placeholder that keeps their
   // history in the group; unregistered users have their balance auto-settled then
   // get removed outright, so the warning copy differs between the two.

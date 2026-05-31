@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
@@ -39,6 +40,42 @@ def other_participant(friendship: Friendship, current: Participant) -> Participa
         if friendship.participant_a_id == current.id
         else friendship.participant_a
     )
+
+
+def set_friendship_archived(
+    friendship: Friendship, participant: Participant, archived: bool
+) -> Friendship:
+    """Toggle the per-participant archive flag.  Archiving is personal - it only
+    affects the caller's own list, never the friend's."""
+    field = friendship.set_archived_for(participant, timezone.now() if archived else None)
+    friendship.save(update_fields=[field, "updated_at"])
+    return friendship
+
+
+def end_friendship(actor, friendship: Friendship, participant: Participant) -> Friendship:
+    """Soft-end (unfriend) a friendship for both sides.
+
+    Refuses while the pair is not settled up - we never want removal to orphan
+    money that is owed.  History is preserved via the `ended_at` soft delete, so
+    the pair can be re-friended later and their shared expenses remain intact.
+    Records a FRIEND_REMOVED activity event and notifies the other side, mirroring
+    the FRIEND_ACCEPTED event recorded when the friendship was created.
+    """
+    from splex.balances.selectors import friendship_balance_for_participant
+
+    if friendship_balance_for_participant(friendship, participant) != 0:
+        raise ValueError("Settle up before removing this friend.")
+    other = other_participant(friendship, participant)
+    friendship.ended_at = timezone.now()
+    friendship.save(update_fields=["ended_at", "updated_at"])
+    event = record_activity(
+        actor,
+        EventType.FRIEND_REMOVED,
+        friendship=friendship,
+        payload={"friendName": other.effective_display_name},
+    )
+    create_notifications_for_activity(event)
+    return friendship
 
 
 @transaction.atomic

@@ -35,6 +35,7 @@ export type Friend = {
   default_currency: string;
   balance: string;
   last_expense_date?: string | null;
+  archived_at?: string | null;
 };
 
 export type OverviewItem = {

@@ -15,6 +15,7 @@
 - Preserve existing project conventions before adding new patterns.
 - Keep user-facing text translatable. Do not hard-code UI strings in components.
 - During implementation, only English and German copy are maintained actively. Other locale files may lag and must fall back to English for any missing keys.
+- When adding or changing i18n keys, edit **only** `en.json` (the source of truth) and `de.json`. Never hand-fill the other `locales/*.json` files - and in particular never copy English text into them to satisfy the key-parity test. Leave them untouched; the translation pipeline fills them later and they fall back to English at runtime until then. Expect `locale.test.ts` parity to be red for the unmaintained locales on a feature branch; that is reconciled by the separate "add translations" step, not by you.
 - Use typed, structured data instead of ad hoc string parsing where reasonable.
 - Handle loading, empty, error, and success states explicitly for user-facing flows.
 - Do not introduce cloud-only infrastructure requirements unless explicitly requested.

@@ -20,11 +20,13 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { shareLink } from "../../shared/lib/shareLink";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
-import { Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
+import { asNumber } from "../../shared/lib/money";
+import { Friend, Group, GroupBalance, Participant, SplitMethod } from "../../shared/types/models";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
@@ -59,6 +61,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [balances, setBalances] = useState<GroupBalance[]>([]);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
@@ -85,15 +88,20 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
     group?.current_participant_id
   );
   const deleteGroupName = group?.name ?? "";
-  const deleteGroupEnabled = deleteConfirmName.trim() === deleteGroupName.trim();
+  // A group can only be deleted once it is settled up, mirroring friend
+  // removal - removal must never silently drop an unsettled balance.
+  const isSettled = !balances.some((row) => asNumber(row.amount) !== 0);
+  const deleteGroupEnabled = isSettled && deleteConfirmName.trim() === deleteGroupName.trim();
 
   async function load() {
-    const [row, friendRows] = await Promise.all([
+    const [row, friendRows, balanceRows] = await Promise.all([
       cachedGet<Group>(api, `/api/groups/${groupId}/`),
-      cachedGet<Friend[]>(api, "/api/friends/")
+      cachedGet<Friend[]>(api, "/api/friends/"),
+      cachedGet<GroupBalance[]>(api, `/api/groups/${groupId}/balances/`)
     ]);
     setGroup(row);
     setFriends(friendRows);
+    setBalances(balanceRows);
     setName(row.name);
     setCurrency(row.default_currency);
     setIconUrl(row.icon_url ?? "");
@@ -129,14 +137,26 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
 
   async function deleteCurrentGroup() {
     if (!deleteGroupEnabled) return;
-    await api.delete(`/api/groups/${groupId}/`);
+    try {
+      await api.delete(`/api/groups/${groupId}/`);
+    } catch (error) {
+      setDeleteConfirmVisible(false);
+      setSnackbar(apiErrorMessage(error, t));
+      return;
+    }
     setDeleteConfirmName("");
     setDeleteConfirmVisible(false);
     navigation.navigate("OverviewHome");
   }
 
   async function leaveCurrentGroup() {
-    await api.post(`/api/groups/${groupId}/leave/`, {});
+    try {
+      await api.post(`/api/groups/${groupId}/leave/`, {});
+    } catch (error) {
+      setLeaveConfirmVisible(false);
+      setSnackbar(apiErrorMessage(error, t));
+      return;
+    }
     setLeaveConfirmVisible(false);
     navigation.navigate("OverviewHome");
   }
@@ -315,10 +335,12 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
             <Button mode="contained-tonal" icon="logout" onPress={() => setLeaveConfirmVisible(true)}>
               {t("group.leave")}
             </Button>
+            {!isSettled ? <Text variant="bodyMedium">{t("group.deleteBlocked")}</Text> : null}
             <Button
               mode="contained-tonal"
               icon="delete-outline"
               textColor={dangerColor}
+              disabled={!isSettled}
               onPress={() => {
                 setDeleteConfirmName("");
                 setDeleteConfirmVisible(true);
@@ -346,6 +368,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
           title={t("group.leave")}
           confirmLabel={t("group.leave")}
           extraMessage={isLastActiveMember ? t("group.leaveLastMember") : t("group.leaveConfirm")}
+          groupWillBeDeleted={isLastActiveMember}
           onDismiss={() => setLeaveConfirmVisible(false)}
           onConfirm={leaveCurrentGroup}
         />

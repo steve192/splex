@@ -13,6 +13,7 @@ class EventType:
 
     FRIEND_INVITED = "friend.invited"
     FRIEND_ACCEPTED = "friend.accepted"
+    FRIEND_REMOVED = "friend.removed"
 
     INVITATION_ACCEPTED = "invitation.accepted"
 

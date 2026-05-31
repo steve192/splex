@@ -36,6 +36,7 @@ _TASKS: dict[str, int] = {
     "cleanup_links": 23,
     "cleanup_receipts": 23,
     "enforce_data_retention": 23,
+    "purge_soft_deleted": 23,
 }
 
 

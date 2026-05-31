@@ -121,6 +121,16 @@ def group_debts(group):
     return _context_debts(expenses, settlements)
 
 
+def group_has_outstanding_balance(group) -> bool:
+    """True when any pair in the group still owes money.
+
+    `group_debts` only emits positive, netted edges, so a fully settled group
+    yields an empty mapping.  Used to gate group deletion the same way friend
+    removal is gated - removal must never silently drop an unsettled balance.
+    """
+    return any(amount > _BALANCE_EPSILON for amount in group_debts(group).values())
+
+
 def friendship_debts(friendship):
     expenses = Expense.objects.filter(
         friendship=friendship, deleted_at__isnull=True
