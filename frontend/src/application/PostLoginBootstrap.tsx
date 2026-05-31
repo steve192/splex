@@ -18,6 +18,7 @@ import { useI18n } from "../shared/i18n/I18nContext";
 import { bootstrapPushOnStartup } from "../shared/notifications/registration";
 import { bootstrapLocationOnStartup } from "../shared/location/locationService";
 import { prefetchPaths } from "../shared/lib/offlineCache";
+import { runPermissionBootstraps } from "./runPermissionBootstraps";
 
 export function PostLoginBootstrap() {
   const { api, user, initialized, refreshUser } = useAuth();
@@ -35,10 +36,17 @@ export function PostLoginBootstrap() {
     if (didBootstrap.current) return;
     didBootstrap.current = true;
 
-    bootstrapPushOnStartup(api).catch(() => undefined);
-    bootstrapLocationOnStartup(user.location_tracking_enabled, api)
-      .then(() => refreshUser().catch(() => undefined))
-      .catch(() => undefined);
+    // Notification and location permission prompts must not overlap: Android
+    // silently denies a runtime-permission request made while another dialog is
+    // open, so a fresh login (location tracking defaults on) would lose the
+    // notification prompt to the location one. Run them in sequence; refresh the
+    // user afterwards so a location-permission denial that disabled tracking
+    // server-side is reflected locally.
+    runPermissionBootstraps([
+      () => bootstrapPushOnStartup(api),
+      () => bootstrapLocationOnStartup(user.location_tracking_enabled, api),
+      () => refreshUser()
+    ]).catch(() => undefined);
     prefetchPaths(api, ["/api/groups/", "/api/friends/", "/api/overview/"]).catch(() => undefined);
 
     if (user.locale !== locale) {
