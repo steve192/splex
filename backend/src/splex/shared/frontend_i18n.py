@@ -1,7 +1,6 @@
 import json
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
-from typing import Optional
 
 from splex.shared.locale import normalize_locale
 
@@ -13,7 +12,7 @@ def _locale_dirs() -> list[Path]:
     return [bundled, repo_locales]
 
 
-def _find_locale_file(locale: str) -> Optional[Path]:
+def _find_locale_file(locale: str) -> Path | None:
     file_name = f'{locale}.json'
     for directory in _locale_dirs():
         candidate = directory / file_name
@@ -22,7 +21,7 @@ def _find_locale_file(locale: str) -> Optional[Path]:
     return None
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load_locale(locale: str) -> dict[str, str]:
     locale_file = _find_locale_file(locale)
     if locale_file is None:

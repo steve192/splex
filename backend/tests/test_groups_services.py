@@ -1,7 +1,12 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 
 from splex.activity.models import ActivityEvent
+from splex.expenses.models import ExpenseOwedShare
+from splex.expenses.services import create_expense
+from splex.friends.models import Friendship
+from splex.friends.services import accessible_friendships, create_friendship
 from splex.groups.models import GroupMembership
 from splex.groups.services import (
     add_registered_participant,
@@ -13,10 +18,10 @@ from splex.groups.services import (
     rename_unregistered_participant,
     update_group,
 )
-from splex.friends.models import Friendship
-from splex.friends.services import accessible_friendships, create_friendship
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
+from splex.settlements.models import Settlement
+from splex.settlements.services import create_settlement
 
 
 @pytest.mark.django_db
@@ -53,7 +58,11 @@ def test_add_registered_participant_adds_existing_friend_to_group():
     friend_participant = get_or_create_user_participant(friend_user)
     create_friendship(owner, friend_participant)
 
-    participant = add_registered_participant(actor=owner, group=group, participant=friend_participant)
+    participant = add_registered_participant(
+        actor=owner,
+        group=group,
+        participant=friend_participant,
+    )
 
     membership = GroupMembership.objects.get(group=group, participant=participant)
     assert membership.removed_at is None
@@ -89,8 +98,6 @@ def test_create_friendship_is_idempotent():
 def test_db_constraint_blocks_two_active_friendships_for_same_pair():
     """Defense in depth: even if a code path tried to bypass the service
     layer, the database itself rejects a second active row for a pair."""
-    from django.db import IntegrityError
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com")
     friend_user = user_model.objects.create_user(email="friend@example.com")
@@ -173,10 +180,6 @@ def test_cannot_remove_yourself_via_remove_participant():
 def test_remove_participant_converts_to_unregistered_placeholder():
     """Removing a participant creates an unregistered placeholder that inherits
     the membership and all expense shares in the group.  No settlement is created."""
-    from splex.expenses.services import create_expense
-    from splex.expenses.models import ExpenseOwedShare, ExpensePaymentShare
-    from splex.settlements.models import Settlement
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     other = user_model.objects.create_user(email="other@example.com", display_name="Other")
@@ -265,8 +268,6 @@ def test_delete_group_is_idempotent():
 def test_delete_group_blocked_while_balance_outstanding():
     """A group cannot be deleted while a pair still owes money, mirroring friend
     removal - deletion must never silently drop an unsettled balance."""
-    from splex.expenses.services import create_expense
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
@@ -296,9 +297,6 @@ def test_delete_group_blocked_while_balance_outstanding():
 @pytest.mark.django_db
 def test_delete_group_allowed_once_settled():
     """Once the outstanding balance is settled, deletion proceeds."""
-    from splex.expenses.services import create_expense
-    from splex.settlements.services import create_settlement
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
@@ -363,7 +361,10 @@ def test_leave_group_converts_to_placeholder_when_others_remain():
     assert placeholder_qs.first().display_name == "Owner"
 
     # The other member is unaffected.
-    assert GroupMembership.objects.get(group=group, participant=other_participant).removed_at is None
+    assert (
+        GroupMembership.objects.get(group=group, participant=other_participant).removed_at
+        is None
+    )
 
 
 @pytest.mark.django_db
@@ -383,8 +384,6 @@ def test_leave_group_as_last_member_succeeds_with_outstanding_placeholder_balanc
     """The last member can always leave (which deletes the group), even with an
     unsettled balance against an unregistered placeholder - unlike an explicit
     delete, leaving is not gated on settling up."""
-    from splex.expenses.services import create_expense
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
@@ -434,8 +433,6 @@ def test_update_group_blocks_currency_change_when_ledger_exists():
     add_unregistered_participant(actor=user, group=group, display_name="Bob")
 
     # Create at least one expense to lock currency.
-    from splex.expenses.services import create_expense
-
     actor_p = get_or_create_user_participant(user)
     create_expense(
         actor=user,
@@ -456,9 +453,6 @@ def test_update_group_blocks_currency_change_when_ledger_exists():
 def test_remove_unregistered_participant_with_balance_settles_then_soft_deletes():
     """Removing an unregistered member zeroes out their balance via auto-settlements
     and soft-deletes the participant so historical expenses keep resolving the name."""
-    from splex.expenses.services import create_expense
-    from splex.settlements.models import Settlement
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
@@ -503,8 +497,6 @@ def test_remove_unregistered_participant_with_balance_settles_then_soft_deletes(
 @pytest.mark.django_db
 def test_remove_unregistered_participant_with_zero_balance_skips_settlement():
     """No balance → just remove the membership and soft-delete the participant."""
-    from splex.settlements.models import Settlement
-
     user_model = get_user_model()
     owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")

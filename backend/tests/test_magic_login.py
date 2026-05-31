@@ -62,7 +62,13 @@ def test_requesting_new_magic_login_invalidates_previous_pair():
         authenticate_magic_token(first_token)
 
     authenticate_magic_code("alice@example.com", second_code)
-    assert MagicLoginChallenge.objects.filter(email="alice@example.com", consumed_at__isnull=True).count() == 0
+    assert (
+        MagicLoginChallenge.objects.filter(
+            email="alice@example.com",
+            consumed_at__isnull=True,
+        ).count()
+        == 0
+    )
 
 
 @pytest.mark.django_db

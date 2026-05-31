@@ -1,98 +1,77 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
-import { Button, Divider, HelperText, IconButton, Surface, Text, TextInput, useTheme } from "react-native-paper";
+import { Surface, Text, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { RootStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
-import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
 import { appImages } from "../../shared/assets/images";
-import { GoogleLoginButton } from "../../shared/auth/GoogleLoginButton";
-import { consumeGoogleOAuthResponse } from "../../shared/auth/googleOAuthWeb";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { detectDeviceLocale } from "../../shared/i18n/locale";
-import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY, tokenFromCurrentUrl } from "../../shared/lib/inviteLinks";
+import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
+import {
+  inviteDebug,
+  inviteTokenFromCurrentUrl,
+  PENDING_INVITE_STORAGE_KEY,
+} from "../../shared/lib/inviteLinks";
 import { styles } from "../../shared/ui/styles";
 
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../application/navigationTypes";
-
-type LoginConfig = {
-  google: { client_id: string | null; android_client_id: string | null };
-  demo_mode_enabled?: boolean;
-};
+import { LoginMessage, shouldShowDemoMode } from "./loginHelpers";
+import { DemoModeSection, LoginFormSection } from "./loginScreenSections";
+import { useLoginBootstrap } from "./useLoginBootstrap";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login" | "LoginMagic">;
 
-export function LoginScreen({ route }: Props) {
+export function LoginScreen({ route }: Readonly<Props>) {
   const { t } = useI18n();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { api, loginAsDemo, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<LoginMessage | null>(null);
   const [loading, setLoading] = useState(false);
   const [loginRequested, setLoginRequested] = useState(false);
-  const [backendUrl, setBackendUrl] = useState("");
   const [backendSettingsOpen, setBackendSettingsOpen] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const [googleAndroidClientId, setGoogleAndroidClientId] = useState<string | undefined>(undefined);
-  const [demoModeEnabled, setDemoModeEnabled] = useState(false);
-  const [providersResolved, setProvidersResolved] = useState(false);
 
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      api.getBaseUrl().then(setBackendUrl).catch(() => undefined);
-    }
-    // Fetch which optional login methods are configured on this backend.
-    api
-      .get<LoginConfig>("/api/login/config/")
-      .then((data) => {
-        setGoogleClientId(data.google?.client_id ?? null);
-        setGoogleAndroidClientId(data.google?.android_client_id ?? undefined);
-        setDemoModeEnabled(Boolean(data.demo_mode_enabled));
-      })
-      .catch(() => {
-        // Backend unreachable - assume demo mode is on so the demo path stays
-        // available offline. Other login providers stay hidden by default.
-        setDemoModeEnabled(true);
-      })
-      .finally(() => setProvidersResolved(true));
-    // If we returned from a Google OAuth redirect, finish the login here.
-    if (Platform.OS === "web") {
-      const googleResponse = consumeGoogleOAuthResponse();
-      if (googleResponse) {
-        setLoading(true);
-        loginWithGoogle(googleResponse.idToken)
-          .catch(() => setMessage(t("auth.googleFailed")))
-          .finally(() => setLoading(false));
-      }
-    }
-    inviteDebug("login screen mounted");
-    const inviteToken = inviteTokenFromCurrentUrl();
-    if (inviteToken) {
-      inviteDebug("login screen storing pending invite token");
-      AsyncStorage.setItem(PENDING_INVITE_STORAGE_KEY, inviteToken).catch(() => undefined);
-      setMessage(t("invite.loginRequired"));
-    }
-    // route.params.token comes from the /login/magic deep link on native;
-    // tokenFromCurrentUrl reads the same value from window.location on web.
-    const token = route?.params?.token ?? tokenFromCurrentUrl();
-    if (!token) return;
-    inviteDebug("login screen found magic token; attempting login");
-    setLoading(true);
-    loginWithToken(token)
-      .then(() => {
-        inviteDebug("magic token login succeeded");
-        clearUrlQuery();
-      })
-      .catch((error) => {
-        inviteDebug("magic token login failed", error);
-        setMessage(t("auth.linkFailed"));
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  function notifyError(text: string) {
+    setMessage({ text, tone: "error" });
+  }
+
+  function notifyInfo(text: string) {
+    setMessage({ text, tone: "info" });
+  }
+
+  const {
+    googleClientId,
+    googleAndroidClientId,
+    demoModeEnabled,
+    providersResolved,
+    backendUrl,
+    setBackendUrl
+  } = useLoginBootstrap({
+    api,
+    loginWithGoogle,
+    loginWithToken,
+    routeToken: route?.params?.token,
+    setLoading,
+    notifyError,
+    notifyInfo,
+    t
+  });
+
+  function onEmailChange(value: string) {
+    setEmail(value);
+    setCode("");
+    setLoginRequested(false);
+    setMessage(null);
+  }
+
+  function onBackendUrlChange(value: string) {
+    saveBackendUrl(value).catch(() => undefined);
+  }
 
   async function requestLink() {
     inviteDebug("magic link request started");
@@ -105,11 +84,11 @@ export function LoginScreen({ route }: Props) {
       await requestMagicLink(email, inviteToken || undefined, requestLocale);
       setLoginRequested(true);
       setCode("");
-      setMessage(t("auth.sent"));
+      notifyInfo(t("auth.sent"));
       inviteDebug("magic link request succeeded");
     } catch (error) {
       inviteDebug("magic link request failed", error);
-      setMessage(t("auth.sendFailed"));
+      notifyError(t("auth.sendFailed"));
     } finally {
       setLoading(false);
     }
@@ -125,7 +104,7 @@ export function LoginScreen({ route }: Props) {
     try {
       await loginAsDemo();
     } catch {
-      setMessage(t("auth.demoFailed"));
+      notifyError(t("auth.demoFailed"));
     } finally {
       setLoading(false);
     }
@@ -139,95 +118,11 @@ export function LoginScreen({ route }: Props) {
       inviteDebug("magic code verification succeeded");
     } catch (error) {
       inviteDebug("magic code verification failed", error);
-      setMessage(t("auth.codeFailed"));
+      notifyError(t("auth.codeFailed"));
     } finally {
       setLoading(false);
     }
   }
-
-  const form = (
-    <>
-      <TextInput
-        mode="outlined"
-        label={t("auth.email")}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={(value) => {
-          setEmail(value);
-          setCode("");
-          setLoginRequested(false);
-          setMessage("");
-        }}
-      />
-      <Button mode="contained" loading={loading} disabled={!email || loading} onPress={requestLink}>
-        {t("auth.request")}
-      </Button>
-      {loginRequested ? (
-        <>
-          <Divider />
-          <TextInput
-            mode="outlined"
-            label={t("auth.code")}
-            value={code}
-            onChangeText={setCode}
-            keyboardType={Platform.OS === "ios" ? "number-pad" : "numeric"}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            textContentType="oneTimeCode"
-          />
-          <Button mode="elevated" disabled={!email || !code || loading} onPress={verifyCode}>
-            {t("auth.verify")}
-          </Button>
-        </>
-      ) : null}
-      {googleClientId ? (
-        <GoogleLoginButton
-          clientId={googleClientId}
-          androidClientId={googleAndroidClientId}
-          onError={setMessage}
-        />
-      ) : null}
-      {Platform.OS === "android" ? (
-        <>
-          <Divider />
-          <View style={styles.rowBetween}>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {t("auth.backendUrl")}
-            </Text>
-            <IconButton icon="cog-outline" onPress={() => setBackendSettingsOpen((current) => !current)} />
-          </View>
-          {backendSettingsOpen ? (
-            <TextInput
-              mode="outlined"
-              label={t("auth.backendUrl")}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={backendUrl}
-              onChangeText={(value) => {
-                setBackendUrl(value);
-                saveBackendUrl(value).catch(() => undefined);
-              }}
-            />
-          ) : null}
-        </>
-      ) : null}
-      {message ? <HelperText type={message.includes("failed") ? "error" : "info"}>{message}</HelperText> : null}
-    </>
-  );
-
-  const demoBlock =
-    providersResolved && demoModeEnabled ? (
-      <View style={styles.loginDemoSection}>
-        <Divider />
-        <Text variant="bodySmall" style={[styles.loginDemoHint, { color: theme.colors.onSurfaceVariant }]}>
-          {t("auth.demoHint")}
-        </Text>
-        <Button mode="outlined" icon="play-circle-outline" loading={loading} disabled={loading} onPress={startDemo}>
-          {t("auth.startDemo")}
-        </Button>
-      </View>
-    ) : null;
 
   return (
     <KeyboardAvoidingView
@@ -278,8 +173,30 @@ export function LoginScreen({ route }: Props) {
                 { backgroundColor: theme.colors.surface }
               ]}
             >
-              {form}
-              {demoBlock}
+              <LoginFormSection
+                backendSettingsOpen={backendSettingsOpen}
+                backendUrl={backendUrl}
+                code={code}
+                email={email}
+                googleAndroidClientId={googleAndroidClientId}
+                googleClientId={googleClientId}
+                loading={loading}
+                loginRequested={loginRequested}
+                message={message}
+                onBackendSettingsToggle={() => setBackendSettingsOpen((current) => !current)}
+                onBackendUrlChange={onBackendUrlChange}
+                onCodeChange={setCode}
+                onEmailChange={onEmailChange}
+                onGoogleError={notifyError}
+                onRequestLink={() => requestLink().catch(() => undefined)}
+                onVerifyCode={() => verifyCode().catch(() => undefined)}
+              />
+              {shouldShowDemoMode(providersResolved, demoModeEnabled) ? (
+                <DemoModeSection
+                  loading={loading}
+                  onStartDemo={() => startDemo().catch(() => undefined)}
+                />
+              ) : null}
             </Surface>
           </View>
         </View>

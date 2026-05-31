@@ -138,15 +138,35 @@ type ExpenseOptions = {
   receipts?: Array<ReturnType<typeof receipt>>;
 };
 
-function expense(
+type ExpenseContext = {
+  group_id?: number | null;
+  friendship_id?: number | null;
+};
+
+type ExpensePayer = {
+  id: number;
+  name: string;
+};
+
+type ExpenseOwedShare = {
+  id: number;
+  name: string;
+  amount: string;
+};
+
+type ExpenseArgs = [
   id: number,
-  ctx: { group_id?: number | null; friendship_id?: number | null },
+  ctx: ExpenseContext,
   description: string,
   amount: string,
   date: string,
-  payer: { id: number; name: string },
-  owed: Array<{ id: number; name: string; amount: string }>,
-  options: ExpenseOptions = {}
+  payer: ExpensePayer,
+  owed: ExpenseOwedShare[],
+  options?: ExpenseOptions
+];
+
+function expense(
+  ...[id, ctx, description, amount, date, payer, owed, options = {}]: ExpenseArgs
 ) {
   const currency = options.currency ?? "EUR";
   return {
@@ -776,9 +796,224 @@ const BALANCES_BY_GROUP_SIMPLIFIED: Record<number, typeof TRIP_BALANCES> = {
 
 type ExpenseFixture = ReturnType<typeof expense>;
 
+const compareIsoDate = (left: string, right: string) => left.localeCompare(right);
+
 function isoWeekday(dateStr: string): number {
   // JS getUTCDay() is 0=Sun..6=Sat; the UI labels weekdays Mon=0..Sun=6.
   return (new Date(`${dateStr}T00:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+function getExpenseDateRange(expenses: ExpenseFixture[]) {
+  const sortedDates = expenses.map((expenseRow) => expenseRow.date).sort(compareIsoDate);
+  return {
+    firstDate: sortedDates[0] ?? null,
+    lastDate: sortedDates.at(-1) ?? null
+  };
+}
+
+function calculateSpendPerWeek(
+  total: number,
+  count: number,
+  firstDate: string | null,
+  lastDate: string | null
+) {
+  if (!count || !firstDate || !lastDate || total <= 0) {
+    return 0;
+  }
+
+  const spanDays =
+    Math.max(0, Math.round((Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000)) + 1;
+  const weeks = spanDays / 7;
+
+  return weeks > 0 ? round2(total / weeks) : 0;
+}
+
+function buildCurrencyBreakdown(expenses: ExpenseFixture[]) {
+  const byOriginalCurrency = new Map<string, { total: number; count: number }>();
+
+  for (const expenseRow of expenses) {
+    const row = byOriginalCurrency.get(expenseRow.original_currency) ?? { total: 0, count: 0 };
+    row.total = round2(row.total + Number(expenseRow.original_amount));
+    row.count += 1;
+    byOriginalCurrency.set(expenseRow.original_currency, row);
+  }
+
+  return [...byOriginalCurrency.entries()]
+    .sort((left, right) => right[1].total - left[1].total)
+    .map(([currency, row]) => ({
+      currency,
+      total: row.total.toFixed(2),
+      count: row.count
+    }));
+}
+
+function buildMonthlyTotals(expenses: ExpenseFixture[], latestMonth: string) {
+  const byMonth = new Map<string, number>();
+
+  for (const expenseRow of expenses) {
+    const key = expenseRow.date.slice(0, 7);
+    byMonth.set(key, round2((byMonth.get(key) ?? 0) + Number(expenseRow.converted_amount)));
+  }
+
+  let [year, month] = latestMonth.split("-").map(Number);
+  const monthly: Array<{ month: string; total: string }> = [];
+
+  for (let index = 0; index < 12; index += 1) {
+    const key = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+    monthly.push({ month: `${key}-01`, total: (byMonth.get(key) ?? 0).toFixed(2) });
+    month -= 1;
+    if (0 === month) {
+      month = 12;
+      year -= 1;
+    }
+  }
+
+  monthly.reverse();
+  return monthly;
+}
+
+function buildContributions(expenses: ExpenseFixture[], participants: BalanceParticipant[]) {
+  const paidById = new Map<number, number>();
+  const shareById = new Map<number, number>();
+
+  for (const expenseRow of expenses) {
+    for (const payment of expenseRow.payments) {
+      paidById.set(
+        payment.participant_id,
+        round2((paidById.get(payment.participant_id) ?? 0) + Number(payment.amount))
+      );
+    }
+    for (const share of expenseRow.owed) {
+      shareById.set(
+        share.participant_id,
+        round2((shareById.get(share.participant_id) ?? 0) + Number(share.amount))
+      );
+    }
+  }
+
+  return participants
+    .map((participant) => ({
+      participant_id: participant.id,
+      display_name: participant.display_name,
+      paid: (paidById.get(participant.id) ?? 0).toFixed(2),
+      share: (shareById.get(participant.id) ?? 0).toFixed(2)
+    }))
+    .sort((left, right) => Number(right.paid) - Number(left.paid));
+}
+
+function buildTopDescriptions(expenses: ExpenseFixture[]) {
+  const descriptionBuckets = new Map<string, { display: string; count: number; total: number }>();
+
+  for (const expenseRow of expenses) {
+    const key = expenseRow.description.trim().toLowerCase();
+    if (!key) {
+      continue;
+    }
+
+    const bucket = descriptionBuckets.get(key) ?? {
+      display: expenseRow.description.trim(),
+      count: 0,
+      total: 0
+    };
+    bucket.count += 1;
+    bucket.total = round2(bucket.total + Number(expenseRow.converted_amount));
+    descriptionBuckets.set(key, bucket);
+  }
+
+  return [...descriptionBuckets.values()]
+    .sort((left, right) => right.count - left.count || right.total - left.total)
+    .slice(0, 8)
+    .map((bucket) => ({
+      description: bucket.display,
+      count: bucket.count,
+      total: bucket.total.toFixed(2)
+    }));
+}
+
+function buildBiggestExpenses(expenses: ExpenseFixture[]) {
+  return [...expenses]
+    .sort((left, right) => Number(right.converted_amount) - Number(left.converted_amount))
+    .slice(0, 5)
+    .map((expenseRow) => ({
+      id: expenseRow.id,
+      description: expenseRow.description,
+      amount: Number(expenseRow.original_amount).toFixed(2),
+      currency: expenseRow.original_currency,
+      converted_amount: Number(expenseRow.converted_amount).toFixed(2),
+      converted_currency: expenseRow.converted_currency,
+      date: expenseRow.date
+    }));
+}
+
+function buildLocations(expenses: ExpenseFixture[]) {
+  return [...expenses]
+    .filter((expenseRow) => expenseRow.latitude != null && expenseRow.longitude != null)
+    .sort((left, right) => right.date.localeCompare(left.date))
+    .map((expenseRow) => ({
+      id: expenseRow.id,
+      description: expenseRow.description,
+      latitude: expenseRow.latitude as number,
+      longitude: expenseRow.longitude as number,
+      amount: Number(expenseRow.original_amount).toFixed(2),
+      currency: expenseRow.original_currency,
+      date: expenseRow.date
+    }));
+}
+
+function buildDayOfWeek(expenses: ExpenseFixture[]) {
+  const totals = Array.from({ length: 7 }, () => 0);
+  const counts = Array.from({ length: 7 }, () => 0);
+
+  for (const expenseRow of expenses) {
+    const weekdayIndex = isoWeekday(expenseRow.date);
+    totals[weekdayIndex] = round2(totals[weekdayIndex] + Number(expenseRow.converted_amount));
+    counts[weekdayIndex] += 1;
+  }
+
+  return totals.map((total, index) => ({
+    weekday: index,
+    count: counts[index],
+    total: total.toFixed(2)
+  }));
+}
+
+function buildPairStats(expenses: ExpenseFixture[], nameById: Map<number, string>) {
+  const pairs = new Map<
+    string,
+    { payer: number; beneficiary: number; count: number; amount: number }
+  >();
+
+  for (const expenseRow of expenses) {
+    const payerId = expenseRow.payments[0].participant_id;
+    for (const share of expenseRow.owed) {
+      if (share.participant_id === payerId) {
+        continue;
+      }
+
+      const key = `${payerId}:${share.participant_id}`;
+      const row = pairs.get(key) ?? {
+        payer: payerId,
+        beneficiary: share.participant_id,
+        count: 0,
+        amount: 0
+      };
+      row.count += 1;
+      row.amount = round2(row.amount + Number(share.amount));
+      pairs.set(key, row);
+    }
+  }
+
+  return [...pairs.values()]
+    .sort((left, right) => right.amount - left.amount || right.count - left.count)
+    .slice(0, 10)
+    .map((row) => ({
+      payer_id: row.payer,
+      payer_name: nameById.get(row.payer) ?? "",
+      beneficiary_id: row.beneficiary,
+      beneficiary_name: nameById.get(row.beneficiary) ?? "",
+      count: row.count,
+      amount: row.amount.toFixed(2)
+    }));
 }
 
 // Mirror of the backend's statistics aggregation, so the figures always agree
@@ -792,142 +1027,17 @@ function computeStatistics(
   const nameById = new Map(participants.map((p) => [p.id, p.display_name]));
   const total = round2(expenses.reduce((sum, e) => sum + Number(e.converted_amount), 0));
   const count = expenses.length;
-  const sortedDates = expenses.map((e) => e.date).sort();
-  const firstDate = sortedDates[0] ?? null;
-  const lastDate = sortedDates[sortedDates.length - 1] ?? null;
+  const { firstDate, lastDate } = getExpenseDateRange(expenses);
   const average = count ? round2(total / count) : 0;
-
-  let spendPerWeek = 0;
-  if (count && firstDate && lastDate && total > 0) {
-    const spanDays =
-      Math.max(0, Math.round((Date.parse(lastDate) - Date.parse(firstDate)) / 86_400_000)) + 1;
-    const weeks = spanDays / 7;
-    if (weeks > 0) spendPerWeek = round2(total / weeks);
-  }
-
-  // currency_breakdown is grouped by the *original* (entered) currency.
-  const byOriginalCurrency = new Map<string, { total: number; count: number }>();
-  for (const e of expenses) {
-    const row = byOriginalCurrency.get(e.original_currency) ?? { total: 0, count: 0 };
-    row.total = round2(row.total + Number(e.original_amount));
-    row.count += 1;
-    byOriginalCurrency.set(e.original_currency, row);
-  }
-  const currencyBreakdown = [...byOriginalCurrency.entries()]
-    .sort((a, b) => b[1].total - a[1].total)
-    .map(([cur, row]) => ({ currency: cur, total: row.total.toFixed(2), count: row.count }));
-
-  // 12 months ending at latestMonth, like the backend's rolling window.
-  const byMonth = new Map<string, number>();
-  for (const e of expenses) {
-    const key = e.date.slice(0, 7);
-    byMonth.set(key, round2((byMonth.get(key) ?? 0) + Number(e.converted_amount)));
-  }
-  let [year, month] = latestMonth.split("-").map(Number);
-  const monthly: Array<{ month: string; total: string }> = [];
-  for (let i = 0; i < 12; i += 1) {
-    const key = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
-    monthly.push({ month: `${key}-01`, total: (byMonth.get(key) ?? 0).toFixed(2) });
-    month -= 1;
-    if (month === 0) {
-      month = 12;
-      year -= 1;
-    }
-  }
-  monthly.reverse();
-
-  const paidById = new Map<number, number>();
-  const shareById = new Map<number, number>();
-  for (const e of expenses) {
-    for (const p of e.payments) {
-      paidById.set(p.participant_id, round2((paidById.get(p.participant_id) ?? 0) + Number(p.amount)));
-    }
-    for (const o of e.owed) {
-      shareById.set(o.participant_id, round2((shareById.get(o.participant_id) ?? 0) + Number(o.amount)));
-    }
-  }
-  const contributions = participants
-    .map((p) => ({
-      participant_id: p.id,
-      display_name: p.display_name,
-      paid: (paidById.get(p.id) ?? 0).toFixed(2),
-      share: (shareById.get(p.id) ?? 0).toFixed(2)
-    }))
-    .sort((a, b) => Number(b.paid) - Number(a.paid));
-
-  const descBuckets = new Map<string, { display: string; count: number; total: number }>();
-  for (const e of expenses) {
-    const key = e.description.trim().toLowerCase();
-    if (!key) continue;
-    const bucket = descBuckets.get(key) ?? { display: e.description.trim(), count: 0, total: 0 };
-    bucket.count += 1;
-    bucket.total = round2(bucket.total + Number(e.converted_amount));
-    descBuckets.set(key, bucket);
-  }
-  const topDescriptions = [...descBuckets.values()]
-    .sort((a, b) => b.count - a.count || b.total - a.total)
-    .slice(0, 8)
-    .map((b) => ({ description: b.display, count: b.count, total: b.total.toFixed(2) }));
-
-  const biggestExpenses = [...expenses]
-    .sort((a, b) => Number(b.converted_amount) - Number(a.converted_amount))
-    .slice(0, 5)
-    .map((e) => ({
-      id: e.id,
-      description: e.description,
-      amount: Number(e.original_amount).toFixed(2),
-      currency: e.original_currency,
-      converted_amount: Number(e.converted_amount).toFixed(2),
-      converted_currency: e.converted_currency,
-      date: e.date
-    }));
-
-  const locations = [...expenses]
-    .filter((e) => e.latitude != null && e.longitude != null)
-    .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .map((e) => ({
-      id: e.id,
-      description: e.description,
-      latitude: e.latitude as number,
-      longitude: e.longitude as number,
-      amount: Number(e.original_amount).toFixed(2),
-      currency: e.original_currency,
-      date: e.date
-    }));
-
-  const dowTotals = Array.from({ length: 7 }, () => 0);
-  const dowCounts = Array.from({ length: 7 }, () => 0);
-  for (const e of expenses) {
-    const idx = isoWeekday(e.date);
-    dowTotals[idx] = round2(dowTotals[idx] + Number(e.converted_amount));
-    dowCounts[idx] += 1;
-  }
-  const dayOfWeek = dowTotals.map((t, i) => ({ weekday: i, count: dowCounts[i], total: t.toFixed(2) }));
-
-  // pair_stats: for each (payer, beneficiary) pair, how much the payer covered.
-  const pairs = new Map<string, { payer: number; beneficiary: number; count: number; amount: number }>();
-  for (const e of expenses) {
-    const payerId = e.payments[0].participant_id;
-    for (const o of e.owed) {
-      if (o.participant_id === payerId) continue;
-      const key = `${payerId}:${o.participant_id}`;
-      const row = pairs.get(key) ?? { payer: payerId, beneficiary: o.participant_id, count: 0, amount: 0 };
-      row.count += 1;
-      row.amount = round2(row.amount + Number(o.amount));
-      pairs.set(key, row);
-    }
-  }
-  const pairStats = [...pairs.values()]
-    .sort((a, b) => b.amount - a.amount || b.count - a.count)
-    .slice(0, 10)
-    .map((row) => ({
-      payer_id: row.payer,
-      payer_name: nameById.get(row.payer) ?? "",
-      beneficiary_id: row.beneficiary,
-      beneficiary_name: nameById.get(row.beneficiary) ?? "",
-      count: row.count,
-      amount: row.amount.toFixed(2)
-    }));
+  const spendPerWeek = calculateSpendPerWeek(total, count, firstDate, lastDate);
+  const currencyBreakdown = buildCurrencyBreakdown(expenses);
+  const monthly = buildMonthlyTotals(expenses, latestMonth);
+  const contributions = buildContributions(expenses, participants);
+  const topDescriptions = buildTopDescriptions(expenses);
+  const biggestExpenses = buildBiggestExpenses(expenses);
+  const locations = buildLocations(expenses);
+  const dayOfWeek = buildDayOfWeek(expenses);
+  const pairStats = buildPairStats(expenses, nameById);
 
   return {
     summary: {

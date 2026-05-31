@@ -38,10 +38,10 @@ from django.db import transaction
 from django.db.models import Sum
 
 from splex.expenses.models import Expense, Receipt
+from splex.expenses.services import ensure_context_access
 from splex.friends.models import Friendship
 from splex.groups.models import Group
 from splex.groups.services import assert_group_member
-from splex.expenses.services import ensure_context_access
 
 logger = logging.getLogger(__name__)
 

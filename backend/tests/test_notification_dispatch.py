@@ -1,7 +1,7 @@
+from base64 import b64encode
 from unittest.mock import patch
 
 import pytest
-from base64 import b64encode
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 
@@ -19,6 +19,15 @@ from splex.notifications.services import (
 )
 
 
+def _expense_created_event(actor, group):
+    return record_activity(
+        actor,
+        EventType.EXPENSE_CREATED,
+        group=group,
+        payload={"description": "X"},
+    )
+
+
 def _setup_group_with_two_users():
     user_model = get_user_model()
     actor = user_model.objects.create_user(email="actor@example.com", display_name="Actor")
@@ -28,7 +37,10 @@ def _setup_group_with_two_users():
     from splex.groups.models import GroupMembership
     from splex.participants.services import get_or_create_user_participant
 
-    GroupMembership.objects.create(group=group, participant=get_or_create_user_participant(receiver))
+    GroupMembership.objects.create(
+        group=group,
+        participant=get_or_create_user_participant(receiver),
+    )
     return actor, receiver, group
 
 
@@ -38,7 +50,7 @@ def test_dispatch_sends_to_each_device_token_and_marks_sent():
     DeviceToken.objects.create(user=receiver, token="ExponentPushToken[abc]", platform="android")
     DeviceToken.objects.create(user=receiver, token="ExponentPushToken[def]", platform="android")
 
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     create_notifications_for_activity(event)
 
     sent_tokens = []
@@ -57,7 +69,7 @@ def test_dispatch_sends_to_each_device_token_and_marks_sent():
 @pytest.mark.django_db
 def test_dispatch_marks_failed_when_no_subscriptions():
     actor, receiver, group = _setup_group_with_two_users()
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     create_notifications_for_activity(event)
 
     notification = Notification.objects.get(user=receiver)
@@ -78,7 +90,7 @@ def test_terminal_error_deletes_device_token():
             raise TerminalDispatchError("DeviceNotRegistered")
         # live-token succeeds silently
 
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     create_notifications_for_activity(event)
     notification = Notification.objects.get(user=receiver)
 
@@ -98,7 +110,7 @@ def test_terminal_error_deletes_web_push_subscription():
         user=receiver, endpoint="https://example.com/dead", p256dh="x", auth="y"
     )
 
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     create_notifications_for_activity(event)
     notification = Notification.objects.get(user=receiver)
 
@@ -116,7 +128,7 @@ def test_non_terminal_error_keeps_token_for_retry():
     actor, receiver, group = _setup_group_with_two_users()
     DeviceToken.objects.create(user=receiver, token="flaky-token", platform="android")
 
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     create_notifications_for_activity(event)
     notification = Notification.objects.get(user=receiver)
 
@@ -135,7 +147,7 @@ def test_non_terminal_error_keeps_token_for_retry():
 @pytest.mark.django_db
 def test_dispatch_excludes_actor_from_recipients():
     actor, _receiver, group = _setup_group_with_two_users()
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     created = create_notifications_for_activity(event)
     # Actor must not receive their own notification.
     recipient_ids = {n.user_id for n in created}
@@ -206,7 +218,7 @@ def test_send_web_push_uses_vapid_instance_for_generated_pem_key():
         p256dh="p256dh-key",
         auth="auth-key",
     )
-    event = record_activity(actor, EventType.EXPENSE_CREATED, group=group, payload={"description": "X"})
+    event = _expense_created_event(actor, group)
     notification = Notification.objects.create(
         user=receiver,
         activity_event=event,

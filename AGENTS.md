@@ -38,7 +38,7 @@
 - Use `pyproject.toml` for dependency and tooling configuration.
 - Prefer explicit transactions around multi-step writes.
 - Soft-delete business records when history/auditability matters.
-- Project targets Python 3.8+. Don't use PEP 604 `X | None` or PEP 585 `list[X]`/`dict[X, Y]` as runtime annotations. Either use `from __future__ import annotations` at the top of the module or use `Optional`/`List`/`Dict` from `typing`.
+- Project targets Python 3.12+ (`requires-python = ">=3.12"`, ruff `target-version = "py312"` with the `UP`/pyupgrade rules on). Use modern built-in generics and unions directly - `list[X]`, `dict[X, Y]`, `X | None`, `datetime.UTC`, `functools.cache` - not `typing.Optional`/`List`/`Dict` or `lru_cache(maxsize=None)`.
 
 ## Frontend Preferences
 

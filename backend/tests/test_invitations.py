@@ -3,7 +3,11 @@ from django.contrib.auth import get_user_model
 
 from splex.friends.models import Friendship
 from splex.groups.models import GroupMembership
-from splex.groups.services import add_unregistered_participant, create_group, remove_group_participant
+from splex.groups.services import (
+    add_unregistered_participant,
+    create_group,
+    remove_group_participant,
+)
 from splex.invitations.services import (
     accept_invitation,
     create_claim_invitation,
@@ -37,7 +41,11 @@ def test_group_invitation_does_not_create_duplicate_memberships():
     accept_invitation(actor=invitee, token=token)
 
     participant = get_or_create_user_participant(invitee)
-    memberships = GroupMembership.objects.filter(group=group, participant=participant, removed_at__isnull=True)
+    memberships = GroupMembership.objects.filter(
+        group=group,
+        participant=participant,
+        removed_at__isnull=True,
+    )
     assert memberships.count() == 1
 
 
@@ -88,7 +96,11 @@ def test_claim_invitation_merges_existing_removed_member_participant():
     GroupMembership.objects.create(group=group, participant=existing_participant)
     remove_group_participant(actor=owner, group=group, participant=existing_participant)
 
-    placeholder = add_unregistered_participant(actor=owner, group=group, display_name="Removed User")
+    placeholder = add_unregistered_participant(
+        actor=owner,
+        group=group,
+        display_name="Removed User",
+    )
     _, token, _ = create_claim_invitation(actor=owner, group=group, target_participant=placeholder)
 
     accept_invitation(actor=removed_user, token=token)

@@ -2,6 +2,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from splex.groups.models import GroupMembership
+from splex.groups.services import create_group
+from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 
@@ -14,8 +17,8 @@ def _auth_client(user) -> APIClient:
 
 @pytest.mark.django_db
 def test_me_returns_locale():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U", locale="de")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U", locale="de")
     response = _auth_client(user).get("/api/me/")
     assert response.status_code == 200
     assert response.data["locale"] == "de"
@@ -23,8 +26,8 @@ def test_me_returns_locale():
 
 @pytest.mark.django_db
 def test_me_patch_updates_locale():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     response = _auth_client(user).patch("/api/me/", {"locale": "de"}, format="json")
     assert response.status_code == 200
     user.refresh_from_db()
@@ -33,8 +36,8 @@ def test_me_patch_updates_locale():
 
 @pytest.mark.django_db
 def test_me_patch_normalizes_default_currency_to_uppercase():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     response = _auth_client(user).patch("/api/me/", {"default_currency": "usd"}, format="json")
     assert response.status_code == 200
     user.refresh_from_db()
@@ -45,8 +48,8 @@ def test_me_patch_normalizes_default_currency_to_uppercase():
 def test_me_patch_no_longer_syncs_to_participant_display_name():
     """The denormalized sync was removed; participant.display_name stays whatever it was.
     The participant.effective_display_name property derives the live name from the user."""
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="Old")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="Old")
     participant = get_or_create_user_participant(user)
     # Force a stale value.
     Participant.objects.filter(id=participant.id).update(display_name="stale")
@@ -62,8 +65,12 @@ def test_me_patch_no_longer_syncs_to_participant_display_name():
 
 @pytest.mark.django_db
 def test_me_patch_updates_push_enabled():
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U", push_enabled=True)
+    user_model = get_user_model()
+    user = user_model.objects.create_user(
+        email="u@example.com",
+        display_name="U",
+        push_enabled=True,
+    )
     _auth_client(user).patch("/api/me/", {"push_enabled": False}, format="json")
     user.refresh_from_db()
     assert user.push_enabled is False
@@ -76,19 +83,15 @@ def test_me_patch_updates_push_enabled():
 @pytest.mark.django_db
 def test_delete_account_removes_user_and_solo_group():
     """Deleting an account soft-deletes groups where the user is the only member."""
-    from django.contrib.auth import get_user_model
-    from splex.groups.services import create_group
-    from splex.groups.models import Group
-
-    User = get_user_model()
-    user = User.objects.create_user(email="solo@example.com", display_name="Solo")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="solo@example.com", display_name="Solo")
     group = create_group(actor=user, name="Solo Trip", default_currency="EUR")
 
     response = _auth_client(user).delete("/api/me/delete/")
     assert response.status_code == 204
 
     # User is gone.
-    assert not User.objects.filter(email="solo@example.com").exists()
+    assert not user_model.objects.filter(email="solo@example.com").exists()
     # Solo group was soft-deleted.
     group.refresh_from_db()
     assert group.deleted_at is not None
@@ -98,15 +101,9 @@ def test_delete_account_removes_user_and_solo_group():
 def test_delete_account_converts_participant_to_placeholder_in_shared_group():
     """In a group with other registered members the leaving user becomes an
     unregistered placeholder; no data is lost."""
-    from django.contrib.auth import get_user_model
-    from splex.groups.models import GroupMembership
-    from splex.groups.services import create_group
-    from splex.participants.models import Participant
-    from splex.participants.services import get_or_create_user_participant
-
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
-    other = User.objects.create_user(email="other@example.com", display_name="Other")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=owner, name="Shared Trip", default_currency="EUR")
     other_p = get_or_create_user_participant(other)
     GroupMembership.objects.create(group=group, participant=other_p)
@@ -115,10 +112,9 @@ def test_delete_account_converts_participant_to_placeholder_in_shared_group():
     assert response.status_code == 204
 
     # Owner's user row is gone.
-    assert not User.objects.filter(email="owner@example.com").exists()
+    assert not user_model.objects.filter(email="owner@example.com").exists()
 
     # Group still exists.
-    from splex.groups.models import Group
     group.refresh_from_db()
     assert group.deleted_at is None
 
@@ -135,11 +131,8 @@ def test_delete_account_converts_participant_to_placeholder_in_shared_group():
 @pytest.mark.django_db
 def test_delete_account_removes_push_tokens():
     """Push tokens and web-push subscriptions are cleaned up on deletion."""
-    from django.contrib.auth import get_user_model
-    from splex.notifications.models import DeviceToken, WebPushSubscription
-
-    User = get_user_model()
-    user = User.objects.create_user(email="u@example.com", display_name="U")
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
     DeviceToken.objects.create(user=user, platform="android", token="tok")
     WebPushSubscription.objects.create(user=user, endpoint="https://ep", p256dh="pk", auth="auth")
 

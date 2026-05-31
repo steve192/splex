@@ -2,7 +2,7 @@
 respect each model's `SOFT_DELETE_FIELD`. New code paths should prefer these
 helpers over re-typing the filter inline."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -23,7 +23,7 @@ def test_participant_active_excludes_soft_deleted_rows():
     ghost = Participant.objects.create(
         display_name="Ghost",
         kind=Participant.Kind.UNREGISTERED,
-        deleted_at=datetime(2026, 5, 1, tzinfo=timezone.utc),
+        deleted_at=datetime(2026, 5, 1, tzinfo=UTC),
     )
 
     # Use `id__in` to scope to test data and avoid clashing with whatever the
@@ -43,7 +43,7 @@ def test_group_membership_active_excludes_removed():
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     membership = GroupMembership.objects.get(group=group)
     assert GroupMembership.objects.filter(group=group).active().count() == 1
-    membership.removed_at = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    membership.removed_at = datetime(2026, 5, 1, tzinfo=UTC)
     membership.save(update_fields=["removed_at"])
     assert GroupMembership.objects.filter(group=group).active().count() == 0
     assert GroupMembership.objects.filter(group=group).inactive().count() == 1
@@ -58,7 +58,7 @@ def test_friendship_active_uses_ended_at():
     friendship = create_friendship(owner, other_p)
     assert Friendship.objects.active().filter(id=friendship.id).exists()
 
-    friendship.ended_at = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    friendship.ended_at = datetime(2026, 5, 1, tzinfo=UTC)
     friendship.save(update_fields=["ended_at"])
     assert not Friendship.objects.active().filter(id=friendship.id).exists()
     assert Friendship.objects.inactive().filter(id=friendship.id).exists()
@@ -72,10 +72,10 @@ def test_group_active_excludes_deleted_but_includes_archived():
     owner = user_model.objects.create_user(email="owner@example.com")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     archived = create_group(actor=owner, name="Old", default_currency="EUR")
-    archived.archived_at = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    archived.archived_at = datetime(2026, 5, 1, tzinfo=UTC)
     archived.save(update_fields=["archived_at"])
     deleted = create_group(actor=owner, name="Gone", default_currency="EUR")
-    deleted.deleted_at = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    deleted.deleted_at = datetime(2026, 5, 1, tzinfo=UTC)
     deleted.save(update_fields=["deleted_at"])
 
     active_ids = set(Group.objects.active().values_list("id", flat=True))

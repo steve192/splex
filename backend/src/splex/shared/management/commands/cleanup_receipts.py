@@ -40,7 +40,9 @@ class Command(BaseCommand):
             if dry_run:
                 self.stdout.write(
                     f"  Would delete draft id={draft.id} "
-                    f"(uploaded_by={draft.uploaded_by_id}, created_at={draft.created_at:%Y-%m-%d %H:%M})"
+                    "(uploaded_by="
+                    f"{draft.uploaded_by_id}, "
+                    f"created_at={draft.created_at:%Y-%m-%d %H:%M})"
                 )
                 count += 1
                 continue

@@ -20,9 +20,9 @@ def _add_user_to_group(user, group):
 
 @pytest.mark.django_db
 def test_activity_list_returns_subject_name_from_target_participant_id():
-    User = get_user_model()
-    actor = User.objects.create_user(email="actor@example.com", display_name="Actor")
-    other = User.objects.create_user(email="other@example.com", display_name="Other")
+    user_model = get_user_model()
+    actor = user_model.objects.create_user(email="actor@example.com", display_name="Actor")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     _add_user_to_group(other, group)
     placeholder = add_unregistered_participant(actor=actor, group=group, display_name="Bob")
@@ -39,9 +39,9 @@ def test_activity_list_returns_subject_name_from_target_participant_id():
 
 @pytest.mark.django_db
 def test_subject_name_reflects_live_rename():
-    User = get_user_model()
-    actor = User.objects.create_user(email="actor@example.com", display_name="Old Actor")
-    other = User.objects.create_user(email="other@example.com", display_name="Other")
+    user_model = get_user_model()
+    actor = user_model.objects.create_user(email="actor@example.com", display_name="Old Actor")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     _add_user_to_group(other, group)
 
@@ -58,9 +58,9 @@ def test_subject_name_reflects_live_rename():
 
 @pytest.mark.django_db
 def test_settlement_activity_includes_live_from_and_to_names():
-    User = get_user_model()
-    payer = User.objects.create_user(email="payer@example.com", display_name="Payer")
-    receiver = User.objects.create_user(email="receiver@example.com", display_name="Receiver")
+    user_model = get_user_model()
+    payer = user_model.objects.create_user(email="payer@example.com", display_name="Payer")
+    receiver = user_model.objects.create_user(email="receiver@example.com", display_name="Receiver")
     group = create_group(actor=payer, name="Trip", default_currency="EUR")
     _add_user_to_group(receiver, group)
 
@@ -98,9 +98,9 @@ def test_settlement_activity_includes_live_from_and_to_names():
 @pytest.mark.django_db
 def test_subject_name_falls_back_to_legacy_snapshot():
     """Old events without target_participant_id should still display."""
-    User = get_user_model()
-    actor = User.objects.create_user(email="actor@example.com", display_name="Actor")
-    other = User.objects.create_user(email="other@example.com", display_name="Other")
+    user_model = get_user_model()
+    actor = user_model.objects.create_user(email="actor@example.com", display_name="Actor")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     _add_user_to_group(other, group)
 
@@ -116,17 +116,19 @@ def test_subject_name_falls_back_to_legacy_snapshot():
 
     response = _auth_client(other).get("/api/activity/")
     legacy = next(
-        row for row in response.data["results"] if row.get("payload", {}).get("participantName") == "LegacyBob"
+        row
+        for row in response.data["results"]
+        if row.get("payload", {}).get("participantName") == "LegacyBob"
     )
     assert legacy["subject_name"] == "LegacyBob"
 
 
 @pytest.mark.django_db
 def test_activity_list_only_returns_events_for_user_contexts():
-    User = get_user_model()
-    user_a = User.objects.create_user(email="a@example.com", display_name="A")
-    user_b = User.objects.create_user(email="b@example.com", display_name="B")
-    outsider = User.objects.create_user(email="c@example.com", display_name="C")
+    user_model = get_user_model()
+    user_a = user_model.objects.create_user(email="a@example.com", display_name="A")
+    user_b = user_model.objects.create_user(email="b@example.com", display_name="B")
+    outsider = user_model.objects.create_user(email="c@example.com", display_name="C")
     group = create_group(actor=user_a, name="A's group", default_currency="EUR")
     _add_user_to_group(user_b, group)
 

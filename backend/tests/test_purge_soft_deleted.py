@@ -11,7 +11,7 @@ from splex.expenses.services import create_expense
 from splex.friends.models import Friendship
 from splex.friends.services import create_friendship, end_friendship
 from splex.groups.models import Group
-from splex.groups.services import add_unregistered_participant, create_group, delete_group
+from splex.groups.services import create_group, delete_group
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 

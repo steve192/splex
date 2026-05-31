@@ -35,7 +35,12 @@ class MediaAttributionView(APIView):
             return Response({"attribution": ""})
         attribution = ""
         if path.startswith("profile-images/"):
-            user = get_user_model().objects.filter(avatar_url=path).only("avatar_attribution").first()
+            user = (
+                get_user_model()
+                .objects.filter(avatar_url=path)
+                .only("avatar_attribution")
+                .first()
+            )
             if user:
                 attribution = user.avatar_attribution or ""
         elif path.startswith("group-icons/"):

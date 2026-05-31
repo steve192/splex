@@ -14,7 +14,12 @@ def test_normalize_owed_shares_percentage_must_sum_to_100():
         normalize_owed_shares(
             Decimal("100.00"),
             Expense.SplitMethod.PERCENTAGE,
-            {"shares": [{"participant_id": 1, "percentage": "70"}, {"participant_id": 2, "percentage": "20"}]},
+            {
+                "shares": [
+                    {"participant_id": 1, "percentage": "70"},
+                    {"participant_id": 2, "percentage": "20"},
+                ]
+            },
             [1, 2],
         )
 
@@ -53,10 +58,11 @@ def test_normalize_owed_shares_adjusted_equal_rejects_negative_share():
 
 @pytest.mark.django_db
 def test_create_expense_with_exact_shares_persists_expected_rows():
-    User = get_user_model()
-    alice = User.objects.create_user(email="alice@example.com")
+    user_model = get_user_model()
+    alice = user_model.objects.create_user(email="alice@example.com")
     group = create_group(actor=alice, name="Trip", default_currency="EUR")
     bob = add_unregistered_participant(actor=alice, group=group, display_name="Bob")
+    alice_participant_id = group.memberships.get(participant__user=alice).participant_id
 
     expense = create_expense(
         actor=alice,
@@ -69,7 +75,7 @@ def test_create_expense_with_exact_shares_persists_expected_rows():
             "split_payload": {
                 "shares": [
                     {"participant_id": bob.id, "amount": "45.00"},
-                    {"participant_id": group.memberships.get(participant__user=alice).participant_id, "amount": "45.00"},
+                    {"participant_id": alice_participant_id, "amount": "45.00"},
                 ]
             },
         },
@@ -83,8 +89,8 @@ def test_create_expense_with_exact_shares_persists_expected_rows():
 
 @pytest.mark.django_db
 def test_create_expense_is_idempotent_on_client_id():
-    User = get_user_model()
-    alice = User.objects.create_user(email="alice@example.com")
+    user_model = get_user_model()
+    alice = user_model.objects.create_user(email="alice@example.com")
     group = create_group(actor=alice, name="Trip", default_currency="EUR")
     add_unregistered_participant(actor=alice, group=group, display_name="Bob")
 

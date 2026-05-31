@@ -1,9 +1,7 @@
-from typing import Optional
-
 from django.conf import settings
 
 
-def normalize_locale(locale: Optional[str]) -> str:
+def normalize_locale(locale: str | None) -> str:
     """Return a supported backend locale code, falling back to English.
 
     Users may carry locale tags such as ``de-AT`` or ``pt_BR`` while the backend

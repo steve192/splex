@@ -32,8 +32,8 @@ def _make_expense(owner, group, *, description, amount, expense_date=None):
 
 @pytest.mark.django_db
 def test_empty_group_returns_zeroed_summary_and_full_monthly_series():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
 
     stats = group_statistics(group)
@@ -58,8 +58,8 @@ def test_empty_group_returns_zeroed_summary_and_full_monthly_series():
 
 @pytest.mark.django_db
 def test_summary_totals_average_and_currency_breakdown():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     _make_expense(owner, group, description="Pizza", amount="10.00")
     _make_expense(owner, group, description="Pizza", amount="20.00")
@@ -78,8 +78,8 @@ def test_summary_totals_average_and_currency_breakdown():
 
 @pytest.mark.django_db
 def test_monthly_series_buckets_by_month_and_zero_fills():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     today = date.today()
     _make_expense(owner, group, description="A", amount="10.00", expense_date=today)
@@ -98,8 +98,8 @@ def test_monthly_series_buckets_by_month_and_zero_fills():
 
 @pytest.mark.django_db
 def test_top_descriptions_groups_case_insensitively():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     _make_expense(owner, group, description="Pizza", amount="10.00")
     _make_expense(owner, group, description="pizza", amount="20.00")
@@ -118,10 +118,10 @@ def test_top_descriptions_groups_case_insensitively():
 
 @pytest.mark.django_db
 def test_contributions_show_paid_versus_share_per_member():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
-    bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    add_unregistered_participant(actor=owner, group=group, display_name="Bob")
     owner_p = get_or_create_user_participant(owner)
 
     # Owner pays 30, split equally between the 2 members → each owes 15.
@@ -147,8 +147,8 @@ def test_contributions_show_paid_versus_share_per_member():
 
 @pytest.mark.django_db
 def test_biggest_expenses_returns_top_5_by_converted_amount():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     amounts = ["10", "100", "5", "50", "200", "1", "75"]
     for i, amount in enumerate(amounts):
@@ -161,8 +161,8 @@ def test_biggest_expenses_returns_top_5_by_converted_amount():
 
 @pytest.mark.django_db
 def test_deleted_expenses_are_excluded_from_all_stats():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     expense = _make_expense(owner, group, description="Ghost", amount="100.00")
     _make_expense(owner, group, description="Real", amount="20.00")
@@ -182,9 +182,9 @@ def test_deleted_expenses_are_excluded_from_all_stats():
 
 @pytest.mark.django_db
 def test_endpoint_requires_group_membership():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
-    outsider = User.objects.create_user(email="outsider@example.com", display_name="Outsider")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    outsider = user_model.objects.create_user(email="outsider@example.com", display_name="Outsider")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
 
     client = APIClient()
@@ -195,8 +195,8 @@ def test_endpoint_requires_group_membership():
 
 @pytest.mark.django_db
 def test_endpoint_returns_aggregated_payload_for_member():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     _make_expense(owner, group, description="Pizza", amount="12.34")
 
@@ -212,8 +212,8 @@ def test_endpoint_returns_aggregated_payload_for_member():
 
 @pytest.mark.django_db
 def test_spend_per_week_is_money_with_currency():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     # Two expenses one week apart → total 21, span ≈ 1.14 weeks → ~18.32/wk.
     _make_expense(owner, group, description="A", amount="10.00", expense_date="2025-04-01")
@@ -227,8 +227,8 @@ def test_spend_per_week_is_money_with_currency():
 
 @pytest.mark.django_db
 def test_locations_returns_geotagged_expenses_only():
-    User = get_user_model()
-    owner = User.objects.create_user(
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(
         email="owner@example.com", display_name="Owner", location_tracking_enabled=True
     )
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
@@ -259,8 +259,8 @@ def test_locations_returns_geotagged_expenses_only():
 
 @pytest.mark.django_db
 def test_day_of_week_buckets_by_weekday():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     # 2025-04-07 was a Monday (weekday=0).
     _make_expense(owner, group, description="Mon1", amount="10", expense_date="2025-04-07")
@@ -278,8 +278,8 @@ def test_day_of_week_buckets_by_weekday():
 
 @pytest.mark.django_db
 def test_pair_stats_attribute_owed_amount_to_payer():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
     group = create_group(actor=owner, name="Trip", default_currency="EUR")
     bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
     owner_p = get_or_create_user_participant(owner)
@@ -308,9 +308,9 @@ def test_pair_stats_attribute_owed_amount_to_payer():
 
 @pytest.mark.django_db
 def test_friendship_statistics_uses_friendship_default_currency():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
-    bob_user = User.objects.create_user(email="bob@example.com", display_name="Bob")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    bob_user = user_model.objects.create_user(email="bob@example.com", display_name="Bob")
     bob_p = get_or_create_user_participant(bob_user)
     friendship = create_friendship(actor=owner, other_participant=bob_p)
     owner_p = get_or_create_user_participant(owner)
@@ -338,10 +338,10 @@ def test_friendship_statistics_uses_friendship_default_currency():
 
 @pytest.mark.django_db
 def test_friendship_endpoint_requires_membership():
-    User = get_user_model()
-    owner = User.objects.create_user(email="owner@example.com", display_name="Owner")
-    bob_user = User.objects.create_user(email="bob@example.com", display_name="Bob")
-    outsider = User.objects.create_user(email="outsider@example.com", display_name="Outsider")
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    bob_user = user_model.objects.create_user(email="bob@example.com", display_name="Bob")
+    outsider = user_model.objects.create_user(email="outsider@example.com", display_name="Outsider")
     bob_p = get_or_create_user_participant(bob_user)
     friendship = create_friendship(actor=owner, other_participant=bob_p)
 

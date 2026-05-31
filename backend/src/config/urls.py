@@ -26,12 +26,24 @@ class PwaRouteView(TemplateView):
 
 
 urlpatterns = [
-    path("api/auth/token/refresh/", UpdateLastLoginTokenRefreshView.as_view(), name="token_refresh"),
+    path(
+        "api/auth/token/refresh/",
+        UpdateLastLoginTokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
     # `<token>/attribution/` is registered before the catch-all so the
     # `<path:token>` route below doesn't greedily swallow it.
-    path("api/media/<path:token>/attribution/", MediaAttributionView.as_view(), name="media_attribution"),
+    path(
+        "api/media/<path:token>/attribution/",
+        MediaAttributionView.as_view(),
+        name="media_attribution",
+    ),
     path("api/media/<path:token>/", PrivateMediaView.as_view(), name="private_media"),
-    path("api/open-source-components/", OpenSourceComponentsView.as_view(), name="open_source_components"),
+    path(
+        "api/open-source-components/",
+        OpenSourceComponentsView.as_view(),
+        name="open_source_components",
+    ),
     path("api/", include("splex.accounts.api.urls")),
     path("api/", include("splex.groups.api.urls")),
     path("api/", include("splex.friends.api.urls")),

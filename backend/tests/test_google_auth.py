@@ -7,7 +7,12 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 
-def _google_tokeninfo(email="user@example.com", aud="web-client-id", verified=True, name="Test User"):
+def _google_tokeninfo(
+    email="user@example.com",
+    aud="web-client-id",
+    verified=True,
+    name="Test User",
+):
     """Return a mock tokeninfo response payload."""
     return {
         "iss": "https://accounts.google.com",

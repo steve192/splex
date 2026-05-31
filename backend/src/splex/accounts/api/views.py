@@ -196,7 +196,10 @@ class MeView(APIView):
         data = serializer.validated_data
         update_fields: list[str] = []
         if "avatar_image" in data and data["avatar_image"]:
-            user.avatar_url = save_data_url_image(data_url=data["avatar_image"], folder="profile-images")
+            user.avatar_url = save_data_url_image(
+                data_url=data["avatar_image"],
+                folder="profile-images",
+            )
             # New image always replaces previous attribution.
             user.avatar_attribution = data.get("avatar_attribution") or ""
             update_fields.extend(["avatar_url", "avatar_attribution"])

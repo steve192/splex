@@ -102,7 +102,13 @@ def _record_login(user) -> None:
     user.last_login = now
     user.retention_first_notice_sent_at = None
     user.retention_second_notice_sent_at = None
-    user.save(update_fields=["last_login", "retention_first_notice_sent_at", "retention_second_notice_sent_at"])
+    user.save(
+        update_fields=[
+            "last_login",
+            "retention_first_notice_sent_at",
+            "retention_second_notice_sent_at",
+        ]
+    )
 
 
 @transaction.atomic

@@ -11,6 +11,17 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 import { handleDemoRequest } from "./demoBackend";
 import { DemoWriteBlockedError, onDemoWriteBlocked } from "./demoMode";
 
+type DemoStatisticsResponse = {
+  summary: {
+    total_amount: string;
+    expense_count: number;
+    first_expense_date: string | null;
+    last_expense_date: string | null;
+    currency_breakdown: Array<{ currency: string; total: string; count: number }>;
+  };
+  monthly: Array<{ month: string; total: string }>;
+};
+
 describe("demoBackend GET", () => {
   it("returns the demo user for /api/me/", async () => {
     const user = await handleDemoRequest<{ email: string }>("GET", "/api/me/");
@@ -44,6 +55,27 @@ describe("demoBackend GET", () => {
     expect(Array.isArray(balances)).toBe(true);
     const stats = await handleDemoRequest<{ summary: unknown }>("GET", "/api/groups/1001/statistics/");
     expect(stats.summary).toBeDefined();
+  });
+
+  it("keeps trip statistics chronologically ordered and currency-grouped", async () => {
+    const stats = await handleDemoRequest<DemoStatisticsResponse>(
+      "GET",
+      "/api/groups/1001/statistics/"
+    );
+
+    expect(stats.summary).toMatchObject({
+      total_amount: "685.00",
+      expense_count: 6,
+      first_expense_date: "2026-04-20",
+      last_expense_date: "2026-05-22"
+    });
+    expect(stats.summary.currency_breakdown).toEqual([
+      { currency: "EUR", total: "655.00", count: 5 },
+      { currency: "USD", total: "32.40", count: 1 }
+    ]);
+    expect(stats.monthly).toHaveLength(12);
+    expect(stats.monthly.at(-2)).toEqual({ month: "2026-04-01", total: "300.00" });
+    expect(stats.monthly.at(-1)).toEqual({ month: "2026-05-01", total: "385.00" });
   });
 
   it("returns friends list and friend details", async () => {

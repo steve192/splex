@@ -15,7 +15,6 @@ from splex.expenses.receipts import upload_receipt
 from splex.expenses.services import create_expense
 from splex.groups.services import add_unregistered_participant, create_group, delete_group
 
-
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100  # minimal magic header + filler
 PDF_BYTES = b"%PDF-1.4\n" + b"\x00" * 100
 RANDOM_BYTES = b"not a valid file" * 10

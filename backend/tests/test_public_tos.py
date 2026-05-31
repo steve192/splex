@@ -108,25 +108,32 @@ def test_render_legal_document_creates_placeholder_for_missing_imprint_file():
         assert "Legal Notice" in document
 
 
-def test_get_legal_file_path_uses_env_before_django_settings_for_tos(monkeypatch):
-    fallback_path = "/tmp/splex-tos.html"
-    monkeypatch.setattr("splex.shared.tos.settings", type("SettingsStub", (), {"configured": False})())
+def _set_unconfigured_settings(monkeypatch):
+    monkeypatch.setattr(
+        "splex.shared.tos.settings",
+        type("SettingsStub", (), {"configured": False})(),
+    )
+
+
+def test_get_legal_file_path_uses_env_before_django_settings_for_tos(monkeypatch, tmp_path):
+    fallback_path = str(tmp_path / "splex-tos.html")
+    _set_unconfigured_settings(monkeypatch)
     monkeypatch.setenv("TOS_FILE_PATH", fallback_path)
 
     assert get_legal_file_path("tos") == Path(fallback_path)
 
 
-def test_get_legal_file_path_uses_env_before_django_settings_for_privacy(monkeypatch):
-    fallback_path = "/tmp/splex-privacy.html"
-    monkeypatch.setattr("splex.shared.tos.settings", type("SettingsStub", (), {"configured": False})())
+def test_get_legal_file_path_uses_env_before_django_settings_for_privacy(monkeypatch, tmp_path):
+    fallback_path = str(tmp_path / "splex-privacy.html")
+    _set_unconfigured_settings(monkeypatch)
     monkeypatch.setenv("PRIVACY_FILE_PATH", fallback_path)
 
     assert get_legal_file_path("privacy") == Path(fallback_path)
 
 
-def test_get_legal_file_path_uses_env_before_django_settings_for_imprint(monkeypatch):
-    fallback_path = "/tmp/splex-imprint.html"
-    monkeypatch.setattr("splex.shared.tos.settings", type("SettingsStub", (), {"configured": False})())
+def test_get_legal_file_path_uses_env_before_django_settings_for_imprint(monkeypatch, tmp_path):
+    fallback_path = str(tmp_path / "splex-imprint.html")
+    _set_unconfigured_settings(monkeypatch)
     monkeypatch.setenv("IMPRINT_FILE_PATH", fallback_path)
 
     assert get_legal_file_path("imprint") == Path(fallback_path)
