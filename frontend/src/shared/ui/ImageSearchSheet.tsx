@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, Platform, View } from "react-native";
+import { FlatList, Image, Platform, useWindowDimensions, View } from "react-native";
 import {
   ActivityIndicator,
   Button,
@@ -11,6 +11,7 @@ import {
   TouchableRipple,
   useTheme
 } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useI18n } from "../i18n/I18nContext";
 import { useKeyboardHeight } from "../lib/useKeyboardHeight";
@@ -54,6 +55,15 @@ export function ImageSearchSheet({
   const { t } = useI18n();
   const theme = useTheme();
   const keyboardHeight = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  // Fit the sheet between the status bar and the keyboard so the search bar
+  // stays on screen: the modal is vertically centred, so lifting it by the
+  // keyboard height alone would shove its top under the status bar.
+  const sheetHeight = Math.max(
+    240,
+    Math.min(windowHeight * 0.9, windowHeight - insets.top - keyboardHeight - 24)
+  );
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<OpenverseImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +117,12 @@ export function ImageSearchSheet({
         onDismiss={onDismiss}
         contentContainerStyle={[
           styles.imageSearchSheet,
-          { backgroundColor: theme.colors.surface, marginBottom: keyboardHeight }
+          {
+            backgroundColor: theme.colors.surface,
+            height: sheetHeight,
+            marginTop: insets.top,
+            marginBottom: keyboardHeight
+          }
         ]}
       >
         <View style={styles.rowBetween}>

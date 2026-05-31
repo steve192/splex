@@ -105,7 +105,6 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 16,
     gap: 12,
-    height: "90%",
     maxWidth: 720,
     padding: 16,
     width: "94%"

@@ -2,7 +2,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Dialog, IconButton, Portal, SegmentedButtons, Snackbar, Switch, Text, TouchableRipple } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Button, Dialog, IconButton, Portal, SegmentedButtons, Snackbar, Switch, Text, TouchableRipple, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
@@ -38,6 +39,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const theme = useTheme();
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [balances, setBalances] = useState<GroupBalance[]>([]);
@@ -55,6 +57,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
   const [groupImageVisible, setGroupImageVisible] = useState(false);
   const [simplifyBalances, setSimplifyBalances] = useState(false);
   const [simplifyInfoVisible, setSimplifyInfoVisible] = useState(false);
+  const [trackReminderConfirmVisible, setTrackReminderConfirmVisible] = useState(false);
   const balanceSummary = useMemo(
     () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
     [balances, group?.current_participant_id, group?.default_currency]
@@ -244,7 +247,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         <View style={styles.rowActions}>
           <Button
             mode="contained"
-            icon="plus"
+            accessibilityLabel={t("expense.add")}
             onPress={() =>
               navigation.navigate("AddExpense", {
                 contextType: "group",
@@ -254,13 +257,13 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
               })
             }
           >
-            {t("expense.add")}
+            <MaterialCommunityIcons name="plus" size={18} color={theme.colors.onPrimary} />
           </Button>
           <Button mode="elevated" icon="link-variant" onPress={() => invite()}>
             {t("invite.create")}
           </Button>
-          <Button mode="elevated" icon="bell-outline" onPress={() => remindToTrackExpenses()}>
-            {t("invite.trackReminder")}
+          <Button mode="elevated" icon="bell-outline" onPress={() => setTrackReminderConfirmVisible(true)}>
+            {t("invite.remind")}
           </Button>
         </View>
 
@@ -404,6 +407,26 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setSimplifyInfoVisible(false)}>{t("common.ok")}</Button>
+          </Dialog.Actions>
+        </Dialog>
+        <Dialog
+          visible={trackReminderConfirmVisible}
+          onDismiss={() => setTrackReminderConfirmVisible(false)}
+        >
+          <Dialog.Title>{t("invite.trackReminder")}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">{t("invite.trackReminderConfirm")}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setTrackReminderConfirmVisible(false)}>{t("common.cancel")}</Button>
+            <Button
+              onPress={() => {
+                setTrackReminderConfirmVisible(false);
+                remindToTrackExpenses();
+              }}
+            >
+              {t("invite.remind")}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
