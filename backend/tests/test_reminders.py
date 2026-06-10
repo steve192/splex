@@ -62,7 +62,7 @@ def test_group_settle_reminder_sends_to_targeted_debtor():
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     bob_participant = _add_friend_to_group(actor=actor, group=group, friend_user=bob)
 
-    with patch("splex.notifications.services.send_expo_notification") as send:
+    with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
             f"/api/groups/{group.id}/reminders/settle/",
             {"participant_id": bob_participant.id, "amount": "10.00", "currency": "EUR"},
@@ -172,7 +172,7 @@ def test_group_track_expense_reminder_pings_every_other_member():
     _add_friend_to_group(actor=actor, group=group, friend_user=bob)
     _add_friend_to_group(actor=actor, group=group, friend_user=carol)
 
-    with patch("splex.notifications.services.send_expo_notification") as send:
+    with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
             f"/api/groups/{group.id}/reminders/track-expense/", {}, format="json",
         )
@@ -208,7 +208,7 @@ def test_friend_settle_reminder_sends_to_other_side():
     _enable_push(bob)
     friendship = create_friendship(actor, get_or_create_user_participant(bob))
 
-    with patch("splex.notifications.services.send_expo_notification") as send:
+    with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
             f"/api/friends/{friendship.id}/reminders/settle/",
             {"amount": "12.50", "currency": "EUR"},
@@ -258,7 +258,7 @@ def test_friend_track_expense_reminder_pings_other_friend():
     bob = _user("b@example.com")
     _enable_push(bob)
     friendship = create_friendship(actor, get_or_create_user_participant(bob))
-    with patch("splex.notifications.services.send_expo_notification") as send:
+    with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
             f"/api/friends/{friendship.id}/reminders/track-expense/", {}, format="json",
         )

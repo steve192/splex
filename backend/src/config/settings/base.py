@@ -314,6 +314,13 @@ VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = env("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")
 
+# Push endpoint TTL (see the cleanup_push_endpoints command).  A device token /
+# web-push subscription with no re-registration (the app re-registers on every
+# launch) and no confirmed delivery for this many days is deleted; a returning
+# device transparently re-registers on its next launch.  Set to 0 to keep
+# endpoints forever (dead ones are still removed on terminal send errors).
+PUSH_TOKEN_TTL_DAYS = env_int("PUSH_TOKEN_TTL_DAYS", 365)
+
 # Allow new user accounts to be created at login.  When false, only existing
 # users may sign in; unknown emails (magic link or Google) are rejected.
 ALLOW_REGISTRATION = env_bool("ALLOW_REGISTRATION", True)

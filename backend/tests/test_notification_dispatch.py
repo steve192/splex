@@ -8,7 +8,12 @@ from django.test import override_settings
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
 from splex.groups.services import create_group
-from splex.notifications.models import DeviceToken, Notification, WebPushSubscription
+from splex.notifications.models import (
+    DeviceToken,
+    ExpoPushTicket,
+    Notification,
+    WebPushSubscription,
+)
 from splex.notifications.services import (
     TerminalDispatchError,
     create_notifications_for_activity,
@@ -142,6 +147,66 @@ def test_non_terminal_error_keeps_token_for_retry():
     assert notification.status == Notification.Status.FAILED
     # Transient errors leave the token in place for the next attempt.
     assert DeviceToken.objects.filter(token="flaky-token").exists()
+
+
+@pytest.mark.django_db
+def test_dispatch_records_expo_ticket_for_receipt_check():
+    actor, receiver, group = _setup_group_with_two_users()
+    device = DeviceToken.objects.create(
+        user=receiver, token="ExponentPushToken[abc]", platform="android"
+    )
+
+    event = _expense_created_event(actor, group)
+    create_notifications_for_activity(event)
+    notification = Notification.objects.get(user=receiver)
+
+    with patch(
+        "splex.notifications.services.send_expo_notification", return_value="ticket-42"
+    ):
+        dispatch_pending_notifications([notification.id])
+
+    assert ExpoPushTicket.objects.filter(device_token=device, ticket_id="ticket-42").exists()
+    # The accepted ticket is not yet a confirmed delivery.
+    device.refresh_from_db()
+    assert device.last_success_at is None
+
+
+@pytest.mark.django_db
+def test_dispatch_marks_web_push_delivery_success():
+    actor, receiver, group = _setup_group_with_two_users()
+    subscription = WebPushSubscription.objects.create(
+        user=receiver, endpoint="https://example.com/ok", p256dh="x", auth="y"
+    )
+
+    event = _expense_created_event(actor, group)
+    create_notifications_for_activity(event)
+    notification = Notification.objects.get(user=receiver)
+
+    with patch("splex.notifications.services.send_web_push_notification"):
+        dispatch_pending_notifications([notification.id])
+
+    subscription.refresh_from_db()
+    assert subscription.last_success_at is not None
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("status_code", [401, 403, 404, 410])
+def test_send_web_push_vapid_or_gone_errors_are_terminal(status_code):
+    """401/403 (VAPID key mismatch) make a subscription permanently
+    unsendable, exactly like a 404/410 - all must raise the terminal error so
+    the dispatcher deletes the row instead of retrying forever."""
+    from pywebpush import WebPushException
+
+    _actor, receiver, _group = _setup_group_with_two_users()
+    subscription = WebPushSubscription.objects.create(
+        user=receiver, endpoint="https://example.com/mismatch", p256dh="x", auth="y"
+    )
+    generate_vapid_key()
+
+    error = WebPushException("rejected", response=type("R", (), {"status_code": status_code})())
+    with patch("pywebpush.webpush", side_effect=error):
+        with pytest.raises(TerminalDispatchError):
+            send_web_push_notification(subscription, title="T", body="B", data={})
 
 
 @pytest.mark.django_db

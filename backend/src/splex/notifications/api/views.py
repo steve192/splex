@@ -41,10 +41,17 @@ class DeviceTokenView(APIView):
         serializer = DeviceTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        # Keyed on the token alone: a device belongs to exactly one account, so
+        # registering it under a new user takes it away from the previous one.
+        # Otherwise the previous account would keep receiving this device's
+        # notifications after someone else logged in on it.
         DeviceToken.objects.update_or_create(
-            user=request.user,
             token=data["token"],
-            defaults={"platform": data["platform"], "enabled": data["enabled"]},
+            defaults={
+                "user": request.user,
+                "platform": data["platform"],
+                "enabled": data["enabled"],
+            },
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -54,10 +61,12 @@ class WebPushSubscriptionView(APIView):
         serializer = WebPushSubscriptionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        # Keyed on the endpoint alone - same ownership-move semantics as
+        # DeviceTokenView above.
         WebPushSubscription.objects.update_or_create(
-            user=request.user,
             endpoint=data["endpoint"],
             defaults={
+                "user": request.user,
                 "p256dh": data["keys"]["p256dh"],
                 "auth": data["keys"]["auth"],
                 "enabled": data["enabled"],

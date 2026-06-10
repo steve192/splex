@@ -7,14 +7,19 @@
  * enable/disable preference in AsyncStorage so toggling on one device doesn't
  * silence the others.
  *
- * Login flow (called on every login / once per launch with a stored session):
- *   - Logging in always (re-)enables push on this device: a fresh token /
- *     subscription is requested and registered as enabled.
+ * Lifecycle contract:
+ *   - Every app launch with a session re-sends this device's current token /
+ *     subscription to the backend. That upload doubles as the liveness
+ *     heartbeat: the backend deletes rows not re-registered (and not
+ *     successfully delivered to) within PUSH_TOKEN_TTL_DAYS, and a deleted
+ *     row is transparently recreated by this re-send on the next launch.
+ *   - An explicit "off" via the Account toggle persists across launches: the
+ *     token is disabled on the backend and NOT re-sent or re-enabled at
+ *     startup. Only a fresh login clears the preference and re-enables push
+ *     (resetPushPreferenceOnLogin, called by the auth login flows).
  *   - If the OS permission is still askable, the prompt is shown; if it was
  *     permanently denied, we record that (so the Account screen can offer a
- *     manual re-enable) but do NOT re-prompt on every login.
- *   - A previous explicit "off" on this device is intentionally ignored at
- *     login — the Account toggle only suppresses push until the next login.
+ *     manual re-enable) but do NOT re-prompt on every launch.
  *   - Demo sessions never touch the real push stack.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,15 +27,22 @@ import { Platform } from "react-native";
 
 import { ApiClient } from "../api/client";
 import { ensureServiceWorkerRegistration } from "../lib/serviceWorker";
-import { urlBase64ToArrayBuffer } from "../lib/webPush";
+import { subscriptionMatchesServerKey, urlBase64ToArrayBuffer } from "../lib/webPush";
+import {
+  decideStartupPushRegistration,
+  PermissionDecision,
+  preferenceToPersistAfterStartup,
+  PushPreference,
+  PushRegistrationStatus
+} from "./registrationHelpers";
 
 declare const require: (moduleName: string) => unknown;
 
 const LOCAL_PREF_KEY = "splex.push.devicePreference";
 
 export type DevicePushState = {
-  preference: "on" | "off" | "unset";
-  lastStatus: "registered" | "permission_denied" | "unsupported" | "error" | "idle";
+  preference: PushPreference;
+  lastStatus: PushRegistrationStatus;
   lastError?: string;
 };
 
@@ -116,6 +128,12 @@ async function registerWebPush(api: ApiClient, enabled: boolean): Promise<Device
   }
 
   let subscription = await registration.pushManager.getSubscription();
+  if (subscription && !subscriptionMatchesServerKey(subscription, config.vapid_public_key)) {
+    // Created under a different VAPID key - the backend can never send to it
+    // again. Drop it; the backend's dispatch cleanup removes the stale row.
+    await subscription.unsubscribe().catch(() => undefined);
+    subscription = null;
+  }
   if (!subscription && enabled) {
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -173,22 +191,41 @@ export async function deregisterPushOnLogout(api: ApiClient): Promise<void> {
 }
 
 /**
- * (Re-)enable push for this device on login. Always attempts registration so a
- * fresh login is reliably notification-enabled; see the file header for the
- * full contract.
+ * Called by the auth login flows before the post-login bootstrap runs: a fresh
+ * login always re-enables notifications on this device, so any explicit "off"
+ * from a previous session is cleared.
+ */
+export async function resetPushPreferenceOnLogin(): Promise<void> {
+  await setLocalPushPreference("unset");
+}
+
+/**
+ * Re-send this device's push token on app launch; see the file header for the
+ * full contract. Skips registration when the user explicitly disabled push on
+ * this device or the OS permission is permanently denied.
  */
 export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePushState> {
   if (api.isDemoMode()) {
     return { preference: "off", lastStatus: "idle" };
   }
   try {
-    if ((await getPermissionDecision()) === "denied") {
+    const decision = decideStartupPushRegistration(
+      await getLocalPushPreference(),
+      await getPermissionDecision()
+    );
+    if (decision === "skip_disabled") {
+      return { preference: "off", lastStatus: "idle" };
+    }
+    if (decision === "skip_permission_denied") {
       // OS won't show the prompt again - record it for the Account screen's
       // re-enable button instead of looping a prompt the user can't answer.
       return { preference: "off", lastStatus: "permission_denied" };
     }
     const result = await registerForPlatform(api, true);
-    await setLocalPushPreference(result.preference);
+    const preferenceToPersist = preferenceToPersistAfterStartup(result.lastStatus);
+    if (preferenceToPersist) {
+      await setLocalPushPreference(preferenceToPersist);
+    }
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -196,8 +233,6 @@ export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePush
     return { preference: "off", lastStatus: "error", lastError: message };
   }
 }
-
-type PermissionDecision = "granted" | "denied" | "undetermined";
 
 /**
  * Current OS notification-permission state, collapsed to three cases.

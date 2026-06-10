@@ -171,6 +171,51 @@ def test_device_token_registration_succeeds():
 
 
 @pytest.mark.django_db
+def test_device_token_registration_moves_token_to_new_account():
+    """A device belongs to one account: registering its token under a second
+    user must take it away from the first, so the previous account never
+    receives notifications on a device it is no longer logged in on."""
+    user_model = get_user_model()
+    first = user_model.objects.create_user(email="first@example.com", display_name="First")
+    second = user_model.objects.create_user(email="second@example.com", display_name="Second")
+    DeviceToken.objects.create(user=first, platform="android", token="shared-device")
+
+    response = _auth_client(second).post(
+        "/api/notifications/device-tokens/",
+        {"token": "shared-device", "platform": "android"},
+        format="json",
+    )
+    assert response.status_code == 204
+
+    rows = DeviceToken.objects.filter(token="shared-device")
+    assert rows.count() == 1
+    assert rows.get().user == second
+
+
+@pytest.mark.django_db
+def test_web_push_registration_moves_endpoint_to_new_account():
+    user_model = get_user_model()
+    first = user_model.objects.create_user(email="first@example.com", display_name="First")
+    second = user_model.objects.create_user(email="second@example.com", display_name="Second")
+    WebPushSubscription.objects.create(
+        user=first, endpoint="https://push/shared", p256dh="old", auth="old"
+    )
+
+    response = _auth_client(second).post(
+        "/api/notifications/web-push-subscriptions/",
+        {"endpoint": "https://push/shared", "keys": {"p256dh": "new", "auth": "new"}},
+        format="json",
+    )
+    assert response.status_code == 204
+
+    rows = WebPushSubscription.objects.filter(endpoint="https://push/shared")
+    assert rows.count() == 1
+    subscription = rows.get()
+    assert subscription.user == second
+    assert subscription.p256dh == "new"
+
+
+@pytest.mark.django_db
 def test_web_push_subscription_missing_keys_returns_400_not_500():
     user_model = get_user_model()
     user = user_model.objects.create_user(email="u@example.com", display_name="U")

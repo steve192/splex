@@ -4,7 +4,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiClient, ApiError, tokenStorage, Tokens } from "../../shared/api/client";
 import { DEMO_TOKENS, DEMO_USER } from "../../shared/demo/demoFixtures";
 import { loadPersistedDemoMode } from "../../shared/demo/demoMode";
-import { deregisterPushOnLogout } from "../../shared/notifications/registration";
+import {
+  deregisterPushOnLogout,
+  resetPushPreferenceOnLogin
+} from "../../shared/notifications/registration";
 
 type User = {
   id: number;
@@ -100,8 +103,20 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
     })();
   }, [api]);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue>(() => {
+    // Shared tail of every fresh-login flow. Clearing the device push
+    // preference first means the post-login bootstrap re-enables
+    // notifications even if they were explicitly turned off before.
+    async function completeLogin(response: { user: User; tokens: Tokens }) {
+      await resetPushPreferenceOnLogin();
+      await tokenStorage.set(response.tokens);
+      await setStoredUser(response.user);
+      api.setTokens(response.tokens);
+      setTokens(response.tokens);
+      setUser(response.user);
+    }
+
+    return {
       api,
       user,
       tokens,
@@ -123,31 +138,19 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
           email,
           code
         });
-        await tokenStorage.set(response.tokens);
-        await setStoredUser(response.user);
-        api.setTokens(response.tokens);
-        setTokens(response.tokens);
-        setUser(response.user);
+        await completeLogin(response);
       },
       async loginWithToken(token: string) {
         const response = await api.post<{ user: User; tokens: Tokens }>("/api/auth/magic-token/", {
           token
         });
-        await tokenStorage.set(response.tokens);
-        await setStoredUser(response.user);
-        api.setTokens(response.tokens);
-        setTokens(response.tokens);
-        setUser(response.user);
+        await completeLogin(response);
       },
       async loginWithGoogle(idToken: string) {
         const response = await api.post<{ user: User; tokens: Tokens }>("/api/auth/google/", {
           id_token: idToken
         });
-        await tokenStorage.set(response.tokens);
-        await setStoredUser(response.user);
-        api.setTokens(response.tokens);
-        setTokens(response.tokens);
-        setUser(response.user);
+        await completeLogin(response);
       },
       async loginAsDemo() {
         await api.setDemoMode(true);
@@ -176,9 +179,8 @@ export function AuthProvider({ api, children }: { api: ApiClient; children: Reac
         setTokens(null);
         setUser(null);
       }
-    }),
-    [api, initialized, tokens, user]
-  );
+    };
+  }, [api, initialized, tokens, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

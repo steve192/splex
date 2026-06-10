@@ -23,7 +23,9 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(DeviceToken)
 class DeviceTokenAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "platform", "enabled", "created_at", "updated_at")
+    list_display = (
+        "id", "user", "platform", "enabled", "created_at", "updated_at", "last_success_at",
+    )
     list_filter = ("platform", "enabled")
     # `token` (raw FCM token) is intentionally not searchable to avoid exposing
     # the credential through admin queries/logs.
@@ -31,18 +33,18 @@ class DeviceTokenAdmin(admin.ModelAdmin):
     raw_id_fields = ("user",)
     # The push credential itself is never rendered in the admin.
     exclude = ("token",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "last_success_at")
 
 
 @admin.register(WebPushSubscription)
 class WebPushSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "enabled", "created_at", "updated_at")
+    list_display = ("id", "user", "enabled", "created_at", "updated_at", "last_success_at")
     list_filter = ("enabled",)
     search_fields = ("user__email",)
     raw_id_fields = ("user",)
     # endpoint/p256dh/auth are push encryption secrets - never render them.
     exclude = ("endpoint", "p256dh", "auth")
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "last_success_at")
 
 
 @admin.register(VapidKey)

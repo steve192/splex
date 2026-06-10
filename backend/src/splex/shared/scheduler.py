@@ -33,7 +33,9 @@ _STARTUP_DELAY_SECONDS = 60
 
 # Task registry: maps management-command name → minimum hours between runs.
 _TASKS: dict[str, int] = {
+    "check_expo_receipts": 1,
     "cleanup_links": 23,
+    "cleanup_push_endpoints": 23,
     "cleanup_receipts": 23,
     "enforce_data_retention": 23,
     "purge_soft_deleted": 23,
