@@ -112,3 +112,58 @@ def test_magic_link_email_uses_requested_locale_for_new_user():
     message = mail.outbox[-1]
     assert message.subject == "Bei Splex anmelden"
     assert "Nutze diesen Link oder den Code unten" in message.body
+
+
+@pytest.mark.django_db
+def test_magic_link_daily_send_limit_suppresses_further_emails(settings):
+    settings.MAGIC_LINK_MAX_EMAILS_PER_DAY = 3
+    for _ in range(3):
+        request_magic_login("target@example.com")
+    assert len(mail.outbox) == 3
+
+    # Fourth request to the same recipient is silently suppressed.
+    result = request_magic_login("target@example.com")
+    assert result is None
+    assert len(mail.outbox) == 3
+
+    # A different recipient is unaffected by another address's cap.
+    request_magic_login("someone-else@example.com")
+    assert len(mail.outbox) == 4
+
+
+@pytest.mark.django_db
+def test_magic_link_daily_limit_disabled_with_zero(settings):
+    settings.MAGIC_LINK_MAX_EMAILS_PER_DAY = 0
+    for _ in range(6):
+        request_magic_login("target@example.com")
+    assert len(mail.outbox) == 6
+
+
+@pytest.mark.django_db
+def test_magic_code_locks_out_after_max_failed_attempts(settings):
+    settings.MAGIC_CODE_MAX_ATTEMPTS = 3
+    request_magic_login("alice@example.com")
+    code = _extract_code(mail.outbox[-1].body)
+
+    for _ in range(3):
+        with pytest.raises(ValueError):
+            authenticate_magic_code("alice@example.com", "000000")
+
+    # Challenge is now burned: even the correct code is rejected.
+    with pytest.raises(ValueError):
+        authenticate_magic_code("alice@example.com", code)
+
+
+@pytest.mark.django_db
+def test_magic_code_lockout_disabled_with_zero(settings):
+    settings.MAGIC_CODE_MAX_ATTEMPTS = 0
+    request_magic_login("alice@example.com")
+    code = _extract_code(mail.outbox[-1].body)
+
+    for _ in range(10):
+        with pytest.raises(ValueError):
+            authenticate_magic_code("alice@example.com", "000000")
+
+    # No lockout: the correct code still works after many wrong guesses.
+    user, _tokens = authenticate_magic_code("alice@example.com", code)
+    assert user.email == "alice@example.com"

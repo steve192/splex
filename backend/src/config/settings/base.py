@@ -303,6 +303,18 @@ VAPID_SUBJECT = env("VAPID_SUBJECT", f"mailto:{DEFAULT_FROM_EMAIL}")
 # users may sign in; unknown emails (magic link or Google) are rejected.
 ALLOW_REGISTRATION = env_bool("ALLOW_REGISTRATION", True)
 
+# Magic-link abuse limits.
+# MAGIC_LINK_MAX_EMAILS_PER_DAY caps how many magic-login emails may be sent to
+# a single recipient address within a rolling 24 h window, regardless of source
+# IP.  This blunts email-bombing / using the server as a spam relay (the DRF
+# IP throttle alone does not protect a targeted address).  Set to 0 to disable.
+MAGIC_LINK_MAX_EMAILS_PER_DAY = env_int("MAGIC_LINK_MAX_EMAILS_PER_DAY", 10)
+# MAGIC_CODE_MAX_ATTEMPTS is how many wrong 6-digit codes may be tried against a
+# single challenge before it is invalidated.  This stops distributed brute force
+# of the 1-in-1,000,000 code space (the per-IP throttle does not, since an
+# attacker can rotate IPs).  Set to 0 to disable the per-challenge lockout.
+MAGIC_CODE_MAX_ATTEMPTS = env_int("MAGIC_CODE_MAX_ATTEMPTS", 5)
+
 # Data retention: accounts that have not logged in for this many months are
 # automatically deleted after two warning emails (14 days and 7 days before
 # deletion).  Set to 0 to disable automatic deletion entirely.

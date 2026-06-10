@@ -100,6 +100,23 @@ def test_google_login_rejects_wrong_audience(settings):
 
 
 @pytest.mark.django_db
+def test_google_login_rejects_wrong_issuer(settings):
+    settings.GOOGLE_CLIENT_ID = "web-client-id"
+
+    payload = _google_tokeninfo()
+    payload["iss"] = "https://evil.example.com"
+    with _mock_get_ok(payload):
+        response = APIClient().post(
+            "/api/auth/google/",
+            {"id_token": "fake-token"},
+            format="json",
+        )
+
+    assert response.status_code == 400
+    assert "issuer" in response.data["detail"]
+
+
+@pytest.mark.django_db
 def test_google_login_rejects_unverified_email(settings):
     settings.GOOGLE_CLIENT_ID = "web-client-id"
 

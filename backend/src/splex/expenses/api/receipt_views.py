@@ -136,13 +136,14 @@ class ReceiptDownloadView(APIView):
                 receipt.storage_path,
             )
             raise Http404("Receipt file is no longer available.")
+        # ``inline`` lets the browser preview the file and triggers Android's
+        # "open with" intent for unknown viewers.  Let Django build the
+        # Content-Disposition header so the (user-supplied) filename is escaped
+        # per RFC 6266 - hand-formatting it allowed quote/charset injection.
         response = FileResponse(
             default_storage.open(receipt.storage_path, "rb"),
             content_type=receipt.content_type,
-        )
-        # ``inline`` lets the browser preview the file and triggers Android's
-        # "open with" intent for unknown viewers.  Quoting per RFC 6266.
-        response["Content-Disposition"] = (
-            f'inline; filename="{receipt.original_filename}"'
+            as_attachment=False,
+            filename=receipt.original_filename,
         )
         return response

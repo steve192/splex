@@ -1,3 +1,5 @@
+import logging
+from datetime import timedelta
 from urllib.parse import urlencode
 
 import requests as http_requests
@@ -14,7 +16,30 @@ from splex.accounts.models import MagicLoginChallenge
 from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.services import get_or_create_user_participant
 
+logger = logging.getLogger(__name__)
+
 MAGIC_LOGIN_VALID_MINUTES = 15
+
+# Accepted issuers for a Google ID token's ``iss`` claim.
+GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+
+
+def _magic_link_daily_limit_reached(email: str) -> bool:
+    """True if ``email`` has already hit the per-recipient 24 h send cap.
+
+    The DRF throttle limits requests per source IP; this limit protects a
+    targeted recipient address from being email-bombed across many IPs and
+    stops the server being used as an open relay for a single address.
+    """
+    limit = getattr(settings, "MAGIC_LINK_MAX_EMAILS_PER_DAY", 0)
+    if limit <= 0:
+        return False
+    since = timezone.now() - timedelta(days=1)
+    sent_today = MagicLoginChallenge.objects.filter(
+        email=email,
+        created_at__gte=since,
+    ).count()
+    return sent_today >= limit
 
 
 def _build_template_email(*, recipient, template_base, context, locale):
@@ -45,6 +70,12 @@ def _send_template_email(*, recipient, template_base, context, locale):
 
 def request_magic_login(email: str, invite_token: str = "", locale: str = ""):
     email = email.strip().lower()
+    if _magic_link_daily_limit_reached(email):
+        # Silently stop sending once the recipient's daily cap is hit.  The view
+        # always reports "sent" regardless, so this neither leaks the limit nor
+        # whether the address exists.
+        logger.info("Magic-link daily send limit reached for a recipient; suppressing email.")
+        return None
     user_locale = locale.strip()
     existing_user = get_user_model().objects.filter(email=email).only('locale').first()
     if not user_locale and existing_user is not None:
@@ -72,17 +103,36 @@ def request_magic_login(email: str, invite_token: str = "", locale: str = ""):
     return challenge
 
 
-@transaction.atomic
 def authenticate_magic_code(email: str, code: str):
-    challenge = (
-        MagicLoginChallenge.objects.select_for_update()
-        .filter(email=email.strip().lower())
-        .order_by("-created_at")
-        .first()
-    )
-    if not challenge or not challenge.is_valid() or not challenge.verify_code(code):
-        raise ValueError("Invalid or expired login code.")
-    return consume_challenge(challenge)
+    # The raise on the failure path happens *outside* the atomic block on
+    # purpose: a wrong-code attempt must increment failed_attempts (and possibly
+    # burn the challenge) durably, so that write can't be rolled back by the
+    # exception we then raise to the caller.
+    with transaction.atomic():
+        challenge = (
+            MagicLoginChallenge.objects.select_for_update()
+            .filter(email=email.strip().lower())
+            .order_by("-created_at")
+            .first()
+        )
+        if challenge and challenge.is_valid() and challenge.verify_code(code):
+            return consume_challenge(challenge)
+        if challenge is not None and challenge.is_valid():
+            _record_failed_code_attempt(challenge)
+    raise ValueError("Invalid or expired login code.")
+
+
+def _record_failed_code_attempt(challenge) -> None:
+    """Count a wrong code guess and burn the challenge once the cap is hit."""
+    challenge.failed_attempts += 1
+    update_fields = ["failed_attempts"]
+    max_attempts = getattr(settings, "MAGIC_CODE_MAX_ATTEMPTS", 0)
+    if max_attempts > 0 and challenge.failed_attempts >= max_attempts:
+        # Burn the challenge so further guesses (even with the right code) are
+        # rejected; the user must request a fresh code.
+        challenge.consumed_at = timezone.now()
+        update_fields.append("consumed_at")
+    challenge.save(update_fields=update_fields)
 
 
 @transaction.atomic
@@ -137,6 +187,9 @@ def authenticate_with_google(*, id_token: str):
         payload = resp.json()
     except Exception:
         raise ValueError("Could not verify Google token.")
+
+    if payload.get("iss") not in GOOGLE_ISSUERS:
+        raise ValueError("Token issuer is not Google.")
 
     if payload.get("aud") not in allowed_client_ids:
         raise ValueError("Token audience does not match configured client IDs.")

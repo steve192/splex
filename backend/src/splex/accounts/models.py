@@ -110,6 +110,10 @@ class MagicLoginChallenge(models.Model):
     token_hash = models.CharField(max_length=128, unique=True)
     expires_at = models.DateTimeField()
     consumed_at = models.DateTimeField(null=True, blank=True)
+    # Number of wrong code submissions against this challenge.  Once it reaches
+    # settings.MAGIC_CODE_MAX_ATTEMPTS the challenge is invalidated to stop
+    # brute force of the 6-digit code (see authenticate_magic_code).
+    failed_attempts = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     @classmethod
@@ -129,7 +133,10 @@ class MagicLoginChallenge(models.Model):
         return self.consumed_at is None and self.expires_at > timezone.now()
 
     def verify_code(self, code: str) -> bool:
-        return self.code_hash == hashlib.sha256(code.encode()).hexdigest()
+        # Constant-time compare so a wrong guess can't be distinguished from the
+        # hash-comparison timing (both operands are fixed-length hex digests).
+        candidate = hashlib.sha256(code.encode()).hexdigest()
+        return secrets.compare_digest(self.code_hash, candidate)
 
     @staticmethod
     def hash_token(token: str) -> str:

@@ -141,3 +141,44 @@ def test_delete_account_removes_push_tokens():
 
     assert not DeviceToken.objects.filter(token="tok").exists()
     assert not WebPushSubscription.objects.filter(endpoint="https://ep").exists()
+
+
+@pytest.mark.django_db
+def test_device_token_missing_field_returns_400_not_500():
+    """A malformed device-token registration must be a clean 400, not a 500."""
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
+
+    response = _auth_client(user).post(
+        "/api/notifications/device-tokens/", {}, format="json"
+    )
+    assert response.status_code == 400
+    assert not DeviceToken.objects.filter(user=user).exists()
+
+
+@pytest.mark.django_db
+def test_device_token_registration_succeeds():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
+
+    response = _auth_client(user).post(
+        "/api/notifications/device-tokens/",
+        {"token": "abc123", "platform": "android"},
+        format="json",
+    )
+    assert response.status_code == 204
+    assert DeviceToken.objects.filter(user=user, token="abc123").exists()
+
+
+@pytest.mark.django_db
+def test_web_push_subscription_missing_keys_returns_400_not_500():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
+
+    response = _auth_client(user).post(
+        "/api/notifications/web-push-subscriptions/",
+        {"endpoint": "https://ep"},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert not WebPushSubscription.objects.filter(user=user).exists()

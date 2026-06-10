@@ -159,6 +159,20 @@ def test_download_returns_file_with_inline_disposition(alice, group, media_root)
 
 
 @pytest.mark.django_db
+def test_download_escapes_quotes_in_filename(alice, group, media_root):
+    r = _upload(_auth_client(alice), group_id=group.id, content=PNG_BYTES,
+                content_type="image/png", name='ev"il.png')
+    rid = r.json()["id"]
+    response = _auth_client(alice).get(f"/api/receipts/{rid}/download/")
+    assert response.status_code == 200
+    disposition = response["Content-Disposition"]
+    # The bare double-quote must not survive unescaped into the header value,
+    # otherwise a crafted filename could spoof the disposition parameters.
+    assert 'filename="ev"il.png"' not in disposition
+    assert "\n" not in disposition and "\r" not in disposition
+
+
+@pytest.mark.django_db
 def test_download_requires_authentication(alice, group, media_root):
     r = _upload(_auth_client(alice), group_id=group.id)
     rid = r.json()["id"]
