@@ -13,7 +13,7 @@ authors = [
 license = { text = "Splex Non-Commercial Source License 1.0" }
 urls = { Homepage = "https://github.com/steve192/splex", Repository = "https://github.com/steve192/splex" }
 dependencies = [
-  "Django==6.0.5",
+  "Django==6.0.6",
   "djangorestframework==3.17.1",
   "djangorestframework-simplejwt==5.5.1",
   "django-cors-headers==4.9.0",
