@@ -603,9 +603,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 value={amount}
                 onChangeText={(text) => {
                   // Allow only digits and decimal separators (. or ,)
-                  const filtered = text.replace(/[^0-9.,]/g, "");
+                  const filtered = text.replaceAll(/[^0-9.,]/g, "");
                   // Normalize: replace , with . and remove extra decimal separators
-                  const normalized = filtered.replace(/,/g, ".");
+                  const normalized = filtered.replaceAll(",", ".");
                   const parts = normalized.split(".");
                   const valid = parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
                   setAmount(valid);

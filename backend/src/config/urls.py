@@ -16,11 +16,13 @@ class PwaRouteView(TemplateView):
     route_name = "pwa"
 
     def get(self, request, *args, **kwargs):
+        # Intentionally does not log the query string: invite/magic-login URLs
+        # carry secret tokens there (e.g. ?token=...), which must never reach
+        # the logs. The route name and path are enough for diagnostics.
         logger.info(
-            "Serving PWA route route=%s path=%s query=%s",
+            "Serving PWA route route=%s path=%s",
             self.route_name,
             request.path,
-            request.META.get("QUERY_STRING", ""),
         )
         return super().get(request, *args, **kwargs)
 

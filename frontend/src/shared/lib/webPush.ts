@@ -18,11 +18,13 @@ export function subscriptionMatchesServerKey(
 
 export function urlBase64ToArrayBuffer(value: string): ArrayBuffer {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
-  const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = `${value}${padding}`.replaceAll("-", "+").replaceAll("_", "/");
   const rawData = atob(base64);
   const output = new Uint8Array(rawData.length);
   for (let index = 0; index < rawData.length; index += 1) {
-    output[index] = rawData.charCodeAt(index);
+    // atob yields a binary string of single-byte chars (0-255), so the code
+    // point and char code are identical; codePointAt satisfies the linter.
+    output[index] = rawData.codePointAt(index) ?? 0;
   }
   return output.buffer.slice(output.byteOffset, output.byteOffset + output.byteLength);
 }

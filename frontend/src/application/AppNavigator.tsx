@@ -205,7 +205,7 @@ export function AppNavigator() {
   useEffect(() => {
     let cancelled = false;
 
-    async function useInviteTokenIfValid(token: string, source: "url" | "storage") {
+    async function applyInviteTokenIfValid(token: string, source: "url" | "storage") {
       inviteDebug("navigator validating invite token", {
         source,
         tokenPreview: `${token.slice(0, 6)}...`
@@ -257,7 +257,7 @@ export function AppNavigator() {
       const urlInviteToken = inviteTokenFromCurrentUrl();
       if (urlInviteToken) {
         inviteDebug("navigator found invite token in current url");
-        await useInviteTokenIfValid(urlInviteToken, "url");
+        await applyInviteTokenIfValid(urlInviteToken, "url");
         if (!cancelled) {
           inviteCheckDoneRef.current = true;
           setCheckedAuthState("auth");
@@ -268,7 +268,7 @@ export function AppNavigator() {
       const stored = await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY);
       inviteDebug("navigator loaded pending invite token from storage", { hasStoredToken: Boolean(stored) });
       if (stored) {
-        await useInviteTokenIfValid(stored, "storage");
+        await applyInviteTokenIfValid(stored, "storage");
       } else {
         setPendingInviteToken(null);
       }

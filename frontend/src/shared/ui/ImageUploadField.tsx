@@ -159,7 +159,9 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const CHUNK = 0x8000;
   let binary = "";
   for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)));
+    // Bytes are 0-255, so code point and char code coincide; fromCodePoint
+    // satisfies the linter and is equivalent for this binary data.
+    binary += String.fromCodePoint(...bytes.subarray(i, i + CHUNK));
   }
   return btoa(binary);
 }
