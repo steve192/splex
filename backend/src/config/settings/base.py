@@ -83,6 +83,18 @@ PWA_ROOT = BASE_DIR / "static_pwa"
 
 APP_BEHIND_PROXY = env_bool("APP_BEHIND_PROXY", False)
 PROXY_USES_TLS = env_bool("PROXY_USES_TLS", False)
+
+# Number of reverse proxies between the public internet and the app.  DRF uses
+# this to find the real client IP for rate limiting: it reads the address at a
+# fixed position from the right of X-Forwarded-For and ignores any client-forged
+# prefix.  Without it, DRF trusts a fully client-supplied X-Forwarded-For header,
+# letting an attacker rotate the header to dodge every IP-based throttle.
+#   - directly exposed (no proxy): 0  -> use REMOTE_ADDR, ignore X-Forwarded-For
+#   - behind exactly one proxy:    1  -> use the IP that proxy recorded
+#   - behind N chained proxies:    N
+# Defaults to 1 when APP_BEHIND_PROXY is on, else 0; override for deeper chains
+# (e.g. Cloudflare in front of your own reverse proxy = 2).
+NUM_PROXIES = env_int("NUM_PROXIES", 1 if APP_BEHIND_PROXY else 0)
 PUBLIC_USES_TLS = (
     FRONTEND_PUBLIC_URL.startswith("https://")
     or BACKEND_PUBLIC_URL.startswith("https://")
@@ -264,6 +276,9 @@ REST_FRAMEWORK = {
         "reminders": env("THROTTLE_REMINDERS_RATE", "5/minute"),
     },
     "EXCEPTION_HANDLER": "splex.shared.api.exception_handler",
+    # Pin proxy depth so throttle identities use a trustworthy client IP rather
+    # than a spoofable X-Forwarded-For header (see NUM_PROXIES above).
+    "NUM_PROXIES": NUM_PROXIES,
 }
 
 ACCESS_TOKEN_LIFETIME_MINUTES = int(env("ACCESS_TOKEN_LIFETIME_MINUTES", "15"))
