@@ -2,7 +2,7 @@
   "expo": {
     "name": "Splex",
     "slug": "splex",
-    "version": "1.4.4",
+    "version": "1.4.5",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/pwa-maskable-icon.png",
@@ -20,9 +20,9 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
     },
-    "runtimeVersion": "10.0.0",
+    "runtimeVersion": "11.0.0",
     "android": {
-      "versionCode": 10,
+      "versionCode": 11,
       "package": "com.sterul.splex",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/pwa-maskable-icon.png",
