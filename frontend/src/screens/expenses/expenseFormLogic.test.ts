@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { Participant } from "../../shared/types/models";
 import {
+  applyPaymentsToForm,
   buildPayments,
   buildSplitPayload,
+  currencyAmount,
   effectiveSplitMethod,
+  hydrateSplit,
   perMemberShare,
   splitEvenly,
   splitTabValue
@@ -131,5 +134,166 @@ describe("expense form logic", () => {
       { participant_id: 1, amount: "7" },
       { participant_id: 2, amount: "3.5" }
     ]);
+  });
+
+  it("buildPayments returns undefined when single-payer has no payer", () => {
+    expect(
+      buildPayments({
+        multiPayer: false,
+        participants: [],
+        paymentValues: {},
+        payerId: null,
+        amount: "5"
+      })
+    ).toBeUndefined();
+  });
+
+  it("currencyAmount formats absolute amount with currency", () => {
+    expect(currencyAmount(12.5, "EUR")).toBe("12.50 EUR");
+    expect(currencyAmount(-3, "USD")).toBe("3.00 USD");
+  });
+
+  it("splitEvenly returns nothing for an empty participant list", () => {
+    expect(splitEvenly(10, [])).toEqual({});
+  });
+
+  it("perMemberShare uses precomputed equal shares for the equal tab", () => {
+    expect(
+      perMemberShare({
+        participantId: 2,
+        tabValue: "equal",
+        selectedParticipantIds: [1, 2],
+        selectedEqualShares: { 1: 5, 2: 5 },
+        splitValues: {},
+        totalAmount: 10
+      })
+    ).toBe(5);
+    // unknown participant falls back to 0
+    expect(
+      perMemberShare({
+        participantId: 99,
+        tabValue: "equal",
+        selectedParticipantIds: [1, 2],
+        selectedEqualShares: { 1: 5, 2: 5 },
+        splitValues: {},
+        totalAmount: 10
+      })
+    ).toBe(0);
+  });
+
+  it("perMemberShare returns 0 for unselected participants in exact/percentage", () => {
+    const base = {
+      participantId: 3,
+      selectedParticipantIds: [1, 2],
+      selectedEqualShares: {},
+      splitValues: { 3: "5" },
+      totalAmount: 10
+    };
+    expect(perMemberShare({ ...base, tabValue: "exact" })).toBe(0);
+    expect(perMemberShare({ ...base, tabValue: "percentage" })).toBe(0);
+  });
+
+  it("builds percentage and adjusted_equal split payloads", () => {
+    expect(
+      buildSplitPayload({
+        method: "percentage",
+        selectedParticipantIds: [1, 2],
+        splitValues: { 1: "60", 2: "40" }
+      })
+    ).toEqual({
+      shares: [
+        { participant_id: 1, percentage: "60" },
+        { participant_id: 2, percentage: "40" }
+      ]
+    });
+
+    expect(
+      buildSplitPayload({
+        method: "adjusted_equal",
+        selectedParticipantIds: [1, 2],
+        splitValues: { 1: "2,5" }
+      })
+    ).toEqual({
+      participant_ids: [1, 2],
+      adjustments: [{ participant_id: 1, amount: "2.5" }]
+    });
+  });
+
+  describe("hydrateSplit", () => {
+    it("equal_all hydrates to no overrides", () => {
+      expect(hydrateSplit("equal_all", undefined)).toEqual({});
+    });
+
+    it("equal_selected hydrates the selected participant ids", () => {
+      expect(hydrateSplit("equal_selected", { participant_ids: [1, 2] })).toEqual({
+        selectedParticipantIds: [1, 2]
+      });
+      // empty / missing yields no override
+      expect(hydrateSplit("equal_selected", {})).toEqual({});
+    });
+
+    it("exact hydrates selected ids and string amounts", () => {
+      expect(
+        hydrateSplit("exact", { shares: [{ participant_id: 1, amount: 4.5 }] })
+      ).toEqual({
+        selectedParticipantIds: [1],
+        splitValues: { 1: "4.5" }
+      });
+    });
+
+    it("percentage hydrates selected ids and string percentages", () => {
+      expect(
+        hydrateSplit("percentage", { shares: [{ participant_id: 2, percentage: 40 }] })
+      ).toEqual({
+        selectedParticipantIds: [2],
+        splitValues: { 2: "40" }
+      });
+    });
+
+    it("adjusted_equal hydrates adjustment amounts", () => {
+      expect(
+        hydrateSplit("adjusted_equal", { adjustments: [{ participant_id: 3, amount: 2 }] })
+      ).toEqual({
+        splitValues: { 3: "2" }
+      });
+    });
+  });
+
+  describe("applyPaymentsToForm", () => {
+    function setters() {
+      return {
+        setMultiPayer: vi.fn(),
+        setPaymentValues: vi.fn(),
+        setPayerId: vi.fn()
+      };
+    }
+
+    it("enables multi-payer mode for more than one payment", () => {
+      const s = setters();
+      applyPaymentsToForm(
+        [
+          { participant_id: 1, amount: "6" },
+          { participant_id: 2, amount: "4" }
+        ],
+        s
+      );
+      expect(s.setMultiPayer).toHaveBeenCalledWith(true);
+      expect(s.setPaymentValues).toHaveBeenCalledWith({ 1: "6", 2: "4" });
+      expect(s.setPayerId).not.toHaveBeenCalled();
+    });
+
+    it("uses single-payer mode for one payment", () => {
+      const s = setters();
+      applyPaymentsToForm([{ participant_id: 7, amount: "10" }], s);
+      expect(s.setMultiPayer).toHaveBeenCalledWith(false);
+      expect(s.setPayerId).toHaveBeenCalledWith(7);
+    });
+
+    it("clears the payer when there are no payments", () => {
+      const s = setters();
+      applyPaymentsToForm(undefined, s);
+      expect(s.setMultiPayer).toHaveBeenCalledWith(false);
+      expect(s.setPayerId).toHaveBeenCalledWith(null);
+    });
   });
 });

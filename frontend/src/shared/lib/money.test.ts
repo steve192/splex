@@ -4,6 +4,7 @@ import {
   asNumber,
   balanceText,
   buildParticipantsForFriend,
+  createClientId,
   formatMoney,
   moneyValue,
   plainAmountText
@@ -37,6 +38,44 @@ describe("money helpers", () => {
     expect(plainAmountText("4.2", "EUR")).toBe("4.20 EUR");
     expect(plainAmountText("-3", "EUR")).toBe("3.00 EUR"); // formatMoney is abs
     expect(plainAmountText(undefined, "EUR")).toBe("0.00 EUR");
+  });
+
+  it("treats non-finite numbers as zero", () => {
+    expect(asNumber("Infinity")).toBe(0);
+    expect(asNumber(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+
+  it("returns no participants when the friend has no current participant id", () => {
+    expect(buildParticipantsForFriend(null)).toEqual([]);
+    expect(
+      buildParticipantsForFriend({
+        id: 1,
+        display_name: "Stefan",
+        participant_id: 2,
+        current_participant_id: null as unknown as number,
+        balance: "0",
+        default_currency: "EUR"
+      })
+    ).toEqual([]);
+  });
+
+  it("createClientId returns a non-empty id and is unique across calls", () => {
+    const a = createClientId();
+    const b = createClientId();
+    expect(typeof a).toBe("string");
+    expect(a.length).toBeGreaterThan(0);
+    expect(a).not.toBe(b);
+  });
+
+  it("createClientId falls back to a timestamp id when crypto.randomUUID is unavailable", () => {
+    const originalCrypto = globalThis.crypto;
+    // @ts-expect-error force the no-crypto fallback path
+    delete globalThis.crypto;
+    try {
+      expect(createClientId()).toMatch(/^\d+-[0-9a-f]+$/);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", { value: originalCrypto, configurable: true });
+    }
   });
 
   it("builds friend participants with self + friend", () => {

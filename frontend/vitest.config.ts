@@ -8,8 +8,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov", "cobertura"],
+      // Logic modules only. Mirror sonar.coverage.exclusions: .tsx components
+      // have no test harness, and styles/theme/assets/generated carry no logic.
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/*.generated.ts",
+        "src/shared/ui/styles.ts",
+        "src/shared/ui/colors.ts",
+        "src/application/theme.ts",
+        "src/shared/assets/images.ts"
+      ],
       reportsDirectory: "coverage"
     }
   }
