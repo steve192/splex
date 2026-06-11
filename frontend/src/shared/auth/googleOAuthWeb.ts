@@ -4,8 +4,18 @@
 // Private Network Access blocks the embedded fetches when the host resolves
 // to a LAN address.  A plain redirect avoids all of those.
 
+import { BASE_PATH } from "../config/basePath";
+
 const STATE_STORAGE_KEY = "splex.googleOAuthState";
 const NONCE_STORAGE_KEY = "splex.googleOAuthNonce";
+
+// Google must redirect back into the app (under /app), not the marketing
+// landing at "/". The login screen (useLoginBootstrap) calls
+// consumeGoogleOAuthResponse on mount to finish the flow. This exact URL must be
+// registered as an Authorized redirect URI in the Google Cloud console.
+function googleRedirectUri(): string {
+  return `${globalThis.window.location.origin}${BASE_PATH}/login`;
+}
 
 function randomHex(byteLength: number): string {
   const buf = new Uint8Array(byteLength);
@@ -16,8 +26,8 @@ function randomHex(byteLength: number): string {
 /**
  * Begin the Google OAuth redirect flow.  Stores a fresh state + nonce in
  * sessionStorage and navigates the current window to Google's auth endpoint.
- * The browser comes back to `globalThis.window.location.origin` with the id_token in the
- * URL fragment.
+ * The browser comes back to {@link googleRedirectUri} (the app login screen)
+ * with the id_token in the URL fragment.
  */
 export function startGoogleOAuthRedirect(clientId: string): void {
   const state = randomHex(16);
@@ -27,7 +37,7 @@ export function startGoogleOAuthRedirect(clientId: string): void {
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: globalThis.window.location.origin,
+    redirect_uri: googleRedirectUri(),
     response_type: "id_token",
     scope: "openid email profile",
     state,

@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Brand palette - the app's dark Material theme (frontend/src/application/theme.ts)
+   plus the brand teals from app.json. Tailwind v4 derives utilities (bg-*,
+   text-*, border-*, ...) from these tokens automatically. */
+@theme {
+  --color-bg: #0c100e;
+  --color-bg-soft: #101513;
+  --color-surface: #171d1b;
+  --color-surface-2: #1f2c29;
+  --color-line: #2a322f;
+  --color-text: #dfe4e1;
+  --color-muted: #a6b0ac;
+  --color-brand: #82d5c8;
+  --color-brand-strong: #199c8e;
+  --color-brand-deep: #006a60;
+
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--color-bg);
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Soft radial brand glow used behind the hero. */
+.brand-glow {
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(130, 213, 200, 0.18), transparent 70%),
+    radial-gradient(40% 40% at 85% 10%, rgba(25, 156, 142, 0.14), transparent 70%);
+}
+
+/* Horizontal scroll-snap gallery (no JS framework needed). */
+.snap-row {
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.snap-row::-webkit-scrollbar {
+  display: none;
+}
+.snap-item {
+  scroll-snap-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

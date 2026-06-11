@@ -81,6 +81,21 @@ SERVE_PWA = env_bool("SERVE_PWA", True)
 ENABLE_ADMIN_UI = env_bool("ENABLE_ADMIN_UI", DEBUG)
 PWA_ROOT = BASE_DIR / "static_pwa"
 
+# The web/PWA app is served under this path (mirrors expo.experiments.baseUrl in
+# frontend/app.json). The marketing landing page lives at the root "/", while
+# the JSON API stays at "/api". Keep this in sync with the frontend.
+APP_BASE_PATH = "/app"
+# Single source of truth for user-facing links into the app (magic-login,
+# invites, emails). FRONTEND_PUBLIC_URL is the bare public origin / landing root;
+# the app itself is reached at APP_PUBLIC_URL.
+APP_PUBLIC_URL = FRONTEND_PUBLIC_URL.rstrip("/") + APP_BASE_PATH
+
+# Serve the static marketing landing page at "/". When disabled, "/" redirects
+# to the app at APP_BASE_PATH so a self-hoster who doesn't want a landing page
+# still has a working root URL.
+SERVE_LANDING = env_bool("SERVE_LANDING", True)
+LANDING_ROOT = BASE_DIR / "static_landing"
+
 APP_BEHIND_PROXY = env_bool("APP_BEHIND_PROXY", False)
 PROXY_USES_TLS = env_bool("PROXY_USES_TLS", False)
 

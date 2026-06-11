@@ -10,6 +10,9 @@
       "android",
       "web"
     ],
+    "experiments": {
+      "baseUrl": "/app"
+    },
     "scheme": [
       "splex",
       "com.sterul.splex"
@@ -37,12 +40,12 @@
             {
               "scheme": "https",
               "host": "splex.sterul.com",
-              "pathPrefix": "/invite/"
+              "pathPrefix": "/app/invite/"
             },
             {
               "scheme": "https",
               "host": "splex.sterul.com",
-              "pathPrefix": "/login/magic"
+              "pathPrefix": "/app/login/magic"
             }
           ],
           "category": [

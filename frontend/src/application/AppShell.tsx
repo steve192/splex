@@ -1,5 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinkingOptions, NavigationContainer } from "@react-navigation/native";
+import {
+  LinkingOptions,
+  NavigationContainer,
+  getPathFromState as defaultGetPathFromState,
+  getStateFromPath as defaultGetStateFromPath
+} from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
@@ -11,6 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider } from "../features/auth/AuthContext";
 import { ApiClient, NATIVE_DEFAULT_BASE_URL } from "../shared/api/client";
+import { addBasePath, restoreBasePathInState, stripBasePath } from "../shared/config/basePath";
 import { DemoWriteBlockedSnackbar } from "../shared/demo/DemoWriteBlockedSnackbar";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
@@ -100,6 +106,20 @@ export function AppShell() {
             }
           }
         }
+      },
+      // The app is served under /app (expo.experiments.baseUrl). React
+      // Navigation matches the screen config above relative to the root, so we
+      // strip the /app prefix off incoming deep-link paths before parsing and
+      // re-add it to generated paths. See shared/config/basePath.ts.
+      getStateFromPath(path, options) {
+        const state = defaultGetStateFromPath(stripBasePath(path), options);
+        // React Navigation echoes the focused route's stored `path` back into
+        // the web address bar on initial load, bypassing getPathFromState; we
+        // fed it the stripped path, so restore the /app prefix here.
+        return state ? restoreBasePathInState(state) : state;
+      },
+      getPathFromState(state, config) {
+        return addBasePath(defaultGetPathFromState(state, config));
       }
     }),
     []

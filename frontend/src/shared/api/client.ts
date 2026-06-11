@@ -281,6 +281,18 @@ export const tokenStorage = {
   }
 };
 
+// Normalize a user-entered native base URL down to the bare origin.
+//
+// The web/PWA app is served at <origin>/app, so users see (and may copy)
+// "mydomain.com/app" in their browser. The JSON API, however, always lives at
+// <origin>/api — never <origin>/app/api. We therefore strip a trailing "/app"
+// (and any trailing slashes) so requests like `${baseUrl}/api/...` resolve
+// correctly whether the user entered "mydomain.com" or "mydomain.com/app".
+// Origins saved before the /app move (no suffix) are unaffected.
 function normalizeBaseUrl(value: string): string {
-  return value.trim().replace(/\/+$/, "");
+  return value
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/app$/i, "")
+    .replace(/\/+$/, "");
 }

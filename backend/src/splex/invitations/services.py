@@ -21,7 +21,7 @@ from splex.settlements.models import Settlement
 
 
 def invitation_url(token: str) -> str:
-    return f"{settings.FRONTEND_PUBLIC_URL}/invite/{token}"
+    return f"{settings.APP_PUBLIC_URL}/invite/{token}"
 
 
 @transaction.atomic

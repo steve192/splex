@@ -16,10 +16,16 @@
 const fs = require("fs");
 const path = require("path");
 
+// The app is served under this fixed base path (mirrors expo.experiments.baseUrl
+// in app.json and BASE_PATH in the app source). public/ assets are copied to
+// dist root unprefixed, but Django serves them under the base path, so the
+// injected manifest/icon references must carry it.
+const BASE_PATH = "/app";
+
 const TAGS = [
-  '<link rel="manifest" href="/manifest.webmanifest">',
+  `<link rel="manifest" href="${BASE_PATH}/manifest.webmanifest">`,
   '<meta name="theme-color" content="#006A60">',
-  '<link rel="apple-touch-icon" href="/icons/icon-192.png">',
+  `<link rel="apple-touch-icon" href="${BASE_PATH}/icons/icon-192.png">`,
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
   '<meta name="apple-mobile-web-app-title" content="Splex">'

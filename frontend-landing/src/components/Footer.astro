@@ -1,0 +1,85 @@
+---
+import { links, site } from "../site";
+import { getContent, type Lang } from "../content";
+import GithubIcon from "./icons/GithubIcon.astro";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const c = getContent(lang);
+const t = c.footer;
+const year = new Date().getFullYear();
+
+// Legal links point at the app's own legal pages (under /app) - never
+// duplicated here. They carry rel="nofollow" and the app path is disallowed in
+// robots.txt, so they stay out of the index.
+const legal = [
+  { label: t.legalLinks.tos, href: links.tos },
+  { label: t.legalLinks.privacy, href: links.privacy },
+  { label: t.legalLinks.imprint, href: links.imprint }
+];
+---
+
+<footer class="border-t border-line bg-bg-soft">
+  <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <div class="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+      <div class="max-w-xs">
+        <div class="flex items-center gap-2.5 font-bold">
+          <img src="/favicon.png" alt="" width="32" height="32" class="h-8 w-8 rounded-lg" />
+          <span class="text-lg">{site.name}</span>
+        </div>
+        <p class="mt-3 text-sm text-muted">{c.meta.description}</p>
+      </div>
+
+      <div class="flex flex-col gap-10 sm:flex-row sm:gap-16">
+        <nav aria-label={t.product}>
+          <h3 class="text-sm font-semibold text-text">{t.product}</h3>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a href="#features" class="text-muted transition hover:text-text">{t.links.features}</a></li>
+            <li><a href="#self-host" class="text-muted transition hover:text-text">{t.links.selfhost}</a></li>
+            <li><a href={links.login} class="text-muted transition hover:text-text">{t.links.login}</a></li>
+            <li>
+              <a
+                href={links.playStore}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-muted transition hover:text-text">{t.links.play}</a
+              >
+            </li>
+          </ul>
+        </nav>
+
+        <nav aria-label={t.legal}>
+          <h3 class="text-sm font-semibold text-text">{t.legal}</h3>
+          <ul class="mt-3 space-y-2 text-sm">
+            {
+              legal.map((item) => (
+                <li>
+                  <a href={item.href} rel="nofollow" class="text-muted transition hover:text-text">
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <div
+      class="mt-10 flex flex-col items-center justify-between gap-4 border-t border-line pt-6 text-sm text-muted sm:flex-row"
+    >
+      <p>© {year} {site.name}. {t.rights}</p>
+      <a
+        href={links.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 transition hover:text-text"
+      >
+        <GithubIcon class="h-4 w-4" />
+        {t.github}
+      </a>
+    </div>
+  </div>
+</footer>

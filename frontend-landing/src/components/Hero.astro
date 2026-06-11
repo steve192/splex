@@ -1,0 +1,73 @@
+---
+import { Image } from "astro:assets";
+import { links } from "../site";
+import { getContent, type Lang } from "../content";
+import { shot } from "../screenshots";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = getContent(lang).hero;
+const banner = shot("banner");
+---
+
+<section id="top" class="relative overflow-hidden">
+  <div class="brand-glow pointer-events-none absolute inset-0 -z-10"></div>
+
+  <div class="mx-auto max-w-6xl px-4 pt-20 pb-12 text-center sm:px-6 sm:pt-28">
+    <a
+      href={links.github}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-flex items-center gap-2 rounded-full border border-line bg-surface/60 px-3.5 py-1.5 text-xs font-medium text-muted transition hover:border-brand hover:text-brand"
+    >
+      <span class="h-1.5 w-1.5 rounded-full bg-brand"></span>
+      {t.badge}
+    </a>
+
+    <h1 class="mx-auto mt-6 max-w-3xl text-balance text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
+      {t.titleA}
+      <span class="text-brand">{t.titleB}</span>
+    </h1>
+
+    <p class="mx-auto mt-5 max-w-2xl text-pretty text-base text-muted sm:text-lg">
+      {t.paragraph}
+    </p>
+
+    <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <a
+        href={links.app}
+        class="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-6 py-3 text-base font-semibold text-bg shadow-lg shadow-brand-strong/20 transition hover:bg-brand sm:w-auto"
+      >
+        {t.ctaApp}
+      </a>
+      <a
+        href={links.playStore}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-6 py-3 text-base font-semibold text-text transition hover:border-brand sm:w-auto"
+      >
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+          <path d="M3.6 2.2a1 1 0 0 0-.6.92v17.76a1 1 0 0 0 .6.92l9.9-9.8-9.9-9.8Zm11.3 8.3 2.9-2.87-9.2-5.2 6.3 8.07Zm0 3 6.3 8.06 9.2-5.2-2.9-2.87-.1.01-2.4 2.4-.1-.4Zm0 0" /><path d="M14.9 10.5 5.7 1.43l9.2 5.2-2.9 2.87 2.9 1.01Z" />
+        </svg>
+        {t.ctaPlay}
+      </a>
+    </div>
+
+    <p class="mt-4 text-xs text-muted">{t.subtext}</p>
+  </div>
+
+  <div class="mx-auto max-w-5xl px-4 pb-16 sm:px-6">
+    <div class="overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/40">
+      <Image
+        src={banner}
+        alt="Splex running on phone and desktop"
+        widths={[640, 960, 1280]}
+        sizes="(max-width: 1024px) 100vw, 1024px"
+        class="h-auto w-full"
+        loading="eager"
+      />
+    </div>
+  </div>
+</section>

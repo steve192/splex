@@ -258,6 +258,29 @@ describe("native base URL handling", () => {
     expect(store["splex.apiBaseUrl"]).toBe("https://host.example.com");
   });
 
+  it("strips a trailing /app so the API base stays the bare origin", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    await api.setBaseUrl("https://host.example.com/app");
+    expect(store["splex.apiBaseUrl"]).toBe("https://host.example.com");
+  });
+
+  it("strips /app with a trailing slash and matches case-insensitively", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    await api.setBaseUrl("https://host.example.com/App/");
+    expect(store["splex.apiBaseUrl"]).toBe("https://host.example.com");
+  });
+
+  it("leaves a legacy origin without /app unchanged and resolves API to /api", async () => {
+    platform.OS = "android";
+    store["splex.apiBaseUrl"] = "https://legacy.example.com";
+    const api = new ApiClient();
+    fetchMock.mockResolvedValue(jsonResponse({}));
+    await api.get("/api/x/");
+    expect(fetchMock.mock.calls[0][0]).toBe("https://legacy.example.com/api/x/");
+  });
+
   it("setBaseUrl is a no-op on web", async () => {
     platform.OS = "web";
     const api = new ApiClient();

@@ -89,7 +89,7 @@ def request_magic_login(email: str, invite_token: str = "", locale: str = ""):
     query = {"token": token}
     if invite_token:
         query["inviteToken"] = invite_token
-    magic_url = f"{settings.FRONTEND_PUBLIC_URL}/login/magic?{urlencode(query)}"
+    magic_url = f"{settings.APP_PUBLIC_URL}/login/magic?{urlencode(query)}"
     _send_template_email(
         recipient=email,
         template_base="magic_login",
@@ -254,7 +254,7 @@ def delete_account(*, actor) -> None:
                 context={
                     "email": email,
                     "display_name": display_name,
-                    "frontend_url": settings.FRONTEND_PUBLIC_URL,
+                    "frontend_url": settings.APP_PUBLIC_URL,
                 },
                 locale=actor.locale,
             )

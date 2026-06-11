@@ -1,0 +1,53 @@
+---
+import { links } from "../site";
+import { getContent, type Lang } from "../content";
+import GithubIcon from "./icons/GithubIcon.astro";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = getContent(lang).selfhost;
+---
+
+<section id="self-host" class="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+  <div class="grid gap-12 lg:grid-cols-2 lg:gap-16">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-wider text-brand">{t.eyebrow}</p>
+      <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+        {t.heading}
+      </h2>
+      <p class="mt-4 text-muted">
+        {t.paragraph}
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a
+          href={links.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-5 py-2.5 text-sm font-semibold transition hover:border-brand"
+        >
+          <GithubIcon class="h-4.5 w-4.5" />
+          {t.ctaGithub}
+        </a>
+        <a
+          href={links.app}
+          class="inline-flex items-center rounded-xl bg-brand-strong px-5 py-2.5 text-sm font-semibold text-bg transition hover:bg-brand"
+        >
+          {t.ctaTry}
+        </a>
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      {
+        t.cards.map((card) => (
+          <div class="rounded-2xl border border-line bg-surface p-5">
+            <h3 class="font-semibold text-text">{card.title}</h3>
+            <p class="mt-2 text-sm text-muted">{card.body}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

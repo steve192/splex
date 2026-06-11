@@ -78,6 +78,7 @@
 - Keep the default self-hosted setup simple.
 - Prefer a single application container for the app.
 - Serve the PWA from the same app container unless there is a strong reason not to.
+- URL layout: the static marketing landing page is served at `/`, the app (PWA) under `/app`, and the JSON API at `/api`. The landing is a separate Astro project in `frontend-landing/` (built in the Docker `landing-build` stage into `static_landing`); the app base path is driven by `expo.experiments.baseUrl` and mirrored by the `BASE_PATH` constant (`frontend/src/shared/config/basePath.ts`) and `APP_BASE_PATH`/`APP_PUBLIC_URL` on the backend. User-facing app links (magic login, invites, Google redirect) must go through `/app`; the `.well-known/assetlinks.json` stays at the domain root.
 - Use SQLite by default for a low-friction setup, while keeping the code compatible with a later move to PostgreSQL.
 - Configure domains and external service credentials through environment variables.
 

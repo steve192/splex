@@ -1,0 +1,114 @@
+---
+// Self-hosted Inter (variable, weight axis only). Bundled into the build so the
+// page never contacts Google's font servers. Browsers fetch only the subset
+// their content needs (latin covers EN + DE) via unicode-range.
+import "@fontsource-variable/inter/wght.css";
+import "../styles/global.css";
+import { site } from "../site";
+import { getContent, type Lang } from "../content";
+
+interface Props {
+  lang: Lang;
+  /** Set true on pages that must stay out of search indexes. */
+  noindex?: boolean;
+}
+
+const { lang, noindex = false } = Astro.props;
+const t = getContent(lang);
+
+const pageTitle = `${site.name} - ${t.meta.title}`;
+const description = t.meta.description;
+
+// English lives at "/", German at "/de/". Build the per-locale URLs once so the
+// canonical + hreflang alternates stay consistent across both pages.
+const enUrl = new URL("/", Astro.site).toString();
+const deUrl = new URL("/de/", Astro.site).toString();
+const canonical = lang === "de" ? deUrl : enUrl;
+const ogImage = new URL(site.ogImage, Astro.site).toString();
+const ogLocale = lang === "de" ? "de_DE" : "en_US";
+const ogLocaleAlt = lang === "de" ? "en_US" : "de_DE";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: site.name,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web, Android",
+  inLanguage: lang,
+  description,
+  url: Astro.site?.toString()
+};
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Redirect first-time visitors to their preferred language (and honor a
+         stored manual choice). Runs before paint to avoid a flash. -->
+    <script is:inline>
+      (function () {
+        try {
+          var path = location.pathname;
+          var current =
+            path === "/de" || path === "/de/" || path.indexOf("/de/") === 0 ? "de" : "en";
+          var stored = localStorage.getItem("splex-lang");
+          if (stored === "en" || stored === "de") {
+            if (stored !== current) location.replace(stored === "de" ? "/de/" : "/");
+            return;
+          }
+          if (current === "en") {
+            var langs = (navigator.languages || [navigator.language || ""]).join(",");
+            if (/(^|,)\s*de/i.test(langs)) location.replace("/de/");
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="de" href={deUrl} />
+    <link rel="alternate" hreflang="x-default" href={enUrl} />
+
+    <meta name="theme-color" content="#0c100e" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Open Graph / Twitter -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={ogLocale} />
+    <meta property="og:locale:alternate" content={ogLocaleAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body>
+    <slot />
+
+    <!-- Persist the visitor's manual language choice so the redirect above
+         respects it on later visits. -->
+    <script is:inline>
+      document.querySelectorAll("[data-set-lang]").forEach(function (el) {
+        el.addEventListener("click", function () {
+          try {
+            localStorage.setItem("splex-lang", el.getAttribute("data-set-lang"));
+          } catch (e) {}
+        });
+      });
+    </script>
+  </body>
+</html>

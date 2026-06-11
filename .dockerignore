@@ -9,6 +9,9 @@ frontend/dist
 frontend/.expo
 frontend/android
 frontend/ios
+frontend-landing/node_modules
+frontend-landing/dist
+frontend-landing/.astro
 __pycache__
 *.pyc
 .env

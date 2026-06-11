@@ -1,5 +1,7 @@
 import { Platform } from "react-native";
 
+import { BASE_PATH } from "../config/basePath";
+
 /**
  * Tracks whether we already initiated a reload triggered by a service-worker
  * controller change. Without this guard, the browser would loop between the old
@@ -32,7 +34,12 @@ export async function ensureServiceWorkerRegistration(): Promise<ServiceWorkerRe
     controllerChangeListenerAttached = true;
   }
 
-  const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+  // The app (and this SW) live under /app, so register the SW from there and
+  // scope it to /app/ — it must not control the marketing landing page at "/".
+  const registration = await navigator.serviceWorker.register(`${BASE_PATH}/sw.js`, {
+    scope: `${BASE_PATH}/`,
+    updateViaCache: "none"
+  });
   // Trigger an explicit update check on every registration call. The browser
   // does this automatically on navigation, but calling it explicitly speeds up
   // recovery when the user is stuck on a stale cached page.

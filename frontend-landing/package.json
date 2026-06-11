@@ -1,0 +1,26 @@
+{
+  "name": "splex-landing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Marketing landing page for Splex, served by the backend at the site root.",
+  "scripts": {
+    "sync-assets": "node scripts/sync-assets.mjs",
+    "dev": "npm run sync-assets && astro dev",
+    "build": "npm run sync-assets && astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@tailwindcss/vite": "^4.0.0",
+    "astro": "^5.1.0",
+    "sharp": "^0.33.5",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.7.0"
+  }
+}

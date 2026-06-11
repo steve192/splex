@@ -1,11 +1,15 @@
 import { Platform } from "react-native";
 
+import { addBasePath } from "../config/basePath";
+
 export type LegalDocumentKind = "tos" | "privacy" | "imprint";
 
+// Served by the SPA under the app base path (e.g. /app/tos). The landing footer
+// links to these same routes so legal content is never duplicated.
 const WEB_PATHS: Record<LegalDocumentKind, string> = {
-  tos: "/tos",
-  privacy: "/privacy",
-  imprint: "/imprint"
+  tos: addBasePath("/tos"),
+  privacy: addBasePath("/privacy"),
+  imprint: addBasePath("/imprint")
 };
 
 export function openLegalDocument(kind: LegalDocumentKind, openNativeScreen: () => void) {

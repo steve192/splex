@@ -66,6 +66,16 @@ I started looking for an open source alternative that matched my needs. I found 
 
 SQLite is the simplest choice for a small single-host install because it keeps everything in one mounted volume with no extra service to operate. PostgreSQL is the better choice when you want stronger concurrency, easier external backups, or a database service managed separately from the app container.
 
+### URL layout
+
+A single container serves three things under one domain:
+
+- `/` — a static marketing landing page (set `SERVE_LANDING=false` to instead redirect `/` to the app).
+- `/app` — the app itself (installable PWA). All app deep links live here, e.g. `/app/invite/<token>` and `/app/login/magic`.
+- `/api` — the JSON API.
+
+`FRONTEND_PUBLIC_URL` is the bare public origin (the landing root); the app is reached at `<origin>/app`. If you enable Google login, the **Authorized redirect URI** in the Google Cloud console must be `<origin>/app/login` (see `.env.example`). In the Android app's backend-URL field you can enter either `mydomain.com` or `mydomain.com/app` — both work.
+
 ### First-time setup
 
 Create a directory for Splex on your server and place a `docker-compose.yml` there.

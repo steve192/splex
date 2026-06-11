@@ -1,7 +1,13 @@
 // Bump the version suffix whenever the cache schema changes so stale entries
-// (e.g. a cached /admin/ response from before admin was enabled) get evicted.
-const SHELL_CACHE = "splex-shell-v2";
-const ASSETS_CACHE = "splex-assets-v2";
+// (e.g. a cached "/" shell from before the app moved under /app) get evicted.
+const SHELL_CACHE = "splex-shell-v3";
+const ASSETS_CACHE = "splex-assets-v3";
+
+// The app is served under /app (expo.experiments.baseUrl). This service worker
+// is served from /app/sw.js, so its default scope is /app/ — it only controls
+// the app, never the marketing landing page at "/". Keep these in sync with
+// public/manifest.webmanifest and frontend/app.json.
+const BASE_PATH = "/app";
 
 // Paths the service worker must NEVER intercept. The admin UI is server-rendered
 // by Django; Django collectstatic serves /static/ via whitenoise. If we cached
@@ -15,7 +21,15 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL_CACHE)
-      .then((cache) => cache.addAll(["/", "/index.html", "/favicon.ico", "/login/magic", "/+not-found"]))
+      .then((cache) =>
+        cache.addAll([
+          `${BASE_PATH}/`,
+          `${BASE_PATH}/index.html`,
+          `${BASE_PATH}/favicon.ico`,
+          `${BASE_PATH}/login/magic`,
+          `${BASE_PATH}/+not-found`
+        ])
+      )
       .then(() => self.skipWaiting())
   );
 });
@@ -51,16 +65,16 @@ self.addEventListener("fetch", (event) => {
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-          return caches.match("/");
+          return caches.match(`${BASE_PATH}/`);
         })
     );
     return;
   }
 
   const isStaticAsset =
-    url.pathname.startsWith("/_expo/") ||
-    url.pathname.startsWith("/assets/") ||
-    url.pathname === "/favicon.ico";
+    url.pathname.startsWith(`${BASE_PATH}/_expo/`) ||
+    url.pathname.startsWith(`${BASE_PATH}/assets/`) ||
+    url.pathname === `${BASE_PATH}/favicon.ico`;
 
   if (!isStaticAsset) return;
 
@@ -90,12 +104,19 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  // Always land inside the app (/app), never the marketing landing at "/".
+  // Honor an optional deep-link path from the push payload (e.g. "/groups/1").
+  const target = event.notification.data?.url;
+  const url =
+    typeof target === "string" && target.startsWith("/")
+      ? `${BASE_PATH}${target}`
+      : `${BASE_PATH}/`;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       if (clients.length > 0) {
         return clients[0].focus();
       }
-      return self.clients.openWindow("/");
+      return self.clients.openWindow(url);
     })
   );
 });

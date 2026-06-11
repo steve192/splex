@@ -151,7 +151,7 @@ class Command(BaseCommand):
                         "email": user.email,
                         "days_remaining": days_remaining,
                         "deletion_date": deletion_date,
-                        "frontend_url": settings.FRONTEND_PUBLIC_URL,
+                        "frontend_url": settings.APP_PUBLIC_URL,
                     },
                     locale=user.locale,
                 )

@@ -29,7 +29,7 @@ describe("openLegalDocument", () => {
 
     expect(open).toHaveBeenCalledTimes(1);
     const [url, target, features] = open.mock.calls[0];
-    expect(url).toBe("https://splex.example.com/privacy");
+    expect(url).toBe("https://splex.example.com/app/privacy");
     expect(target).toBe("_blank");
     expect(features).toContain("noopener");
   });
@@ -45,8 +45,8 @@ describe("openLegalDocument", () => {
     openLegalDocument("tos", () => undefined);
     openLegalDocument("imprint", () => undefined);
 
-    expect(open.mock.calls[0][0]).toBe("https://splex.example.com/tos");
-    expect(open.mock.calls[1][0]).toBe("https://splex.example.com/imprint");
+    expect(open.mock.calls[0][0]).toBe("https://splex.example.com/app/tos");
+    expect(open.mock.calls[1][0]).toBe("https://splex.example.com/app/imprint");
   });
 
   it("falls back to the native screen off web", () => {
@@ -77,6 +77,6 @@ describe("openLegalDocument", () => {
 
     openTermsOfService(() => undefined);
 
-    expect(open.mock.calls[0][0]).toBe("https://splex.example.com/tos");
+    expect(open.mock.calls[0][0]).toBe("https://splex.example.com/app/tos");
   });
 });

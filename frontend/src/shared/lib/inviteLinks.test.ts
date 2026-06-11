@@ -8,10 +8,11 @@ import { clearUrlQuery, inviteTokenFromCurrentUrl, tokenFromCurrentUrl } from ".
 
 describe("invite links", () => {
   beforeEach(() => {
-    const url = "http://localhost:8000/invite/abc123?token=magic-token";
+    // The app is served under /app, so deep links carry that prefix.
+    const url = "http://localhost:8000/app/invite/abc123?token=magic-token";
     Object.defineProperty(globalThis, "window", {
       value: {
-        location: { href: url, pathname: "/invite/abc123" },
+        location: { href: url, pathname: "/app/invite/abc123" },
         history: { replaceState: vi.fn() }
       },
       writable: true
@@ -23,13 +24,13 @@ describe("invite links", () => {
     expect(tokenFromCurrentUrl("token")).toBe("magic-token");
   });
 
-  it("reads invite token from path", () => {
+  it("reads invite token from a /app-prefixed path", () => {
     expect(inviteTokenFromCurrentUrl()).toBe("abc123");
   });
 
-  it("clears browser url to root", () => {
+  it("clears browser url to the app root", () => {
     const replaceState = vi.spyOn(window.history, "replaceState");
     clearUrlQuery();
-    expect(replaceState).toHaveBeenCalledWith({}, "Splex", "/");
+    expect(replaceState).toHaveBeenCalledWith({}, "Splex", "/app/");
   });
 });

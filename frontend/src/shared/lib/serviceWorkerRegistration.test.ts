@@ -45,13 +45,16 @@ describe("ensureServiceWorkerRegistration", () => {
     vi.unstubAllGlobals();
   });
 
-  it("registers /sw.js with updateViaCache=none", async () => {
+  it("registers /app/sw.js scoped to /app with updateViaCache=none", async () => {
     const env = makeServiceWorkerEnv(null);
     env.install();
     const { ensureServiceWorkerRegistration } = await import("./serviceWorker");
     await ensureServiceWorkerRegistration();
     expect(env.registerCalls).toHaveLength(1);
-    expect(env.registerCalls[0]).toEqual({ url: "/sw.js", options: { updateViaCache: "none" } });
+    expect(env.registerCalls[0]).toEqual({
+      url: "/app/sw.js",
+      options: { scope: "/app/", updateViaCache: "none" }
+    });
   });
 
   it("triggers an explicit update check after registration", async () => {

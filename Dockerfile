@@ -3,9 +3,27 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 COPY frontend/scripts ./scripts
 COPY frontend/metro.config.js ./metro.config.js
-RUN npm install
+RUN npm ci
 COPY frontend ./
 RUN npm run build:web
+
+# Static marketing landing page (Astro). Built separately and served by Django
+# at the site root; the app build above is served under /app.
+FROM node:24.16.0-bookworm AS landing-build
+WORKDIR /app/frontend-landing
+COPY frontend-landing/package*.json ./
+RUN npm ci
+# The screenshots are synced from docs/screenshots at build time, so they must
+# be present in the build context (see frontend-landing/scripts/sync-assets.mjs).
+COPY docs /app/docs
+COPY frontend-landing ./
+# Public site URL for canonical / Open Graph / sitemap URLs. Override at build
+# time with `--build-arg LANDING_SITE_URL=https://splex.example.com`.
+ARG LANDING_SITE_URL=https://splex.sterul.com
+ENV LANDING_SITE_URL=${LANDING_SITE_URL}
+# Never send Astro's anonymous build telemetry from CI / image builds.
+ENV ASTRO_TELEMETRY_DISABLED=1
+RUN npm run build
 
 FROM python:3.14-slim AS backend
 LABEL org.opencontainers.image.source=https://github.com/steve192/splex
@@ -17,6 +35,7 @@ WORKDIR /app
 COPY backend /app/backend
 RUN pip install --no-cache-dir /app/backend
 COPY --from=frontend-build /app/frontend/dist /app/backend/static_pwa
+COPY --from=landing-build /app/frontend-landing/dist /app/backend/static_landing
 COPY --from=frontend-build /app/frontend/src/shared/legal/openSourceComponents.generated.json /app/backend/src/splex/shared/openSourceComponents.generated.json
 COPY frontend/src/shared/i18n/locales /app/backend/src/splex/shared/frontend_locales
 WORKDIR /app/backend
