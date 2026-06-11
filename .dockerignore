@@ -12,6 +12,11 @@ frontend/ios
 frontend-landing/node_modules
 frontend-landing/dist
 frontend-landing/.astro
+# Synced build outputs (regenerated from source by sync-assets during the build).
+# Excluded so the image never depends on a stray copy from a dev's working tree.
+frontend-landing/public/favicon.png
+frontend-landing/public/og-banner.png
+frontend-landing/src/assets/screenshots
 __pycache__
 *.pyc
 .env

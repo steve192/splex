@@ -13,9 +13,11 @@ FROM node:24.16.0-bookworm AS landing-build
 WORKDIR /app/frontend-landing
 COPY frontend-landing/package*.json ./
 RUN npm ci
-# The screenshots are synced from docs/screenshots at build time, so they must
-# be present in the build context (see frontend-landing/scripts/sync-assets.mjs).
+# sync-assets.mjs pulls the screenshots from docs/screenshots and the favicon
+# from the app's maskable icon at build time, so both sources must be present in
+# this stage's context (relative paths resolved from /app).
 COPY docs /app/docs
+COPY frontend/assets/images/pwa-maskable-icon.png /app/frontend/assets/images/pwa-maskable-icon.png
 COPY frontend-landing ./
 # Public site URL for canonical / Open Graph / sitemap URLs. Override at build
 # time with `--build-arg LANDING_SITE_URL=https://splex.example.com`.

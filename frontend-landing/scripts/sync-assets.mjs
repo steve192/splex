@@ -40,9 +40,14 @@ if (existsSync(banner)) {
 }
 
 // The app's maskable icon is the favicon shown in the browser tab / title bar.
+// public/favicon.png is gitignored, so it must be regenerated on every build.
+// If the source is missing (e.g. it was not made available to a Docker build
+// stage), fail loudly rather than silently shipping a faviconless site.
 const appIcon = join(repoRoot, "frontend", "assets", "images", "pwa-maskable-icon.png");
-if (existsSync(appIcon)) {
-  cpSync(appIcon, join(publicDir, "favicon.png"));
+if (!existsSync(appIcon)) {
+  console.error(`sync-assets: favicon source not found at ${appIcon}`);
+  process.exit(1);
 }
+cpSync(appIcon, join(publicDir, "favicon.png"));
 
-console.log(`sync-assets: copied ${copied} screenshot(s) into src/assets/screenshots.`);
+console.log(`sync-assets: copied ${copied} screenshot(s) and the favicon.`);
