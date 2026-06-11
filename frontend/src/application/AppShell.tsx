@@ -30,10 +30,10 @@ export function AppShell() {
   const systemThemeMode = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
   let resolvedThemeMode: "light" | "dark";
-  if (themeMode !== "system") {
-    resolvedThemeMode = themeMode;
-  } else {
+  if (themeMode === "system") {
     resolvedThemeMode = systemThemeMode === "dark" ? "dark" : "light";
+  } else {
+    resolvedThemeMode = themeMode;
   }
 
   useEffect(() => {

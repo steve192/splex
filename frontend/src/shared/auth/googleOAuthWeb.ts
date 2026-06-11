@@ -44,7 +44,7 @@ export function startGoogleOAuthRedirect(clientId: string): void {
  * and return the token.  Returns null otherwise.
  */
 export function consumeGoogleOAuthResponse(): { idToken: string } | null {
-  if (typeof globalThis.window === "undefined") return null;
+  if (globalThis.window === undefined) return null;
   const rawHash = globalThis.window.location.hash.startsWith("#")
     ? globalThis.window.location.hash.slice(1)
     : globalThis.window.location.hash;

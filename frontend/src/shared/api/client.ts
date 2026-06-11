@@ -37,7 +37,7 @@ const API_DEBUG_ENABLED =
 
 function apiDebug(message: string, details?: unknown) {
   if (!API_DEBUG_ENABLED) return;
-  if (typeof globalThis.window !== "undefined") {
+  if (globalThis.window !== undefined) {
     console.info(`[splex:api] ${message}`, details ?? "");
   }
 }

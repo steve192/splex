@@ -9,7 +9,7 @@ export function inviteDebug(message: string, details?: unknown) {
 }
 
 export function tokenFromCurrentUrl(paramName = "token"): string {
-  if (Platform.OS !== "web" || typeof globalThis.window === "undefined") return "";
+  if (Platform.OS !== "web" || globalThis.window === undefined) return "";
   const token = new URL(globalThis.window.location.href).searchParams.get(paramName) ?? "";
   inviteDebug("read magic token from url", {
     href: globalThis.window.location.href,
@@ -20,7 +20,7 @@ export function tokenFromCurrentUrl(paramName = "token"): string {
 }
 
 export function inviteTokenFromCurrentUrl(): string {
-  if (Platform.OS !== "web" || typeof globalThis.window === "undefined") return "";
+  if (Platform.OS !== "web" || globalThis.window === undefined) return "";
   const url = new URL(globalThis.window.location.href);
   const pathMatch = /^\/invite\/([^/?#]+)/.exec(url.pathname);
   const token = decodeURIComponent(pathMatch?.[1] ?? url.searchParams.get("inviteToken") ?? "");
@@ -35,7 +35,7 @@ export function inviteTokenFromCurrentUrl(): string {
 }
 
 export function clearUrlQuery() {
-  if (Platform.OS === "web" && typeof globalThis.window !== "undefined") {
+  if (Platform.OS === "web" && globalThis.window !== undefined) {
     inviteDebug("clearing url", { href: globalThis.window.location.href });
     globalThis.window.history.replaceState({}, document.title, "/");
   }
