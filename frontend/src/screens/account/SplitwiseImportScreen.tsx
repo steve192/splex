@@ -85,12 +85,14 @@ export function SplitwiseImportScreen() {
       setSummary(result.summary);
       setApiKey("");
     } catch (error) {
-      const message =
-        error instanceof ApiError && error.status === 401
-          ? t("splitwiseImport.invalidKey")
-          : error instanceof Error && error.message
-            ? error.message
-            : t("common.error");
+      let message: string;
+      if (error instanceof ApiError && error.status === 401) {
+        message = t("splitwiseImport.invalidKey");
+      } else if (error instanceof Error && error.message) {
+        message = error.message;
+      } else {
+        message = t("common.error");
+      }
       setErrorMessage(message);
     } finally {
       setRunning(false);

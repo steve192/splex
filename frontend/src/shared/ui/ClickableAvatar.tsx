@@ -29,7 +29,7 @@ type ClickableAvatarProps = {
  *     onPress navigates somewhere, or an editing preview where tapping picks
  *     a new image).
  */
-export function ClickableAvatar({ name, imageUrl, imageSource, size }: ClickableAvatarProps) {
+export function ClickableAvatar({ name, imageUrl, imageSource, size }: Readonly<ClickableAvatarProps>) {
   const [visible, setVisible] = useState(false);
   const canEnlarge = Boolean(imageUrl || imageSource);
 

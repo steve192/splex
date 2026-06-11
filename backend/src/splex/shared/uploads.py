@@ -5,7 +5,7 @@ from io import BytesIO
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageOps
 
 JPEG_CONTENT_TYPE = "image/jpeg"
 PNG_CONTENT_TYPE = "image/png"
@@ -52,7 +52,7 @@ def validate_and_normalize_image(payload: bytes, content_type: str) -> bytes:
     try:
         image = Image.open(BytesIO(payload))
         image.load()
-    except (UnidentifiedImageError, OSError) as exc:
+    except OSError as exc:
         raise ValueError("Invalid image file.") from exc
     image = ImageOps.exif_transpose(image)
     if image.width * image.height > MAX_IMAGE_PIXELS:

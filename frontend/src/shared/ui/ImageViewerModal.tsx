@@ -36,7 +36,7 @@ export function ImageViewerModal({
   imageUrl,
   imageSource,
   onDismiss
-}: ImageViewerModalProps) {
+}: Readonly<ImageViewerModalProps>) {
   const { api } = useAuth();
   const insets = useSafeAreaInsets();
   const [zoom, setZoom] = useState(1);
@@ -168,7 +168,7 @@ type WebPannableImageProps = {
   onZoom: (zoom: number | ((current: number) => number)) => void;
 };
 
-function WebPannableImage({ source, zoom, tx, ty, stateRef, onPan, onZoom }: WebPannableImageProps) {
+function WebPannableImage({ source, zoom, tx, ty, stateRef, onPan, onZoom }: Readonly<WebPannableImageProps>) {
   const pointers = useRef({
     map: new Map<number, { x: number; y: number }>(),
     startX: 0,

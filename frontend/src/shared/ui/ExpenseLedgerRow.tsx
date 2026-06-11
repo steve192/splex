@@ -28,7 +28,7 @@ function payerLine(expense: Expense, t: TranslateFn): string {
   });
 }
 
-export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: ExpenseLedgerRowProps) {
+export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: Readonly<ExpenseLedgerRowProps>) {
   const { t } = useI18n();
   const parts = formatDeviceDateParts(expense.date);
   const paid = expense.payments

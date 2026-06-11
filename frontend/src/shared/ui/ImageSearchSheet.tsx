@@ -51,7 +51,7 @@ export function ImageSearchSheet({
   initialQuery,
   onDismiss,
   onPick
-}: ImageSearchSheetProps) {
+}: Readonly<ImageSearchSheetProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const keyboardHeight = useKeyboardHeight();
@@ -110,6 +110,48 @@ export function ImageSearchSheet({
     }
   }, [visible, initialQuery, runSearch]);
 
+  let bodyContent: React.ReactNode;
+  if (loading) {
+    bodyContent = (
+      <View style={styles.imageSearchEmpty}>
+        <ActivityIndicator />
+      </View>
+    );
+  } else if (error) {
+    bodyContent = (
+      <View style={styles.imageSearchEmpty}>
+        <Text>{error}</Text>
+        <Button onPress={() => runSearch(query)}>{t("common.retry") ?? t("expense.retrySync")}</Button>
+      </View>
+    );
+  } else if (results.length === 0) {
+    bodyContent = (
+      <View style={styles.imageSearchEmpty}>
+        <Text variant="bodyMedium">{t("imageSearch.empty")}</Text>
+      </View>
+    );
+  } else {
+    bodyContent = (
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item.id}
+        numColumns={3}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.imageSearchGrid}
+        columnWrapperStyle={styles.imageSearchRow}
+        renderItem={({ item }) => (
+          <TouchableRipple
+            onPress={() => onPick(item)}
+            style={styles.imageSearchCell}
+            borderless
+          >
+            <Image source={{ uri: item.thumbnail }} style={styles.imageSearchThumb} />
+          </TouchableRipple>
+        )}
+      />
+    );
+  }
+
   return (
     <Portal>
       <Modal
@@ -139,38 +181,7 @@ export function ImageSearchSheet({
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           {t("imageSearch.poweredBy")}
         </Text>
-        {loading ? (
-          <View style={styles.imageSearchEmpty}>
-            <ActivityIndicator />
-          </View>
-        ) : error ? (
-          <View style={styles.imageSearchEmpty}>
-            <Text>{error}</Text>
-            <Button onPress={() => runSearch(query)}>{t("common.retry") ?? t("expense.retrySync")}</Button>
-          </View>
-        ) : results.length === 0 ? (
-          <View style={styles.imageSearchEmpty}>
-            <Text variant="bodyMedium">{t("imageSearch.empty")}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={results}
-            keyExtractor={(item) => item.id}
-            numColumns={3}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.imageSearchGrid}
-            columnWrapperStyle={styles.imageSearchRow}
-            renderItem={({ item }) => (
-              <TouchableRipple
-                onPress={() => onPick(item)}
-                style={styles.imageSearchCell}
-                borderless
-              >
-                <Image source={{ uri: item.thumbnail }} style={styles.imageSearchThumb} />
-              </TouchableRipple>
-            )}
-          />
-        )}
+        {bodyContent}
       </Modal>
     </Portal>
   );
@@ -208,9 +219,8 @@ function normalize(raw: RawOpenverseImage): OpenverseImage {
 export function buildAttributionText(image: OpenverseImage): string {
   const title = image.title || "Untitled";
   const creator = image.creator ? ` by ${image.creator}` : "";
-  const license = image.license
-    ? ` - ${image.license.toUpperCase()}${image.licenseVersion ? ` ${image.licenseVersion}` : ""}`
-    : "";
+  const licenseVersionSuffix = image.licenseVersion ? ` ${image.licenseVersion}` : "";
+  const license = image.license ? ` - ${image.license.toUpperCase()}${licenseVersionSuffix}` : "";
   const sourceUrl = image.sourceUrl ? ` (${image.sourceUrl})` : "";
   return `"${title}"${creator}${license}${sourceUrl}`.trim();
 }

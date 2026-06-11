@@ -51,7 +51,7 @@ export function SplitSheet({
   onEnsureParticipants,
   onToggleParticipant,
   onSplitValueChange
-}: SplitSheetProps) {
+}: Readonly<SplitSheetProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };

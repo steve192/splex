@@ -12,10 +12,10 @@ import { useI18n } from "../i18n/I18nContext";
 export function PwaIosInstructionsDialog({
   visible,
   onDismiss
-}: {
+}: Readonly<{
   visible: boolean;
   onDismiss(): void;
-}) {
+}>) {
   const { t } = useI18n();
   const theme = useTheme();
 

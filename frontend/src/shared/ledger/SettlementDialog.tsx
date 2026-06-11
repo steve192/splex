@@ -45,7 +45,7 @@ export function SettlementDialog({
   onCurrencyChange,
   onDismiss,
   onSave
-}: SettlementDialogProps) {
+}: Readonly<SettlementDialogProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
@@ -202,7 +202,7 @@ function PaypalSection({
   onOpen,
   onCopy,
   copiedHint
-}: PaypalSectionProps) {
+}: Readonly<PaypalSectionProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const muted = { color: theme.colors.onSurfaceVariant };

@@ -47,22 +47,22 @@ export function BalanceMemberCard({
   onSettle,
   onRemindSettle,
   currentParticipantId
-}: BalanceMemberCardProps) {
+}: Readonly<BalanceMemberCardProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const total = asNumber(row.amount);
-  const totalColor =
-    total === 0
-      ? theme.colors.onSurfaceVariant
-      : total > 0
-        ? positiveColor(theme)
-        : negativeColor(theme);
-  const headerKey =
-    total === 0
-      ? "balance.personSettled"
-      : total > 0
-        ? "balance.isOwedAmount"
-        : "balance.owesAmount";
+  let totalColor: string;
+  let headerKey: string;
+  if (total === 0) {
+    totalColor = theme.colors.onSurfaceVariant;
+    headerKey = "balance.personSettled";
+  } else if (total > 0) {
+    totalColor = positiveColor(theme);
+    headerKey = "balance.isOwedAmount";
+  } else {
+    totalColor = negativeColor(theme);
+    headerKey = "balance.owesAmount";
+  }
   const headerTemplate = t(headerKey);
   const [headerBefore, headerAfter] = total === 0
     ? [headerTemplate, ""]
@@ -78,6 +78,28 @@ export function BalanceMemberCard({
     !ownerIsCurrentUser &&
     total < 0;
 
+  let expandedContent: React.ReactNode = null;
+  if (expanded) {
+    expandedContent = row.details.length ? (
+      <View style={styles.balanceDetailList}>
+        {row.details.map((detail) => (
+          <BalanceDetailRow
+            key={`${detail.from_participant_id}-${detail.to_participant_id}`}
+            detail={detail}
+            ownerParticipantId={row.participant_id}
+            ownerDisplayName={row.display_name}
+            currentParticipantId={currentParticipantId}
+            onSettle={() => onSettle(detail)}
+          />
+        ))}
+      </View>
+    ) : (
+      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+        {t("balance.personSettled")}
+      </Text>
+    );
+  }
+
   return (
     <Card mode="elevated" style={styles.balanceCard}>
       <TouchableRipple style={styles.clickable} onPress={onToggle} borderless>
@@ -88,36 +110,17 @@ export function BalanceMemberCard({
               <Text variant="titleMedium">{row.display_name}</Text>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                 {headerBefore}
-                {total !== 0 ? (
+                {total !== 0 && (
                   <Text variant="bodyMedium" style={[{ color: totalColor }, styles.bold]}>
                     {formatMoney(total)} {row.currency}
                   </Text>
-                ) : null}
+                )}
                 {headerAfter}
               </Text>
             </View>
             <List.Icon icon={expanded ? "chevron-up" : "chevron-down"} />
           </View>
-          {expanded ? (
-            row.details.length ? (
-              <View style={styles.balanceDetailList}>
-                {row.details.map((detail) => (
-                  <BalanceDetailRow
-                    key={`${detail.from_participant_id}-${detail.to_participant_id}`}
-                    detail={detail}
-                    ownerParticipantId={row.participant_id}
-                    ownerDisplayName={row.display_name}
-                    currentParticipantId={currentParticipantId}
-                    onSettle={() => onSettle(detail)}
-                  />
-                ))}
-              </View>
-            ) : (
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                {t("balance.personSettled")}
-              </Text>
-            )
-          ) : null}
+          {expandedContent}
         </Card.Content>
       </TouchableRipple>
       {/* Card-level Remind action sits OUTSIDE the TouchableRipple so taps
@@ -163,7 +166,7 @@ function BalanceDetailRow({
   ownerDisplayName,
   currentParticipantId,
   onSettle
-}: BalanceDetailRowProps) {
+}: Readonly<BalanceDetailRowProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const counterpartyIsCreditor = detail.from_participant_id === ownerParticipantId;

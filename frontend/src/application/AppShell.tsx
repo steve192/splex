@@ -29,7 +29,12 @@ export function AppShell() {
   const api = useMemo(() => new ApiClient(), []);
   const systemThemeMode = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
-  const resolvedThemeMode = themeMode === "system" ? (systemThemeMode === "dark" ? "dark" : "light") : themeMode;
+  let resolvedThemeMode: "light" | "dark";
+  if (themeMode !== "system") {
+    resolvedThemeMode = themeMode;
+  } else {
+    resolvedThemeMode = systemThemeMode === "dark" ? "dark" : "light";
+  }
 
   useEffect(() => {
     AsyncStorage.getItem("splex.theme").then((stored) => {

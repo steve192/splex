@@ -25,10 +25,10 @@ type InvitationPreview = {
 
 type InvitationAcceptScreenProps = NativeStackScreenProps<RootStackParamList, "InvitationAccept">;
 
-export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptScreenProps) {
+export function InvitationAcceptScreen({ navigation, route }: Readonly<InvitationAcceptScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
-  const [token, setToken] = useState(route?.params?.token ?? inviteTokenFromCurrentUrl());
+  const [token] = useState(route?.params?.token ?? inviteTokenFromCurrentUrl());
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [message, setMessage] = useState("");
 
@@ -118,12 +118,12 @@ export function InvitationAcceptScreen({ navigation, route }: InvitationAcceptSc
                   left={(props) => <List.Icon {...props} icon="account-outline" />}
                 />
               ) : null}
-              {!preview.valid ? (
+              {!preview.valid && (
                 <View style={styles.emptyStateContent}>
                   <Image source={appImages.invitationExpired} style={styles.emptyStateImage} resizeMode="contain" />
                   <Text variant="bodyMedium">{t("invite.expired")}</Text>
                 </View>
-              ) : null}
+              )}
             </>
           ) : null}
           <Button mode="contained" disabled={!token || (preview ? !preview.valid : false)} onPress={accept}>

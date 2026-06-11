@@ -3,6 +3,6 @@ import { View } from "react-native";
 
 import { styles } from "./styles";
 
-export function ContentWidth({ children }: { children: ReactNode }) {
+export function ContentWidth({ children }: Readonly<{ children: ReactNode }>) {
   return <View style={styles.contentWidth}>{children}</View>;
 }

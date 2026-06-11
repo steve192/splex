@@ -28,7 +28,7 @@ type BalanceGraphProps = {
  * the amount printed on the arc.  Best at 2-6 members; still legible up to
  * ~10, after which the arc bow starts overlapping.
  */
-export function BalanceGraph({ rows }: BalanceGraphProps) {
+export function BalanceGraph({ rows }: Readonly<BalanceGraphProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const { members, edges } = useMemo(() => buildGraphModel(rows), [rows]);

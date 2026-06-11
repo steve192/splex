@@ -29,7 +29,7 @@ export function ContextPickerSheet({
   showRemember = false,
   remember = false,
   onToggleRemember
-}: ContextPickerSheetProps) {
+}: Readonly<ContextPickerSheetProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const keyboardHeight = useKeyboardHeight();
@@ -138,12 +138,12 @@ function Section({
   emptyText,
   items,
   children
-}: {
+}: Readonly<{
   title: string;
   emptyText: string;
   items: unknown[];
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <View style={styles.sectionGap}>
       <Text variant="titleMedium" style={styles.sectionLabel}>
@@ -160,13 +160,13 @@ function ContextRow({
   imageUrl,
   imageSource,
   onPress
-}: {
+}: Readonly<{
   title: string;
   description: string;
   imageUrl?: string;
   imageSource?: Parameters<typeof PersonAvatar>[0]["imageSource"];
   onPress: () => void;
-}) {
+}>) {
   return (
     <>
       <List.Item

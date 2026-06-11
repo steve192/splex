@@ -40,7 +40,7 @@ type ImageUploadFieldProps = {
  * So `ImageCropDialog` is the single non-OS cropper in the app - used for
  * everything except the one case where the OS picker gives us crop for free.
  */
-export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange }: ImageUploadFieldProps) {
+export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange }: Readonly<ImageUploadFieldProps>) {
   const { t } = useI18n();
   const [previewUrl, setPreviewUrl] = useState(imageUrl ?? "");
   const [error, setError] = useState("");

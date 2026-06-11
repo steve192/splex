@@ -25,7 +25,7 @@ type ExpenseDetailScreenProps = {
   navigation: ExpenseDetailNavigation;
 };
 
-export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenProps) {
+export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetailScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const theme = useTheme();
@@ -123,7 +123,7 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                   />
                 </Card.Content>
               </Card>
-              {personalNet !== null ? (
+              {personalNet !== null && (
                 <Card mode="elevated" style={styles.metricTile}>
                   <Card.Content>
                     <Text variant="labelLarge">{t("expense.yourBalance")}</Text>
@@ -134,7 +134,7 @@ export function ExpenseDetailScreen({ route, navigation }: ExpenseDetailScreenPr
                     />
                   </Card.Content>
                 </Card>
-              ) : null}
+              )}
               {converted ? (
                 <Card mode="elevated" style={styles.metricTile}>
                   <Card.Content>

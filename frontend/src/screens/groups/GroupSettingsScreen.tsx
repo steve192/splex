@@ -335,7 +335,7 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
             <Button mode="contained-tonal" icon="logout" onPress={() => setLeaveConfirmVisible(true)}>
               {t("group.leave")}
             </Button>
-            {!isSettled ? <Text variant="bodyMedium">{t("group.deleteBlocked")}</Text> : null}
+            {!isSettled && <Text variant="bodyMedium">{t("group.deleteBlocked")}</Text>}
             <Button
               mode="contained-tonal"
               icon="delete-outline"

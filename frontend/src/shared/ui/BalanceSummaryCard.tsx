@@ -12,7 +12,7 @@ type BalanceSummaryCardProps = {
   detailLines: ReactNode;
 };
 
-export function BalanceSummaryCard({ total, currency, detailLines }: BalanceSummaryCardProps) {
+export function BalanceSummaryCard({ total, currency, detailLines }: Readonly<BalanceSummaryCardProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   if (total === 0) {
@@ -50,7 +50,7 @@ type BalanceLineProps = {
   currency: string;
 };
 
-export function BalanceLine({ variant, person, amount, currency }: BalanceLineProps) {
+export function BalanceLine({ variant, person, amount, currency }: Readonly<BalanceLineProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const positive = variant === "incoming";

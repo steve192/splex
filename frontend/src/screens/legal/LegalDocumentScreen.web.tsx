@@ -12,7 +12,7 @@ type Props = {
   kind: LegalDocumentKind;
 };
 
-export function LegalDocumentScreen({ kind }: Props) {
+export function LegalDocumentScreen({ kind }: Readonly<Props>) {
   const { t } = useI18n();
   const theme = useTheme();
   const { html, loading, error, reload } = useLegalDocumentHtml(kind);

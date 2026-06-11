@@ -37,7 +37,7 @@ const API_DEBUG_ENABLED =
 
 function apiDebug(message: string, details?: unknown) {
   if (!API_DEBUG_ENABLED) return;
-  if (typeof window !== "undefined") {
+  if (typeof globalThis.window !== "undefined") {
     console.info(`[splex:api] ${message}`, details ?? "");
   }
 }
@@ -93,12 +93,10 @@ export class ApiClient {
   async getBaseUrl(): Promise<string> {
     if (Platform.OS === "web") return "";
     if (this.baseUrl !== null) return this.baseUrl;
-    if (!this.baseUrlPromise) {
-      this.baseUrlPromise = AsyncStorage.getItem(API_BASE_URL_STORAGE_KEY).then((stored) => {
-        this.baseUrl = normalizeBaseUrl(stored || NATIVE_DEFAULT_BASE_URL);
-        return this.baseUrl;
-      });
-    }
+    this.baseUrlPromise ??= AsyncStorage.getItem(API_BASE_URL_STORAGE_KEY).then((stored) => {
+      this.baseUrl = normalizeBaseUrl(stored || NATIVE_DEFAULT_BASE_URL);
+      return this.baseUrl;
+    });
     return this.baseUrlPromise;
   }
 
@@ -150,11 +148,9 @@ export class ApiClient {
     }
     if (response.status === 401 && this.tokens?.refresh && !retried) {
       apiDebug("response was 401; refreshing access token", { path });
-      if (!this.refreshPromise) {
-        this.refreshPromise = this.refreshAccessToken().finally(() => {
-          this.refreshPromise = null;
-        });
-      }
+      this.refreshPromise ??= this.refreshAccessToken().finally(() => {
+        this.refreshPromise = null;
+      });
       await this.refreshPromise;
       return this.request<T>(path, options, true);
     }

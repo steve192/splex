@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
 import { Button, Card, List, Snackbar, Text, TouchableRipple } from "react-native-paper";
 
@@ -21,7 +21,7 @@ import { styles } from "../../shared/ui/styles";
 
 type OverviewScreenProps = NativeStackScreenProps<OverviewStackParamList, "OverviewHome">;
 
-export function OverviewScreen({ navigation }: OverviewScreenProps) {
+export function OverviewScreen({ navigation }: Readonly<OverviewScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [items, setItems] = useState<OverviewItem[]>([]);
@@ -129,7 +129,7 @@ export function OverviewScreen({ navigation }: OverviewScreenProps) {
             {t("friend.invite")}
           </Button>
         </View>
-        {!items.length ? <EmptyState image={appImages.emptyGroupsFriends} text={t("overview.empty")} /> : null}
+        {!items.length && <EmptyState image={appImages.emptyGroupsFriends} text={t("overview.empty")} />}
         <View style={styles.listSection}>
           <Text variant="titleLarge">{t("overview.groups")}</Text>
           {groups.length ? groups.map(renderItem) : <Text variant="bodyMedium">{t("overview.noGroups")}</Text>}

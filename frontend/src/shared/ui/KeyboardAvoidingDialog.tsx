@@ -18,7 +18,7 @@ type DialogProps = ComponentProps<typeof Dialog>;
  *
  * Use this instead of `Dialog` anywhere a dialog contains a `TextInput`.
  */
-export function KeyboardAvoidingDialog({ style, ...props }: DialogProps) {
+export function KeyboardAvoidingDialog({ style, ...props }: Readonly<DialogProps>) {
   const keyboardHeight = useKeyboardHeight();
   return <Dialog {...props} style={[{ marginBottom: keyboardHeight }, style]} />;
 }

@@ -3,7 +3,7 @@ import { Card, Text } from "react-native-paper";
 
 import { styles } from "./styles";
 
-export function EmptyState({ image, text }: { image?: ImageSourcePropType; text: string }) {
+export function EmptyState({ image, text }: Readonly<{ image?: ImageSourcePropType; text: string }>) {
   return (
     <Card mode="elevated" style={styles.card}>
       <Card.Content style={styles.emptyStateContent}>

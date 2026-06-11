@@ -84,7 +84,7 @@ export function FriendSettingsScreen({ route, navigation }: Readonly<FriendSetti
             <Button mode="elevated" onPress={saveArchive}>
               {t("friend.saveArchive")}
             </Button>
-            {!isSettled ? <Text variant="bodyMedium">{t("friend.removeBlocked")}</Text> : null}
+            {!isSettled && <Text variant="bodyMedium">{t("friend.removeBlocked")}</Text>}
             <Button
               mode="contained-tonal"
               icon="account-remove-outline"

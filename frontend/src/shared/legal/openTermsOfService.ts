@@ -9,8 +9,8 @@ const WEB_PATHS: Record<LegalDocumentKind, string> = {
 };
 
 export function openLegalDocument(kind: LegalDocumentKind, openNativeScreen: () => void) {
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    window.open(new URL(WEB_PATHS[kind], window.location.href).toString(), "_blank", "noopener,noreferrer");
+  if (Platform.OS === "web" && typeof globalThis.window !== "undefined") {
+    globalThis.window.open(new URL(WEB_PATHS[kind], globalThis.window.location.href).toString(), "_blank", "noopener,noreferrer");
     return;
   }
   openNativeScreen();

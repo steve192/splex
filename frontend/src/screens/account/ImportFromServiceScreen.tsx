@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Card, HelperText, List, Text } from "react-native-paper";
+import { Card, List, Text } from "react-native-paper";
 
 import { AccountStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";

@@ -70,20 +70,22 @@ export function ReceiptList({ receipts, allowRemove, onRemoved }: Readonly<Recei
           description={formatBytes(receipt.size_bytes)}
           left={(props) => <List.Icon {...props} icon={iconFor(receipt.content_type)} />}
           onPress={() => handleOpen(receipt)}
-          right={() =>
-            busyId === receipt.id ? (
-              <ActivityIndicator style={styles.selfCenter} />
-            ) : allowRemove ? (
-              <IconButton
-                icon="close"
-                iconColor={negativeColor(theme)}
-                onPress={() => handleRemove(receipt)}
-                accessibilityLabel={t("receipts.remove")}
-              />
-            ) : (
-              <IconButton icon="download" onPress={() => handleOpen(receipt)} />
-            )
-          }
+          right={() => {
+            if (busyId === receipt.id) {
+              return <ActivityIndicator style={styles.selfCenter} />;
+            }
+            if (allowRemove) {
+              return (
+                <IconButton
+                  icon="close"
+                  iconColor={negativeColor(theme)}
+                  onPress={() => handleRemove(receipt)}
+                  accessibilityLabel={t("receipts.remove")}
+                />
+              );
+            }
+            return <IconButton icon="download" onPress={() => handleOpen(receipt)} />;
+          }}
         />
       ))}
     </View>

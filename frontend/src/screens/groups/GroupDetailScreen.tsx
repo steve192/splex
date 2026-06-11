@@ -35,7 +35,7 @@ import { styles } from "../../shared/ui/styles";
 
 type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
 
-export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps) {
+export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
@@ -222,13 +222,15 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
         `/api/groups/${groupId}/reminders/track-expense/`,
         {}
       );
-      setSnackbar(
-        result.recipients === 0
-          ? t("invite.trackReminderNobody")
-          : result.sent === 0
-            ? t("invite.trackReminderNoPush")
-            : t("invite.trackReminderSent", { count: result.sent })
-      );
+      let reminderMessage: string;
+      if (result.recipients === 0) {
+        reminderMessage = t("invite.trackReminderNobody");
+      } else if (result.sent === 0) {
+        reminderMessage = t("invite.trackReminderNoPush");
+      } else {
+        reminderMessage = t("invite.trackReminderSent", { count: result.sent });
+      }
+      setSnackbar(reminderMessage);
     } catch (error) {
       setSnackbar(apiErrorMessage(error, t));
     }
@@ -319,7 +321,7 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
               onRetry={retryPendingExpenses}
               onDelete={deletePendingExpense}
             />
-            {ledger.length ? (
+            {ledger.length > 0 &&
               ledger.map((item) =>
                 item.type === "expense" ? (
                   <ExpenseLedgerRow
@@ -335,15 +337,15 @@ export function GroupDetailScreen({ route, navigation }: GroupDetailScreenProps)
                     onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
                   />
                 )
-              )
-            ) : pendingExpenses.length ? null : (
+              )}
+            {ledger.length === 0 && pendingExpenses.length === 0 && (
               <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
             )}
-            {nextOffset !== null ? (
+            {nextOffset !== null && (
               <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
                 {t("activity.loadMore")}
               </Button>
-            ) : null}
+            )}
           </>
         ) : (
           <>

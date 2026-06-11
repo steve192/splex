@@ -20,7 +20,7 @@ export function LocationSuggestionsInput({
   loading = false,
   maxLength = 240,
   label = "Description"
-}: LocationSuggestionsInputProps) {
+}: Readonly<LocationSuggestionsInputProps>) {
   const { t } = useI18n();
   const [showSuggestions, setShowSuggestions] = useState(true);
 

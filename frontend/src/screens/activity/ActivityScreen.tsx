@@ -20,7 +20,7 @@ import { activityContext, activityDescription, activityIcon } from "./activityHe
 
 type ActivityScreenProps = NativeStackScreenProps<ActivityStackParamList, "ActivityHome">;
 
-export function ActivityScreen({ navigation }: ActivityScreenProps) {
+export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [events, setEvents] = useState<ActivityFeedEvent[]>([]);
@@ -106,7 +106,7 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
   return (
     <Screen topInset scrollViewProps={{ onScroll: handleScroll }}>
       <Text variant="headlineSmall">{t("tabs.activity")}</Text>
-      {!events.length ? <EmptyState image={appImages.emptyActivity} text={t("activity.empty")} /> : null}
+      {!events.length && <EmptyState image={appImages.emptyActivity} text={t("activity.empty")} />}
       {events.map((item) => {
         const description = activityDescription(item, t);
         const context = activityContext(item, t);
@@ -135,11 +135,11 @@ export function ActivityScreen({ navigation }: ActivityScreenProps) {
           </Card>
         );
       })}
-      {nextOffset !== null ? (
+      {nextOffset !== null && (
         <Button mode="elevated" loading={loading} onPress={() => load(nextOffset)}>
           {t("activity.loadMore")}
         </Button>
-      ) : null}
+      )}
     </Screen>
   );
 }

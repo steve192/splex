@@ -32,7 +32,7 @@ const WHEEL_ZOOM_STEP = 0.12;
  *             + zoom buttons. RNGH's web build doesn't pick up mouse drag in
  *             this layout, so the input layer is bespoke.
  */
-export function ImageCropDialog({ visible, source, onDismiss, onComplete }: ImageCropDialogProps) {
+export function ImageCropDialog({ visible, source, onDismiss, onComplete }: Readonly<ImageCropDialogProps>) {
   const { t } = useI18n();
   const [zoom, setZoom] = useState(1);
   // Pan expressed as 0-100% so 0 = leftmost/topmost edge of the source visible
@@ -199,7 +199,7 @@ function WebCropViewport({
   onViewportSize,
   onPan,
   onZoom
-}: WebCropViewportProps) {
+}: Readonly<WebCropViewportProps>) {
   const pointers = useRef({
     map: new Map<number, { x: number; y: number }>(),
     startX: 0,
@@ -304,7 +304,7 @@ type CropImageLayerProps = {
 
 /** Decorative image layer. Wrapped in a pointer-events-blocked View so it
  *  never steals input from the parent viewport's gesture target. */
-function CropImageLayer({ source, viewportSize, zoom, panX, panY }: CropImageLayerProps) {
+function CropImageLayer({ source, viewportSize, zoom, panX, panY }: Readonly<CropImageLayerProps>) {
   return (
     <View
       pointerEvents="none"

@@ -50,7 +50,7 @@ async function setStoredUser(user: User | null): Promise<void> {
   await AsyncStorage.removeItem(USER_STORAGE_KEY);
 }
 
-export function AuthProvider({ api, children }: { api: ApiClient; children: ReactNode }) {
+export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; children: ReactNode }>) {
   const [tokens, setTokens] = useState<Tokens | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [initialized, setInitialized] = useState(false);

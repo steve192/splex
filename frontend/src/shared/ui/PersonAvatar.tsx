@@ -6,12 +6,12 @@ export function PersonAvatar({
   name,
   imageUrl,
   size = 36
-}: {
+}: Readonly<{
   imageSource?: ImageSourcePropType;
   name?: string;
   imageUrl?: string;
   size?: number;
-}) {
+}>) {
   if (imageUrl) {
     return <Avatar.Image size={size} source={{ uri: imageUrl }} />;
   }

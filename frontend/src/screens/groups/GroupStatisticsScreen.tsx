@@ -5,7 +5,7 @@ import { StatisticsView } from "../../shared/statistics/StatisticsView";
 
 type Props = NativeStackScreenProps<OverviewStackParamList, "GroupStatistics">;
 
-export function GroupStatisticsScreen({ route, navigation }: Props) {
+export function GroupStatisticsScreen({ route, navigation }: Readonly<Props>) {
   const groupId = route.params.id;
   return (
     <StatisticsView

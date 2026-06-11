@@ -107,7 +107,7 @@ async function registerExpoToken(api: ApiClient, enabled: boolean): Promise<Devi
 }
 
 async function registerWebPush(api: ApiClient, enabled: boolean): Promise<DevicePushState> {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in globalThis)) {
     return { preference: "off", lastStatus: "unsupported" };
   }
   const config = await api.get<{ vapid_public_key: string }>("/api/notifications/config/");

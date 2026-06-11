@@ -25,14 +25,14 @@ interface GoogleLoginButtonProps {
  * Web uses a full-page redirect; LoginScreen consumes the OAuth response on
  * mount.  Native Android uses `expo-auth-session`'s popup/in-app-browser flow.
  */
-export function GoogleLoginButton(props: GoogleLoginButtonProps) {
+export function GoogleLoginButton(props: Readonly<GoogleLoginButtonProps>) {
   if (Platform.OS === "web") {
     return <GoogleLoginButtonWeb {...props} />;
   }
   return <GoogleLoginButtonNative {...props} />;
 }
 
-function GoogleLoginButtonWeb({ clientId }: GoogleLoginButtonProps) {
+function GoogleLoginButtonWeb({ clientId }: Readonly<GoogleLoginButtonProps>) {
   const { t } = useI18n();
   return (
     <>
@@ -44,7 +44,7 @@ function GoogleLoginButtonWeb({ clientId }: GoogleLoginButtonProps) {
   );
 }
 
-function GoogleLoginButtonNative({ clientId, androidClientId, onError }: GoogleLoginButtonProps) {
+function GoogleLoginButtonNative({ clientId, androidClientId, onError }: Readonly<GoogleLoginButtonProps>) {
   const { t } = useI18n();
   const { loginWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);

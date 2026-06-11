@@ -42,7 +42,7 @@ export function PayerSheet({
   onMultiPayerChange,
   onPayerChange,
   onPaymentValueChange
-}: PayerSheetProps) {
+}: Readonly<PayerSheetProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const errorStyle = { color: negativeColor(theme) };
@@ -71,21 +71,7 @@ export function PayerSheet({
           <Text variant="bodyMedium">{t("expense.multiplePayers")}</Text>
           <Switch value={multiPayer} onValueChange={onMultiPayerChange} />
         </View>
-        {!multiPayer ? (
-          participants.map((participant) => (
-            <List.Item
-              key={participant.id}
-              style={styles.listTile}
-              title={nameFor(participant)}
-              description={currencyAmount(totalAmount, currency)}
-              onPress={() => onPayerChange(participant.id)}
-              left={() => <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />}
-              right={(props) => (
-                <List.Icon {...props} icon={payerId === participant.id ? "radiobox-marked" : "radiobox-blank"} />
-              )}
-            />
-          ))
-        ) : (
+        {multiPayer ? (
           <View style={styles.gap}>
             <Text variant="bodyMedium" style={paymentConfigInvalid ? errorStyle : undefined}>
               {t("expense.amountLeft", { amount: currencyAmount(paymentLeft, currency) })}
@@ -112,6 +98,20 @@ export function PayerSheet({
               />
             ))}
           </View>
+        ) : (
+          participants.map((participant) => (
+            <List.Item
+              key={participant.id}
+              style={styles.listTile}
+              title={nameFor(participant)}
+              description={currencyAmount(totalAmount, currency)}
+              onPress={() => onPayerChange(participant.id)}
+              left={() => <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />}
+              right={(props) => (
+                <List.Icon {...props} icon={payerId === participant.id ? "radiobox-marked" : "radiobox-blank"} />
+              )}
+            />
+          ))
         )}
       </Modal>
     </Portal>

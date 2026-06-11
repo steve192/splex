@@ -20,7 +20,7 @@ const INTERNAL_ROUTES: Record<string, keyof RootStackParamList> = {
   "/imprint": "Imprint"
 };
 
-export function LegalDocumentScreen({ kind }: Props) {
+export function LegalDocumentScreen({ kind }: Readonly<Props>) {
   const { t } = useI18n();
   const theme = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

@@ -4,7 +4,7 @@ import { Avatar, Text } from "react-native-paper";
 import { ExpenseShare } from "../types/models";
 import { PersonAvatar } from "./PersonAvatar";
 
-export function AvatarStack({ people, size = 34 }: { people: ExpenseShare[]; size?: number }) {
+export function AvatarStack({ people, size = 34 }: Readonly<{ people: ExpenseShare[]; size?: number }>) {
   const visible = people.slice(0, 2);
   const extra = people.length - visible.length;
   return (

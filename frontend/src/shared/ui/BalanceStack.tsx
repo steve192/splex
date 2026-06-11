@@ -16,22 +16,22 @@ type BalanceStackProps = {
  * neutral). The caller provides the wrapping View with whatever alignment it
  * needs (e.g. styles.expenseNet, styles.listTileRight).
  */
-export function BalanceStack({ amount, currency }: BalanceStackProps) {
+export function BalanceStack({ amount, currency }: Readonly<BalanceStackProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const numeric = asNumber(amount);
-  const color =
-    numeric > 0
-      ? positiveColor(theme)
-      : numeric < 0
-        ? negativeColor(theme)
-        : theme.colors.onSurfaceVariant;
-  const label =
-    numeric > 0
-      ? t("balance.owedToYou")
-      : numeric < 0
-        ? t("balance.youOwe")
-        : t("balance.settled");
+  let color: string;
+  let label: string;
+  if (numeric > 0) {
+    color = positiveColor(theme);
+    label = t("balance.owedToYou");
+  } else if (numeric < 0) {
+    color = negativeColor(theme);
+    label = t("balance.youOwe");
+  } else {
+    color = theme.colors.onSurfaceVariant;
+    label = t("balance.settled");
+  }
 
   return (
     <Fragment>

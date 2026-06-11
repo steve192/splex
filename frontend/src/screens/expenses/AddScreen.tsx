@@ -66,8 +66,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const { showSuccess } = useFeedback();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
-  const expenseId = route?.params?.expenseId as number | undefined;
-  const pendingMutationId = route?.params?.pendingMutationId as string | undefined;
+  const expenseId = route?.params?.expenseId;
+  const pendingMutationId = route?.params?.pendingMutationId;
   const editing = Boolean(expenseId || pendingMutationId);
   // "AddHome" is the navigation tab entry point. Opening the screen from a group
   // or friend uses the "AddExpense" route with a pre-populated target instead.
@@ -554,7 +554,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   }
 
   const hasPayment = multiPayer
-    ? Object.values(paymentValues).some((value) => Boolean(value))
+    ? Object.values(paymentValues).some(Boolean)
     : Boolean(payerId);
 
   const valid =
@@ -581,15 +581,16 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               {selectedContext ? <Text variant="bodyMedium">{selectedContext.name}</Text> : null}
             </View>
           </View>
-          {editing ? (
+          {editing && (
             <Button mode="text" onPress={navigateAfterSave}>
               {t("common.cancel")}
             </Button>
-          ) : selectedContext ? (
+          )}
+          {!editing && selectedContext && (
             <Button mode="text" icon="swap-horizontal" onPress={() => setActiveSheet("context")}>
               {t("expense.changeContext")}
             </Button>
-          ) : null}
+          )}
         </View>
 
         <Card mode="elevated" style={styles.card}>
@@ -670,21 +671,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 <Card.Content style={styles.gap}>
                   <View style={styles.rowBetween}>
                     <Text variant="titleMedium">{t("receipts.section")}</Text>
-                    {canUploadReceipts ? (
-                      uploadingReceipt ? (
-                        <ActivityIndicator />
-                      ) : (
-                        <IconButton
-                          icon="paperclip"
-                          onPress={handleAddReceipt}
-                          accessibilityLabel={t("receipts.addAction")}
-                        />
-                      )
-                    ) : null}
+                    {canUploadReceipts && uploadingReceipt && <ActivityIndicator />}
+                    {canUploadReceipts && !uploadingReceipt && (
+                      <IconButton
+                        icon="paperclip"
+                        onPress={handleAddReceipt}
+                        accessibilityLabel={t("receipts.addAction")}
+                      />
+                    )}
                   </View>
-                  {!canUploadReceipts ? (
+                  {!canUploadReceipts && (
                     <HelperText type="info">{t("receipts.offlineHint")}</HelperText>
-                  ) : null}
+                  )}
                   <ReceiptList
                     receipts={receipts}
                     allowRemove={canUploadReceipts}
@@ -805,7 +803,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     if (tabValue === "equal") {
       return t("split.selectedCountEqual", { count: selectedParticipantIds.length });
     }
-    return `${t(`split.${splitMethod}`)} (${selectedParticipantIds.length})`;
+    const methodLabel = t(`split.${splitMethod}`);
+    return `${methodLabel} (${selectedParticipantIds.length})`;
   }
 
 }

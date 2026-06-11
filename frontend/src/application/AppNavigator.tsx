@@ -317,17 +317,62 @@ export function AppNavigator() {
     return null;
   }
 
+  let initialRouteName: "InvitationAccept" | "Main" | "Login";
+  if (!tokens) {
+    initialRouteName = "Login";
+  } else if (pendingInviteToken) {
+    initialRouteName = "InvitationAccept";
+  } else {
+    initialRouteName = "Main";
+  }
+
   inviteDebug("navigator rendering stack", {
     authenticated: Boolean(tokens),
     checkedAuthState,
     hasPendingInviteToken: Boolean(pendingInviteToken),
-    initialRouteName: tokens ? (pendingInviteToken ? "InvitationAccept" : "Main") : "Login"
+    initialRouteName
   });
+
+  let authStackScreens: React.ReactNode;
+  if (!tokens) {
+    authStackScreens = (
+      <>
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false, title: t("auth.title") }}
+        />
+        <Stack.Screen
+          name="LoginMagic"
+          component={LoginScreen}
+          options={{ headerShown: false, title: t("auth.title") }}
+        />
+      </>
+    );
+  } else if (pendingInviteToken) {
+    authStackScreens = (
+      <>
+        <Stack.Screen
+          name="InvitationAccept"
+          component={InvitationAcceptScreen}
+          initialParams={{ token: pendingInviteToken }}
+        />
+        <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+      </>
+    );
+  } else {
+    authStackScreens = (
+      <>
+        <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="InvitationAccept" component={InvitationAcceptScreen} />
+      </>
+    );
+  }
 
   return (
     <Stack.Navigator
       key={tokens ? `auth-${pendingInviteToken ?? "main"}` : "login"}
-      initialRouteName={tokens ? (pendingInviteToken ? "InvitationAccept" : "Main") : "Login"}
+      initialRouteName={initialRouteName}
     >
       <Stack.Screen
         name="TermsOfService"
@@ -352,36 +397,7 @@ export function AppNavigator() {
         component={OpenSourceLicensesScreen}
         options={{ title: t("legal.openSource.title") }}
       />
-      {tokens ? (
-        pendingInviteToken ? (
-          <>
-            <Stack.Screen
-              name="InvitationAccept"
-              component={InvitationAcceptScreen}
-              initialParams={{ token: pendingInviteToken }}
-            />
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="InvitationAccept" component={InvitationAcceptScreen} />
-          </>
-        )
-      ) : (
-        <>
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false, title: t("auth.title") }}
-          />
-          <Stack.Screen
-            name="LoginMagic"
-            component={LoginScreen}
-            options={{ headerShown: false, title: t("auth.title") }}
-          />
-        </>
-      )}
+      {authStackScreens}
     </Stack.Navigator>
   );
 }

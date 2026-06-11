@@ -12,7 +12,14 @@ export function formatDeviceDate(value?: string): string {
 }
 
 export function formatDeviceDateParts(value?: string): { month: string; day: string } {
-  const date = value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? dateFromDateOnly(value) : value ? new Date(value) : new Date();
+  let date: Date;
+  if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    date = dateFromDateOnly(value);
+  } else if (value) {
+    date = new Date(value);
+  } else {
+    date = new Date();
+  }
   const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
   return {
     month: new Intl.DateTimeFormat(undefined, { month: "short" }).format(safeDate).toUpperCase(),

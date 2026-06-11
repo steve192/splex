@@ -13,7 +13,7 @@ type SettlementLedgerRowProps = {
   onPress: () => void;
 };
 
-export function SettlementLedgerRow({ settlement, onPress }: SettlementLedgerRowProps) {
+export function SettlementLedgerRow({ settlement, onPress }: Readonly<SettlementLedgerRowProps>) {
   const { t } = useI18n();
   const parts = formatDeviceDateParts(settlement.created_at);
   const isWriteOff = settlement.kind === "auto_write_off";

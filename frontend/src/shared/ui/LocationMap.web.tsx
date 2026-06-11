@@ -46,8 +46,18 @@ export function LocationMap({ latitude, longitude, height = 250 }: Readonly<Loca
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map
-    if (!map.current) {
+    if (map.current) {
+      // Update existing map view if coordinates changed
+      map.current.setView([latitude, longitude], 13);
+      // Clear old markers and add new one
+      map.current.eachLayer((layer: L.Layer) => {
+        if (layer instanceof L.Marker) {
+          map.current!.removeLayer(layer);
+        }
+      });
+      L.marker([latitude, longitude], { icon: createCustomMarker() }).addTo(map.current);
+    } else {
+      // Initialize map
       map.current = L.map(mapContainer.current).setView([latitude, longitude], 13);
 
       // Add tile layer from backend configuration
@@ -57,16 +67,6 @@ export function LocationMap({ latitude, longitude, height = 250 }: Readonly<Loca
       }).addTo(map.current);
 
       // Add marker with custom icon
-      L.marker([latitude, longitude], { icon: createCustomMarker() }).addTo(map.current);
-    } else {
-      // Update map view if coordinates changed
-      map.current.setView([latitude, longitude], 13);
-      // Clear old markers and add new one
-      map.current.eachLayer((layer: L.Layer) => {
-        if (layer instanceof L.Marker) {
-          map.current!.removeLayer(layer);
-        }
-      });
       L.marker([latitude, longitude], { icon: createCustomMarker() }).addTo(map.current);
     }
   }, [latitude, longitude, tileUrl]);

@@ -14,7 +14,7 @@ import { styles } from "../../shared/ui/styles";
 
 type CreateGroupScreenProps = NativeStackScreenProps<OverviewStackParamList, "CreateGroup">;
 
-export function CreateGroupScreen({ navigation }: CreateGroupScreenProps) {
+export function CreateGroupScreen({ navigation }: Readonly<CreateGroupScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();

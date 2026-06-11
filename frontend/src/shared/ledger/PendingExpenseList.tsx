@@ -20,7 +20,7 @@ export function PendingExpenseList({
   onOpen,
   onRetry,
   onDelete
-}: PendingExpenseListProps) {
+}: Readonly<PendingExpenseListProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);

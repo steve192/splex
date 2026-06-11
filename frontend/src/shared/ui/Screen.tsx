@@ -13,7 +13,7 @@ type ScreenProps = {
   scrollViewProps?: Omit<ScrollViewProps, "contentContainerStyle" | "children">;
 };
 
-export function Screen({ children, topInset = false, contentContainerStyle, scrollViewProps }: ScreenProps) {
+export function Screen({ children, topInset = false, contentContainerStyle, scrollViewProps }: Readonly<ScreenProps>) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 

@@ -5,7 +5,7 @@ import { StatisticsView } from "../../shared/statistics/StatisticsView";
 
 type Props = NativeStackScreenProps<OverviewStackParamList, "FriendStatistics">;
 
-export function FriendStatisticsScreen({ route, navigation }: Props) {
+export function FriendStatisticsScreen({ route, navigation }: Readonly<Props>) {
   const friendshipId = route.params.id;
   return (
     <StatisticsView

@@ -108,7 +108,7 @@ export function SplitProImportScreen() {
       // Best-effort pre-selection by email - users still have to confirm.
       const splexEmail = splexUser?.email?.toLowerCase();
       const match = splexEmail
-        ? fetched.find((row) => row.email && row.email.toLowerCase() === splexEmail)
+        ? fetched.find((row) => row.email?.toLowerCase() === splexEmail)
         : undefined;
       setSelectedUserId(match?.id ?? fetched[0]?.id ?? null);
     } catch (error) {
@@ -255,7 +255,11 @@ export function SplitProImportScreen() {
             autoCorrect={false}
             disabled={connecting || running || credentialsLocked}
           />
-          {!credentialsLocked ? (
+          {credentialsLocked ? (
+            <Button mode="text" icon="pencil-outline" onPress={resetConnection} disabled={running}>
+              {t("splitProImport.changeCredentials")}
+            </Button>
+          ) : (
             <Button
               mode="contained"
               icon="lan-connect"
@@ -265,17 +269,13 @@ export function SplitProImportScreen() {
             >
               {t("splitProImport.connect")}
             </Button>
-          ) : (
-            <Button mode="text" icon="pencil-outline" onPress={resetConnection} disabled={running}>
-              {t("splitProImport.changeCredentials")}
-            </Button>
           )}
           {connecting ? (
             <HelperText type="info">{t("splitProImport.connecting")}</HelperText>
           ) : null}
         </Card.Content>
       </Card>
-      {users !== null ? (
+      {users !== null && (
         <Card mode="elevated">
           <Card.Content style={styles.gap}>
             <Text variant="titleMedium">{t("splitProImport.pickUserTitle")}</Text>
@@ -284,7 +284,7 @@ export function SplitProImportScreen() {
               <HelperText type="error">{t("splitProImport.noUsers")}</HelperText>
             ) : (
               <RadioButton.Group
-                value={selectedUserId !== null ? String(selectedUserId) : ""}
+                value={selectedUserId === null ? "" : String(selectedUserId)}
                 onValueChange={(value) => setSelectedUserId(Number(value))}
               >
                 {users.map((row) => (
@@ -311,7 +311,7 @@ export function SplitProImportScreen() {
             ) : null}
           </Card.Content>
         </Card>
-      ) : null}
+      )}
       {summary ? (
         <Card mode="elevated">
           <Card.Content style={styles.gap}>

@@ -9,10 +9,10 @@ export function inviteDebug(message: string, details?: unknown) {
 }
 
 export function tokenFromCurrentUrl(paramName = "token"): string {
-  if (Platform.OS !== "web" || typeof window === "undefined") return "";
-  const token = new URL(window.location.href).searchParams.get(paramName) ?? "";
+  if (Platform.OS !== "web" || typeof globalThis.window === "undefined") return "";
+  const token = new URL(globalThis.window.location.href).searchParams.get(paramName) ?? "";
   inviteDebug("read magic token from url", {
-    href: window.location.href,
+    href: globalThis.window.location.href,
     paramName,
     hasToken: Boolean(token)
   });
@@ -20,12 +20,12 @@ export function tokenFromCurrentUrl(paramName = "token"): string {
 }
 
 export function inviteTokenFromCurrentUrl(): string {
-  if (Platform.OS !== "web" || typeof window === "undefined") return "";
-  const url = new URL(window.location.href);
-  const pathMatch = url.pathname.match(/^\/invite\/([^/?#]+)/);
+  if (Platform.OS !== "web" || typeof globalThis.window === "undefined") return "";
+  const url = new URL(globalThis.window.location.href);
+  const pathMatch = /^\/invite\/([^/?#]+)/.exec(url.pathname);
   const token = decodeURIComponent(pathMatch?.[1] ?? url.searchParams.get("inviteToken") ?? "");
   inviteDebug("read invite token from url", {
-    href: window.location.href,
+    href: globalThis.window.location.href,
     pathname: url.pathname,
     hasPathToken: Boolean(pathMatch?.[1]),
     hasQueryToken: Boolean(url.searchParams.get("inviteToken")),
@@ -35,8 +35,8 @@ export function inviteTokenFromCurrentUrl(): string {
 }
 
 export function clearUrlQuery() {
-  if (Platform.OS === "web" && typeof window !== "undefined") {
-    inviteDebug("clearing url", { href: window.location.href });
-    window.history.replaceState({}, document.title, "/");
+  if (Platform.OS === "web" && typeof globalThis.window !== "undefined") {
+    inviteDebug("clearing url", { href: globalThis.window.location.href });
+    globalThis.window.history.replaceState({}, document.title, "/");
   }
 }

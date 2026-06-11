@@ -23,7 +23,7 @@ export async function getLocationPermissionStatus(): Promise<LocationPermissionS
     }
     if (typeof navigator.permissions?.query === "function") {
       try {
-        const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+        const status = await navigator.permissions.query({ name: "geolocation" });
         if (status.state === "granted") return "granted";
         if (status.state === "denied") return "denied";
       } catch {
@@ -47,7 +47,7 @@ export async function requestLocationPermission(): Promise<LocationPermissionSta
     // skip the prompt when the user has already granted/denied location for this origin.
     if (typeof navigator.permissions?.query === "function") {
       try {
-        const status = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+        const status = await navigator.permissions.query({ name: "geolocation" });
         if (status.state === "granted") return "granted";
         if (status.state === "denied") return "denied";
       } catch {

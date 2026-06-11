@@ -97,7 +97,7 @@ interface StatisticsViewProps {
   onExpensePress: (id: number) => void;
 }
 
-export function StatisticsView({ endpoint, onExpensePress }: StatisticsViewProps) {
+export function StatisticsView({ endpoint, onExpensePress }: Readonly<StatisticsViewProps>) {
   const { api } = useAuth();
   const { t, locale } = useI18n();
   const theme = useTheme();
@@ -430,7 +430,7 @@ export function StatisticsView({ endpoint, onExpensePress }: StatisticsViewProps
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: string }) {
+function SummaryStat({ label, value }: Readonly<{ label: string; value: string }>) {
   const theme = useTheme();
   return (
     <View style={{ minWidth: 100 }}>
@@ -464,7 +464,7 @@ function ContributionBar({
   trackColor,
   labelColor,
   t
-}: ContributionBarProps) {
+}: Readonly<ContributionBarProps>) {
   const paid = asNumber(row.paid);
   const share = asNumber(row.share);
   const paidPct = max > 0 ? Math.max(0, Math.min(1, paid / max)) : 0;
@@ -504,14 +504,14 @@ function Stripe({
   color,
   trackColor,
   labelColor
-}: {
+}: Readonly<{
   label: string;
   amountText: string;
   pct: number;
   color: string;
   trackColor: string;
   labelColor: string;
-}) {
+}>) {
   return (
     <View>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 2 }}>

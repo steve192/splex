@@ -1,5 +1,7 @@
 import { Friend, Participant } from "../types/models";
 
+type MoneyInput = string | number | undefined;
+
 export function createClientId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -7,12 +9,12 @@ export function createClientId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function asNumber(value: string | number | undefined): number {
+export function asNumber(value: MoneyInput): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function formatMoney(value: string | number | undefined): string {
+export function formatMoney(value: MoneyInput): string {
   return Math.abs(asNumber(value)).toFixed(2);
 }
 
@@ -30,7 +32,7 @@ export function balanceText(t: (key: string) => string, amount: string, currency
 }
 
 /** Just the absolute amount and the currency, no "you owe / are owed" framing. */
-export function plainAmountText(amount: string | number | undefined, currency: string): string {
+export function plainAmountText(amount: MoneyInput, currency: string): string {
   return `${formatMoney(amount)} ${currency}`;
 }
 

@@ -17,7 +17,7 @@ export function ManualCopyDialog({
   value,
   label,
   onDismiss
-}: ManualCopyDialogProps) {
+}: Readonly<ManualCopyDialogProps>) {
   const { t } = useI18n();
   return (
     <Portal>

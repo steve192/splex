@@ -118,7 +118,7 @@ export async function openReceipt(api: ApiClient, receipt: Receipt): Promise<voi
   if (!FileSystem.cacheDirectory) {
     throw new Error("Cache directory unavailable on this platform.");
   }
-  const safeName = receipt.original_filename.replace(/[^\w.\-]+/g, "_") || `receipt-${receipt.id}`;
+  const safeName = receipt.original_filename.replace(/[^\w.-]+/g, "_") || `receipt-${receipt.id}`;
   const targetUri = `${FileSystem.cacheDirectory}${receipt.id}-${safeName}`;
   const download = await FileSystem.downloadAsync(
     `${baseUrl}/api/receipts/${receipt.id}/download/`,

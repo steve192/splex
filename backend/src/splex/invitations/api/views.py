@@ -77,6 +77,7 @@ class InvitationImageView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
     throttle_scope = "private_media"
+    IMAGE_NOT_FOUND_DETAIL = "Image not found."
 
     def get(self, request, token, kind):
         try:
@@ -90,15 +91,23 @@ class InvitationImageView(APIView):
         elif kind == "group" and invitation.group:
             image_url = invitation.group.icon_url
         else:
-            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
+            )
         if not image_url:
-            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
+            )
         try:
             path = storage_path_from_media_url(image_url)
         except ValueError:
-            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
+            )
         if not default_storage.exists(path):
-            return Response({"detail": "Image not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
+            )
         content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
         return FileResponse(default_storage.open(path, "rb"), content_type=content_type)
 

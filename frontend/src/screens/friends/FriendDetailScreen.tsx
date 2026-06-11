@@ -28,7 +28,7 @@ import { styles } from "../../shared/ui/styles";
 
 type FriendDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "FriendDetail">;
 
-export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProps) {
+export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailScreenProps>) {
   const { t } = useI18n();
   const { api, user } = useAuth();
   const { showSuccess } = useFeedback();
@@ -152,7 +152,7 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
   }
 
   function openSettlementDialog() {
-    if (!friend || !friend.current_participant_id || balanceSummary === 0) return;
+    if (!friend?.current_participant_id || balanceSummary === 0) return;
     const currentOwesFriend = balanceSummary < 0;
     const currentName = user?.display_name ?? t("common.you");
     setSettleTarget({
@@ -219,21 +219,14 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
             total={balanceSummary}
             currency={friend.default_currency}
             detailLines={
-              balanceSummary > 0 ? (
+              balanceSummary === 0 ? null : (
                 <BalanceLine
-                  variant="incoming"
+                  variant={balanceSummary > 0 ? "incoming" : "outgoing"}
                   person={friend.display_name}
                   amount={formatMoney(balanceSummary)}
                   currency={friend.default_currency}
                 />
-              ) : balanceSummary < 0 ? (
-                <BalanceLine
-                  variant="outgoing"
-                  person={friend.display_name}
-                  amount={formatMoney(balanceSummary)}
-                  currency={friend.default_currency}
-                />
-              ) : null
+              )
             }
           />
         ) : null}
@@ -271,11 +264,11 @@ export function FriendDetailScreen({ route, navigation }: FriendDetailScreenProp
         {!ledger.length && !pendingExpenses.length ? (
           <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
         ) : null}
-        {nextOffset !== null ? (
+        {nextOffset !== null && (
           <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
             {t("activity.loadMore")}
           </Button>
-        ) : null}
+        )}
       </Screen>
 
       <Portal>

@@ -31,12 +31,14 @@ export function MoneyText({ amount, currency, plain, style, ...props }: MoneyTex
       </Text>
     );
   }
-  const color =
-    numeric > 0
-      ? positiveColor(theme)
-      : numeric < 0
-        ? negativeColor(theme)
-        : theme.colors.onSurfaceVariant;
+  let color: string;
+  if (numeric > 0) {
+    color = positiveColor(theme);
+  } else if (numeric < 0) {
+    color = negativeColor(theme);
+  } else {
+    color = theme.colors.onSurfaceVariant;
+  }
   const label = balanceText(t, String(amount ?? 0), currency);
   return (
     <Text {...props} style={[{ color }, styles.bold, style]}>

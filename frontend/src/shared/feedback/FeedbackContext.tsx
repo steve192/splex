@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { createContext, ReactNode, useContext, useRef, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Image, ImageSourcePropType, StyleSheet, View } from "react-native";
 import { Surface, useTheme } from "react-native-paper";
 
@@ -18,7 +18,7 @@ type FeedbackContextValue = {
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null);
 
-export function FeedbackProvider({ children }: { children: ReactNode }) {
+export function FeedbackProvider({ children }: Readonly<{ children: ReactNode }>) {
   const theme = useTheme();
   const [visible, setVisible] = useState(false);
   const [icon, setIcon] = useState<FeedbackIcon>("check");
@@ -28,7 +28,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const iconRotate = useRef(new Animated.Value(0)).current;
   const runId = useRef(0);
 
-  function showSuccess(options?: FeedbackOptions) {
+  const showSuccess = useCallback((options?: FeedbackOptions) => {
     runId.current += 1;
     const currentRun = runId.current;
     setIcon(options?.icon ?? "check");
@@ -76,7 +76,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         setVisible(false);
       }
     });
-  }
+  }, [opacity, iconScale, iconRotate]);
+
+  const contextValue = useMemo(() => ({ showSuccess }), [showSuccess]);
 
   const rotation = iconRotate.interpolate({
     inputRange: [0, 1],
@@ -84,7 +86,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   });
 
   return (
-    <FeedbackContext.Provider value={{ showSuccess }}>
+    <FeedbackContext.Provider value={contextValue}>
       <View style={feedbackStyles.root}>
         {children}
         {visible ? (
