@@ -65,8 +65,8 @@
     "expo-updates": "56.0.19",
     "expo-web-browser": "56.0.5",
     "leaflet": "1.9.4",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "react-native": "0.85.3",
     "react-native-gesture-handler": "2.31.2",
     "react-native-gifted-charts": "1.4.77",
@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "@types/leaflet": "1.9.21",
-    "@types/react": "19.2.15",
+    "@types/react": "19.2.16",
     "@vitest/coverage-v8": "4.1.8",
     "typescript": "6.0.3",
     "vitest": "4.1.8"
