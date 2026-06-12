@@ -1,0 +1,26 @@
+name: Setup backend
+description: >-
+  Set up Python from backend/.python-version with a pip cache and (by default)
+  install backend dependencies. The repository must already be checked out.
+
+inputs:
+  install:
+    description: Whether to install backend dependencies after setting up Python.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: backend/.python-version
+        cache: pip
+        cache-dependency-path: backend/pyproject.toml
+
+    - name: Install dependencies
+      if: inputs.install == 'true'
+      shell: bash
+      working-directory: backend
+      run: pip install -e ".[dev]"

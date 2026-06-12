@@ -48,12 +48,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.16.0"
+          node-version-file: frontend/.nvmrc
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14.5"
+          python-version-file: backend/.python-version
 
       - name: Run semantic-release dry run
         id: semantic
@@ -151,16 +151,8 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.16.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install current dependencies
-        working-directory: frontend
-        run: npm ci
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Compute current fingerprint
         id: current
@@ -226,12 +218,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.16.0"
+          node-version-file: frontend/.nvmrc
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14.5"
+          python-version-file: backend/.python-version
 
       - name: Run semantic-release
         uses: cycjimmy/semantic-release-action@v6.0.0
@@ -278,6 +270,8 @@ jobs:
             ghcr.io/${{ github.repository }}:${{ needs.semantic-preview.outputs.tag }}
             ghcr.io/${{ github.repository }}:${{ needs.semantic-preview.outputs.version }}
             ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
 
   publish-expo-update:
     name: Publish Expo Update
@@ -294,15 +288,8 @@ jobs:
         with:
           ref: ${{ needs.semantic-preview.outputs.tag }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.16.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Publish Expo update
         if: ${{ env.EXPO_TOKEN != '' }}

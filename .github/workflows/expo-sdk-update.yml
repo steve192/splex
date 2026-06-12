@@ -40,30 +40,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.16.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Snapshot current versions
+        run: cp package.json "$RUNNER_TEMP/package.before.json"
 
       - name: Update to SDK-recommended versions
         run: npx expo install --fix
 
-      - name: Pin exact versions
+      - name: Pin updated packages to exact versions
         run: |
-          # expo install --fix writes tilde ranges; replace every range with
-          # the exact version from the lockfile for fully deterministic builds
+          # expo install --fix writes tilde ranges. Pin them to the exact
+          # lockfile version for deterministic builds, but ONLY for packages
+          # expo actually changed - leave unrelated ranges (Renovate-managed,
+          # e.g. non-SDK react-native-* libs) untouched so this PR contains
+          # only the SDK update.
           node <<'EOF'
           const fs = require('fs');
+          const before = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/package.before.json`, 'utf8'));
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
           const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
           for (const section of ['dependencies', 'devDependencies']) {
             for (const [name, range] of Object.entries(pkg[section] ?? {})) {
-              if (!/^[~^]/.test(range)) continue;
+              if (range === before[section]?.[name]) continue; // expo did not touch it
+              if (!/^[~^]/.test(range)) continue;              // already exact
               const installed = lock.packages[`node_modules/${name}`]?.version;
               if (installed) pkg[section][name] = installed;
             }
