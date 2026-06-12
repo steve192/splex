@@ -30,7 +30,7 @@
       "automerge": false
     },
     {
-      "description": "Frontend: Expo / React Native ecosystem - grouped, manually reviewed",
+      "description": "Frontend: Expo SDK-managed packages - versions are dictated by the installed Expo SDK (see expo/bundledNativeModules.json), so Renovate must not touch them; the expo-sdk-update workflow keeps them current instead",
       "matchManagers": [
         "npm"
       ],
@@ -41,10 +41,22 @@
         "expo",
         "expo-*",
         "@expo/*",
+        "react",
+        "react-dom",
         "react-native",
-        "react-native-*"
+        "react-native-web",
+        "react-native-gesture-handler",
+        "react-native-reanimated",
+        "react-native-safe-area-context",
+        "react-native-screens",
+        "react-native-svg",
+        "react-native-webview",
+        "react-native-worklets",
+        "@react-native-async-storage/async-storage",
+        "@react-native-community/netinfo",
+        "@types/react"
       ],
-      "groupName": "expo-and-react-native"
+      "enabled": false
     },
     {
       "description": "Frontend: other npm minor/patch updates - one PR per package so a single failure doesn't block the rest",

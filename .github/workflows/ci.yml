@@ -6,6 +6,10 @@ on:
       - "**"
   pull_request:
     types: [opened, synchronize, reopened]
+  # Lets the expo-sdk-update workflow kick off a main CI run after it merges,
+  # so the release-eligibility check + auto-release run even though a
+  # GITHUB_TOKEN merge does not emit a push event.
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -18,82 +22,13 @@ permissions:
   packages: read
 
 jobs:
-  frontend:
-    name: Frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24.16.0
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Expo dependency check
-        run: npx expo-doctor
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Tests
-        run: npm test
-
-      - name: Build web
-        run: npm run build:web
-
-  backend:
-    name: Backend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.14.5"
-          cache: pip
-          cache-dependency-path: backend/pyproject.toml
-
-      - name: Install dependencies
-        run: pip install -e ".[dev]"
-
-      - name: Run tests
-        run: python -m pytest
-
-  docker:
-    name: Build Docker
-    needs: [frontend, backend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker image (no push)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: false
-          tags: splex-ci:${{ github.sha }}
+  build-test:
+    name: Build & Test
+    uses: ./.github/workflows/build-test.yml
 
   sonar:
     name: SonarCloud
-    needs: [frontend, backend]
+    needs: build-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -139,7 +74,7 @@ jobs:
 
   renovate-release-check:
     name: Evaluate Renovate-only commits
-    needs: docker
+    needs: build-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     outputs:
@@ -176,16 +111,22 @@ jobs:
             exit 0
           fi
 
-          commit_info=$(git log "$commit_range" --pretty='%an|%ae')
+          commit_info=$(git log "$commit_range" --pretty='%an|%ae|%s')
           should_release=true
-          while IFS='|' read -r author email; do
+          while IFS='|' read -r author email subject; do
             [ -z "$author" ] && continue
             lower=$(printf '%s %s' "$author" "$email" | tr '[:upper:]' '[:lower:]')
-            if [[ "$lower" != *renovate* ]]; then
-              echo "Found non-Renovate commit from $author <$email>. Release will be skipped."
-              should_release=false
-              break
+            if [[ "$lower" == *renovate* ]]; then
+              continue
             fi
+            # Squash merges from the expo-sdk-update workflow carry the PR
+            # author, not a bot identity, so match them by commit subject.
+            if [[ "$subject" == "fix(deps): update expo sdk packages"* ]]; then
+              continue
+            fi
+            echo "Found non-dependency-bot commit from $author <$email>. Release will be skipped."
+            should_release=false
+            break
           done <<< "$commit_info"
 
           echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
