@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Tuodut kulut: {count}",
   "splitwiseImport.summarySettlements": "Tuodut tasoitukset: {count}",
   "splitwiseImport.summarySkipped": "Ohitetut kulut: {count}",
+  "activity.deletedUser": "Poistettu käyttäjä",
   "activity.empty": "Ei vielä tapahtumia.",
   "activity.expense.created": "{actor} lisäsi kulun",
   "activity.expense.deleted": "{actor} poisti kulun",

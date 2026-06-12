@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Expensas importadas: {count}",
   "splitwiseImport.summarySettlements": "Gulivaziuns importadas: {count}",
   "splitwiseImport.summarySkipped": "Expensas sursiglidas: {count}",
+  "activity.deletedUser": "In utilisader stizzà",
   "activity.empty": "Anc nagina activitad.",
   "activity.expense.created": "{actor} ha agiuntà ina expensa",
   "activity.expense.deleted": "{actor} ha stizzà ina expensa",

@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Cheltuieli importate: {count}",
   "splitwiseImport.summarySettlements": "Reglări importate: {count}",
   "splitwiseImport.summarySkipped": "Cheltuieli omise: {count}",
+  "activity.deletedUser": "Un utilizator șters",
   "activity.empty": "Nicio activitate încă.",
   "activity.expense.created": "{actor} a adăugat o cheltuială",
   "activity.expense.deleted": "{actor} a șters o cheltuială",

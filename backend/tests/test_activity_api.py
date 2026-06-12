@@ -124,6 +124,31 @@ def test_subject_name_falls_back_to_legacy_snapshot():
 
 
 @pytest.mark.django_db
+def test_activity_feed_loads_when_actor_account_was_deleted():
+    """An event's actor is SET_NULL when that user deletes their account; the feed
+    must still load and render the actor/avatar as empty placeholders (no 500)."""
+    from splex.accounts.services import delete_account
+
+    user_model = get_user_model()
+    actor = user_model.objects.create_user(email="actor@example.com", display_name="Actor")
+    other = user_model.objects.create_user(email="other@example.com", display_name="Other")
+    group = create_group(actor=actor, name="Trip", default_currency="EUR")
+    _add_user_to_group(other, group)
+
+    # Another registered member remains, so the actor is converted to a placeholder
+    # and the group (and its group.created event) survives with actor=NULL.
+    delete_account(actor=actor)
+
+    response = _auth_client(other).get("/api/activity/")
+    assert response.status_code == 200
+    created = next(
+        row for row in response.data["results"] if row["event_type"] == "group.created"
+    )
+    assert created["actor"] == ""
+    assert created["actor_avatar_url"] == ""
+
+
+@pytest.mark.django_db
 def test_activity_list_only_returns_events_for_user_contexts():
     user_model = get_user_model()
     user_a = user_model.objects.create_user(email="a@example.com", display_name="A")

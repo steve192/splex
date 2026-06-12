@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Импортировано расходов: {count}",
   "splitwiseImport.summarySettlements": "Импортировано урегулирований: {count}",
   "splitwiseImport.summarySkipped": "Пропущено расходов: {count}",
+  "activity.deletedUser": "Удалённый пользователь",
   "activity.empty": "Пока нет активности.",
   "activity.expense.created": "{actor} добавил(а) расход",
   "activity.expense.deleted": "{actor} удалил(а) расход",

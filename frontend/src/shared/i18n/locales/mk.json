@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Увезени трошоци: {count}",
   "splitwiseImport.summarySettlements": "Увезени порамнувања: {count}",
   "splitwiseImport.summarySkipped": "Прескокнати трошоци: {count}",
+  "activity.deletedUser": "Избришан корисник",
   "activity.empty": "Сè уште нема активност.",
   "activity.expense.created": "{actor} додаде трошок",
   "activity.expense.deleted": "{actor} избриша трошок",

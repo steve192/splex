@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Imporditud kulusid: {count}",
   "splitwiseImport.summarySettlements": "Imporditud tasaarveldusi: {count}",
   "splitwiseImport.summarySkipped": "Vahele jäetud kulusid: {count}",
+  "activity.deletedUser": "Kustutatud kasutaja",
   "activity.empty": "Tegevusi veel pole.",
   "activity.expense.created": "{actor} lisas kulu",
   "activity.expense.deleted": "{actor} kustutas kulu",

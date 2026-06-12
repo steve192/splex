@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Ausgaben importiert: {count}",
   "splitwiseImport.summarySettlements": "Zahlungen importiert: {count}",
   "splitwiseImport.summarySkipped": "Übersprungene Ausgaben: {count}",
+  "activity.deletedUser": "Ein gelöschter Benutzer",
   "activity.empty": "Noch keine Aktivitäten.",
   "activity.expense.created": "{actor} hat eine Ausgabe hinzugefügt",
   "activity.expense.deleted": "{actor} hat eine Ausgabe gelöscht",

@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Zaimportowane wydatki: {count}",
   "splitwiseImport.summarySettlements": "Zaimportowane rozliczenia: {count}",
   "splitwiseImport.summarySkipped": "Pominięte wydatki: {count}",
+  "activity.deletedUser": "Usunięty użytkownik",
   "activity.empty": "Brak aktywności.",
   "activity.expense.created": "{actor} dodał(a) wydatek",
   "activity.expense.deleted": "{actor} usunął(-ęła) wydatek",

@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Expenses imported: {count}",
   "splitwiseImport.summarySettlements": "Settlements imported: {count}",
   "splitwiseImport.summarySkipped": "Skipped expenses: {count}",
+  "activity.deletedUser": "A deleted user",
   "activity.empty": "No activity yet.",
   "activity.expense.created": "{actor} added an expense",
   "activity.expense.deleted": "{actor} deleted an expense",

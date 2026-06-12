@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Útgjöld flutt inn: {count}",
   "splitwiseImport.summarySettlements": "Uppgjör flutt inn: {count}",
   "splitwiseImport.summarySkipped": "Sleppt útgjöldum: {count}",
+  "activity.deletedUser": "Eyddur notandi",
   "activity.empty": "Engin virkni enn.",
   "activity.expense.created": "{actor} bætti við útgjaldi",
   "activity.expense.deleted": "{actor} eyddi útgjaldi",

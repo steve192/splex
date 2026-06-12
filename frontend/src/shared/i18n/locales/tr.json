@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "İçe aktarılan giderler: {count}",
   "splitwiseImport.summarySettlements": "İçe aktarılan uzlaşmalar: {count}",
   "splitwiseImport.summarySkipped": "Atlanan giderler: {count}",
+  "activity.deletedUser": "Silinmiş kullanıcı",
   "activity.empty": "Henüz etkinlik yok.",
   "activity.expense.created": "{actor} bir gider ekledi",
   "activity.expense.deleted": "{actor} bir gideri sildi",

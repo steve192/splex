@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "İmport edilən xərclər: {count}",
   "splitwiseImport.summarySettlements": "İmport edilən hesablaşmalar: {count}",
   "splitwiseImport.summarySkipped": "Buraxılan xərclər: {count}",
+  "activity.deletedUser": "Silinmiş istifadəçi",
   "activity.empty": "Hələ fəaliyyət yoxdur.",
   "activity.expense.created": "{actor} xərc əlavə etdi",
   "activity.expense.deleted": "{actor} xərci sildi",

@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Geïmporteerde uitgaven: {count}",
   "splitwiseImport.summarySettlements": "Geïmporteerde vereffeningen: {count}",
   "splitwiseImport.summarySkipped": "Overgeslagen uitgaven: {count}",
+  "activity.deletedUser": "Een verwijderde gebruiker",
   "activity.empty": "Nog geen activiteit.",
   "activity.expense.created": "{actor} heeft een uitgave toegevoegd",
   "activity.expense.deleted": "{actor} heeft een uitgave verwijderd",

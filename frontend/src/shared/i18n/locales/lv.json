@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importētie izdevumi: {count}",
   "splitwiseImport.summarySettlements": "Importētie norēķini: {count}",
   "splitwiseImport.summarySkipped": "Izlaistie izdevumi: {count}",
+  "activity.deletedUser": "Dzēsts lietotājs",
   "activity.empty": "Vēl nav aktivitāšu.",
   "activity.expense.created": "{actor} pievienoja izdevumu",
   "activity.expense.deleted": "{actor} izdzēsa izdevumu",

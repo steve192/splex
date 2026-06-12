@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Spejjeż importati: {count}",
   "splitwiseImport.summarySettlements": "Settlements importati: {count}",
   "splitwiseImport.summarySkipped": "Spejjeż maqbuża: {count}",
+  "activity.deletedUser": "Utent imħassar",
   "activity.empty": "Għad m'hemm l-ebda attività.",
   "activity.expense.created": "{actor} żied spiża",
   "activity.expense.deleted": "{actor} ħassar spiża",

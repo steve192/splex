@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Despeses importades: {count}",
   "splitwiseImport.summarySettlements": "Liquidacions importades: {count}",
   "splitwiseImport.summarySkipped": "Despeses omeses: {count}",
+  "activity.deletedUser": "Un usuari eliminat",
   "activity.empty": "Encara no hi ha activitat.",
   "activity.expense.created": "{actor} ha afegit una despesa",
   "activity.expense.deleted": "{actor} ha suprimit una despesa",

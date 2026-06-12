@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Costais iompórtáilte: {count}",
   "splitwiseImport.summarySettlements": "Socruithe iompórtáilte: {count}",
   "splitwiseImport.summarySkipped": "Costais scipeáilte: {count}",
+  "activity.deletedUser": "Úsáideoir scriosta",
   "activity.empty": "Gan ghníomhaíocht fós.",
   "activity.expense.created": "Chuir {actor} costas leis",
   "activity.expense.deleted": "Scrios {actor} costas",

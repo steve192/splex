@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Utgifter importert: {count}",
   "splitwiseImport.summarySettlements": "Oppgjør importert: {count}",
   "splitwiseImport.summarySkipped": "Utgifter hoppet over: {count}",
+  "activity.deletedUser": "En slettet bruker",
   "activity.empty": "Ingen aktivitet ennå.",
   "activity.expense.created": "{actor} la til en utgift",
   "activity.expense.deleted": "{actor} slettet en utgift",

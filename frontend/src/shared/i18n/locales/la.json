@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Sumptus importati: {count}",
   "splitwiseImport.summarySettlements": "Compositiones importatae: {count}",
   "splitwiseImport.summarySkipped": "Sumptus praetermissi: {count}",
+  "activity.deletedUser": "Usor deletus",
   "activity.empty": "Nulla adhuc actio.",
   "activity.expense.created": "{actor} sumptum addidit",
   "activity.expense.deleted": "{actor} sumptum delevit",

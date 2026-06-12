@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importované výdaje: {count}",
   "splitwiseImport.summarySettlements": "Importovaná vyrovnání: {count}",
   "splitwiseImport.summarySkipped": "Přeskočené výdaje: {count}",
+  "activity.deletedUser": "Smazaný uživatel",
   "activity.empty": "Zatím žádná aktivita.",
   "activity.expense.created": "{actor} přidal(a) výdaj",
   "activity.expense.deleted": "{actor} smazal(a) výdaj",

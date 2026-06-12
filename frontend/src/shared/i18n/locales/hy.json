@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Ներմուծված ծախսեր՝ {count}",
   "splitwiseImport.summarySettlements": "Ներմուծված կարգավորումներ՝ {count}",
   "splitwiseImport.summarySkipped": "Բաց թողնված ծախսեր՝ {count}",
+  "activity.deletedUser": "Ջնջված օգտատեր",
   "activity.empty": "Գործունեություն դեռ չկա։",
   "activity.expense.created": "{actor}-ը ավելացրեց ծախս",
   "activity.expense.deleted": "{actor}-ը ջնջեց ծախս",

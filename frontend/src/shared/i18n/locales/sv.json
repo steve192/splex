@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importerade utgifter: {count}",
   "splitwiseImport.summarySettlements": "Importerade regleringar: {count}",
   "splitwiseImport.summarySkipped": "Överhoppade utgifter: {count}",
+  "activity.deletedUser": "En borttagen användare",
   "activity.empty": "Ingen aktivitet ännu.",
   "activity.expense.created": "{actor} lade till en utgift",
   "activity.expense.deleted": "{actor} tog bort en utgift",

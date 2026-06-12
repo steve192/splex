@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importált kiadások: {count}",
   "splitwiseImport.summarySettlements": "Importált elszámolások: {count}",
   "splitwiseImport.summarySkipped": "Kihagyott kiadások: {count}",
+  "activity.deletedUser": "Egy törölt felhasználó",
   "activity.empty": "Még nincs aktivitás.",
   "activity.expense.created": "{actor} hozzáadott egy kiadást",
   "activity.expense.deleted": "{actor} törölt egy kiadást",

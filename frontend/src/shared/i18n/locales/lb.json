@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Ausgaben importéiert: {count}",
   "splitwiseImport.summarySettlements": "Ofrechnungen importéiert: {count}",
   "splitwiseImport.summarySkipped": "Ausgaben iwwersprongen: {count}",
+  "activity.deletedUser": "E geläschte Benotzer",
   "activity.empty": "Nach keng Aktivitéit.",
   "activity.expense.created": "{actor} huet eng Ausgab derbäigesat",
   "activity.expense.deleted": "{actor} huet eng Ausgab geläscht",

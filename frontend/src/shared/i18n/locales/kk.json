@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Импортталған шығындар: {count}",
   "splitwiseImport.summarySettlements": "Импортталған есеп айырысулар: {count}",
   "splitwiseImport.summarySkipped": "Өткізіліп жіберілген шығындар: {count}",
+  "activity.deletedUser": "Жойылған пайдаланушы",
   "activity.empty": "Әзірге белсенділік жоқ.",
   "activity.expense.created": "{actor} шығын қосты",
   "activity.expense.deleted": "{actor} шығынды жойды",

@@ -111,6 +111,8 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
         const description = activityDescription(item, t);
         const context = activityContext(item, t);
         const pendingStatus = item.pending_mutation_id ? t("expense.pendingSync") : "";
+        // Empty actor means the acting user deleted their account.
+        const actorName = item.actor || t("activity.deletedUser");
         return (
           <Card key={String(item.id)} mode="elevated" style={styles.card}>
             <TouchableRipple
@@ -120,9 +122,9 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
               <Card.Content>
                 <List.Item
                   style={styles.listTile}
-                  title={t(`activity.${item.event_type}`, { actor: item.actor })}
+                  title={t(`activity.${item.event_type}`, { actor: actorName })}
                   description={[context, description, pendingStatus].filter(Boolean).join("\n")}
-                  left={() => <PersonAvatar name={item.actor} imageUrl={item.actor_avatar_url} />}
+                  left={() => <PersonAvatar name={actorName} imageUrl={item.actor_avatar_url} />}
                   right={() => (
                     <View style={styles.listTileRight}>
                       <List.Icon icon={activityIcon(item.event_type)} />

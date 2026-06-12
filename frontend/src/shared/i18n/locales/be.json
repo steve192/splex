@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Імпартавана выдаткаў: {count}",
   "splitwiseImport.summarySettlements": "Імпартавана разлікаў: {count}",
   "splitwiseImport.summarySkipped": "Прапушчана выдаткаў: {count}",
+  "activity.deletedUser": "Выдалены карыстальнік",
   "activity.empty": "Пакуль няма актыўнасці.",
   "activity.expense.created": "{actor} дадаў(ла) выдатак",
   "activity.expense.deleted": "{actor} выдаліў(ла) выдатак",

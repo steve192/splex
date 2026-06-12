@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importerede udgifter: {count}",
   "splitwiseImport.summarySettlements": "Importerede afregninger: {count}",
   "splitwiseImport.summarySkipped": "Sprungne udgifter over: {count}",
+  "activity.deletedUser": "En slettet bruger",
   "activity.empty": "Ingen aktivitet endnu.",
   "activity.expense.created": "{actor} tilføjede en udgift",
   "activity.expense.deleted": "{actor} slettede en udgift",

@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Importuotos išlaidos: {count}",
   "splitwiseImport.summarySettlements": "Importuoti atsiskaitymai: {count}",
   "splitwiseImport.summarySkipped": "Praleistos išlaidos: {count}",
+  "activity.deletedUser": "Ištrintas naudotojas",
   "activity.empty": "Kol kas veiklos nėra.",
   "activity.expense.created": "{actor} pridėjo išlaidą",
   "activity.expense.deleted": "{actor} ištrynė išlaidą",

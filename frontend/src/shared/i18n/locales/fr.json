@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Dépenses importées : {count}",
   "splitwiseImport.summarySettlements": "Règlements importés : {count}",
   "splitwiseImport.summarySkipped": "Dépenses ignorées : {count}",
+  "activity.deletedUser": "Un utilisateur supprimé",
   "activity.empty": "Aucune activité pour le moment.",
   "activity.expense.created": "{actor} a ajouté une dépense",
   "activity.expense.deleted": "{actor} a supprimé une dépense",

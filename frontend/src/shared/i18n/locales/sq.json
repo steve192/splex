@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Shpenzime të importuara: {count}",
   "splitwiseImport.summarySettlements": "Shlyerje të importuara: {count}",
   "splitwiseImport.summarySkipped": "Shpenzime të anashkaluara: {count}",
+  "activity.deletedUser": "Një përdorues i fshirë",
   "activity.empty": "Nuk ka ende asnjë aktivitet.",
   "activity.expense.created": "{actor} shtoi një shpenzim",
   "activity.expense.deleted": "{actor} fshiu një shpenzim",

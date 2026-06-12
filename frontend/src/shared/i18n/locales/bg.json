@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Импортирани разходи: {count}",
   "splitwiseImport.summarySettlements": "Импортирани уреждания: {count}",
   "splitwiseImport.summarySkipped": "Пропуснати разходи: {count}",
+  "activity.deletedUser": "Изтрит потребител",
   "activity.empty": "Все още няма активност.",
   "activity.expense.created": "{actor} добави разход",
   "activity.expense.deleted": "{actor} изтри разход",

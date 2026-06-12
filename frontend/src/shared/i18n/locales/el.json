@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Έξοδα που εισήχθησαν: {count}",
   "splitwiseImport.summarySettlements": "Διακανονισμοί που εισήχθησαν: {count}",
   "splitwiseImport.summarySkipped": "Έξοδα που παραλείφθηκαν: {count}",
+  "activity.deletedUser": "Ένας διαγραμμένος χρήστης",
   "activity.empty": "Δεν υπάρχει ακόμη δραστηριότητα.",
   "activity.expense.created": "Ο/Η {actor} πρόσθεσε ένα έξοδο",
   "activity.expense.deleted": "Ο/Η {actor} διέγραψε ένα έξοδο",

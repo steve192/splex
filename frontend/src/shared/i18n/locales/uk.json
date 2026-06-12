@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Імпортовано витрат: {count}",
   "splitwiseImport.summarySettlements": "Імпортовано закриттів боргу: {count}",
   "splitwiseImport.summarySkipped": "Пропущено витрат: {count}",
+  "activity.deletedUser": "Видалений користувач",
   "activity.empty": "Активності ще немає.",
   "activity.expense.created": "{actor} додав(ла) витрату",
   "activity.expense.deleted": "{actor} видалив(ла) витрату",

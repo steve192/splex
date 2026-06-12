@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "Spese importate: {count}",
   "splitwiseImport.summarySettlements": "Saldi importati: {count}",
   "splitwiseImport.summarySkipped": "Spese saltate: {count}",
+  "activity.deletedUser": "Un utente eliminato",
   "activity.empty": "Nessuna attività per ora.",
   "activity.expense.created": "{actor} ha aggiunto una spesa",
   "activity.expense.deleted": "{actor} ha eliminato una spesa",

@@ -102,8 +102,13 @@ class ActivityListView(APIView):
                 {
                     "id": event.id,
                     "event_type": event.event_type,
-                    "actor": str(event.actor),
-                    "actor_avatar_url": signed_media_url(event.actor.avatar_url),
+                    # actor is SET_NULL when the user deletes their account, so the
+                    # historical event survives with no actor. Send empty strings and
+                    # let the client render a localized "deleted user" placeholder.
+                    "actor": str(event.actor) if event.actor else "",
+                    "actor_avatar_url": (
+                        signed_media_url(event.actor.avatar_url) if event.actor else ""
+                    ),
                     "payload": payload,
                     "subject_name": resolve_subject_name(event, targets),
                     "created_at": event.created_at,

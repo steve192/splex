@@ -101,6 +101,7 @@
   "splitwiseImport.summaryExpenses": "იმპორტირებული ხარჯები: {count}",
   "splitwiseImport.summarySettlements": "იმპორტირებული ანგარიშსწორებები: {count}",
   "splitwiseImport.summarySkipped": "გამოტოვებული ხარჯები: {count}",
+  "activity.deletedUser": "წაშლილი მომხმარებელი",
   "activity.empty": "აქტივობა ჯერ არ არის.",
   "activity.expense.created": "{actor}-მა დაამატა ხარჯი",
   "activity.expense.deleted": "{actor}-მა წაშალა ხარჯი",
