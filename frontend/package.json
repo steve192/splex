@@ -68,7 +68,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-gesture-handler": "2.31.2",
+    "react-native-gesture-handler": "3.0.0",
     "react-native-gifted-charts": "1.4.77",
     "react-native-paper": "5.15.2",
     "react-native-paper-dates": "0.23.8",
