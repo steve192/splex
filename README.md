@@ -13,6 +13,11 @@ Available as Web App (PWA) that allows installation on mobile devices without do
 
 [<img alt='Get it on Google Play' width=323 height=125 src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png'/>](https://play.google.com/store/apps/details?id=com.sterul.splex)
 
+## Try Splex
+
+A public instance is available at **https://splex.sterul.com/**
+
+You can try Splex without creating an account using the anonymous **demo mode**
 
 ## Motivation
 Splitwise is a strong product for tracking shared expenses, whether you are traveling with friends or managing day-to-day costs in a shared household.
