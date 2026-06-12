@@ -209,6 +209,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # @semantic-release/github comments on the released PRs/issues, which
+      # needs pull-requests + issues write. A job-level permissions block sets
+      # every unlisted scope to none, so these must be listed explicitly.
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
