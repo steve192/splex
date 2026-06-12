@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
-    "typescript": "5.9.3"
+    "typescript": "6.0.3"
   },
   "comments": {
     "overrides": "@tailwindcss/vite lists vite as a peer (… || ^7 || ^8), so npm would pull vite 8 next to Astro 6's vite 7 and the two copies break the Tailwind plugin's resolver. Pin a single vite 7 that both support."
