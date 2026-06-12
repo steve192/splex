@@ -45,6 +45,7 @@ from splex.expenses.receipts import (
     delete_receipts_for_group,
 )
 from splex.friends.models import Friendship
+from splex.shared.uploads import delete_stored_image
 from splex.groups.models import Group, GroupMembership
 from splex.settlements.models import Settlement
 
@@ -157,6 +158,8 @@ class Command(BaseCommand):
         for group in groups:
             try:
                 delete_receipts_for_group(group)
+                # The group icon is an uploaded blob; remove it before the row.
+                delete_stored_image(group.icon_url)
                 group.delete()
                 count += 1
             except Exception:

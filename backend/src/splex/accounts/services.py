@@ -277,8 +277,11 @@ def _delete_account_atomic(*, actor) -> None:
     expense shares that are not group-scoped); its user link is severed by the
     Django CASCADE/SET_NULL when the User row is deleted.
     """
+    from django.db.models import Q
+
     from splex.groups.models import GroupMembership
     from splex.groups.services import _convert_participant_in_group, delete_group
+    from splex.invitations.models import Invitation
 
     participant = get_or_create_user_participant(actor)
 
@@ -305,7 +308,10 @@ def _delete_account_atomic(*, actor) -> None:
         if other_registered_exists:
             _convert_participant_in_group(group=group, participant=participant)
         else:
-            delete_group(actor=actor, group=group)
+            # Last registered member abandons the group: any remaining balances
+            # are with unregistered placeholders, so (like leave_group) we don't
+            # force a settle-up — otherwise account deletion would fail outright.
+            delete_group(actor=actor, group=group, require_settled=False)
 
     # Snapshot name on the original participant so friend-context data stays readable.
     participant.display_name = display_name
@@ -316,5 +322,15 @@ def _delete_account_atomic(*, actor) -> None:
     # Remove push credentials so no stale tokens survive.
     DeviceToken.objects.filter(user=actor).delete()
     WebPushSubscription.objects.filter(user=actor).delete()
+
+    # Invitations are ephemeral tokens with PROTECT links to the user (both
+    # invited_by and accepted_by); delete any referencing the actor so the
+    # User row can be removed without a ProtectedError.
+    Invitation.objects.filter(Q(invited_by=actor) | Q(accepted_by=actor)).delete()
+
+    # Remove the uploaded profile picture so the blob doesn't outlive the account.
+    from splex.shared.uploads import delete_stored_image
+
+    delete_stored_image(actor.avatar_url)
 
     actor.delete()

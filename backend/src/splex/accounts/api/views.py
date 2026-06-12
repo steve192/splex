@@ -28,7 +28,7 @@ from splex.accounts.services import (
     request_magic_login,
 )
 from splex.shared.tos import render_legal_document
-from splex.shared.uploads import save_data_url_image
+from splex.shared.uploads import delete_stored_image, save_data_url_image
 
 logger = logging.getLogger(__name__)
 
@@ -195,7 +195,9 @@ class MeView(APIView):
         user = request.user
         data = serializer.validated_data
         update_fields: list[str] = []
+        old_avatar_path = None
         if "avatar_image" in data and data["avatar_image"]:
+            old_avatar_path = user.avatar_url
             user.avatar_url = save_data_url_image(
                 data_url=data["avatar_image"],
                 folder="profile-images",
@@ -214,6 +216,10 @@ class MeView(APIView):
             setattr(user, field, value)
             update_fields.append(field)
         user.save(update_fields=update_fields)
+        # Replacing the avatar orphans the previous blob; remove it after the
+        # new path is durably saved.
+        if old_avatar_path and old_avatar_path != user.avatar_url:
+            delete_stored_image(old_avatar_path)
         return Response(UserSerializer(user).data)
 
 

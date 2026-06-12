@@ -1,11 +1,14 @@
 import base64
 import binascii
+import logging
 import uuid
 from io import BytesIO
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from PIL import Image, ImageOps
+
+logger = logging.getLogger(__name__)
 
 JPEG_CONTENT_TYPE = "image/jpeg"
 PNG_CONTENT_TYPE = "image/png"
@@ -46,6 +49,21 @@ def save_data_url_image(*, data_url: str, folder: str) -> str:
         ContentFile(payload),
     )
     return path
+
+
+def delete_stored_image(path: str | None) -> None:
+    """Remove an uploaded image (avatar, group icon) from storage.
+
+    No-op for blank paths.  Storage failures are swallowed so callers in delete
+    flows aren't derailed by a missing or unreachable blob.
+    """
+    if not path:
+        return
+    try:
+        if default_storage.exists(path):
+            default_storage.delete(path)
+    except Exception:  # noqa: BLE001 - storage backend failures are recoverable
+        logger.warning("Failed to delete stored image at %s", path, exc_info=True)
 
 
 def validate_and_normalize_image(payload: bytes, content_type: str) -> bytes:

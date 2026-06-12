@@ -12,7 +12,7 @@ from splex.notifications.services import create_notifications_for_activity
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
-from splex.shared.uploads import save_data_url_image
+from splex.shared.uploads import delete_stored_image, save_data_url_image
 
 
 @transaction.atomic
@@ -104,10 +104,12 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
     if group.deleted_at:
         raise ValueError("Deleted groups cannot be changed.")
     changed = []
+    old_icon_path = None
     if "name" in data:
         group.name = data["name"]
         changed.append("name")
     if data.get("icon_image"):
+        old_icon_path = group.icon_url
         group.icon_url = save_data_url_image(data_url=data["icon_image"], folder="group-icons")
         # An icon change always replaces any previous attribution; if the
         # caller supplied a new one, use it, otherwise reset to blank.
@@ -137,6 +139,10 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
         changed.append("archived_at")
     if changed:
         group.save(update_fields=[*changed, "updated_at"])
+        # Replacing the icon orphans the previous blob; remove it once the new
+        # path is saved.
+        if old_icon_path and old_icon_path != group.icon_url:
+            delete_stored_image(old_icon_path)
         event = record_activity(
             actor,
             EventType.GROUP_UPDATED,
