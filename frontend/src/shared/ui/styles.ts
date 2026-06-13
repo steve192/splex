@@ -229,6 +229,33 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 8
   },
+  // Compact searchbar that sits inside the navigation header in place of the
+  // screen title while a list is being searched. Fills its container, which is
+  // stretched to full width by `headerSearchContainer`.
+  searchbarInHeader: {
+    height: 44,
+    width: "100%"
+  },
+  // The Searchbar's bar-mode input defaults to minHeight 56, which overflows
+  // the compact 44px header bar and pushes the text off-center; clear it so the
+  // input fills (and is centered within) the bar instead.
+  searchbarInHeaderInput: {
+    minHeight: 0,
+    paddingVertical: 0
+  },
+  // Lets the header title container span the full available width so the
+  // in-header searchbar is not capped by the default centered title width.
+  headerSearchContainer: {
+    flex: 1,
+    marginHorizontal: 0,
+    maxWidth: "100%"
+  },
+  // Collapses the (empty) header-right container while searching so it does not
+  // claim half of the row from the searchbar via its default flex-grow.
+  headerSearchRightCollapsed: {
+    flexBasis: "auto",
+    flexGrow: 0
+  },
   // Bounds a sheet's scrollable list so it scrolls internally rather than
   // pushing the sheet's fixed header (title, search) off-screen on long lists.
   sheetScroll: {

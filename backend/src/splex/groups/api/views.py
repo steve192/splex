@@ -309,6 +309,7 @@ class GroupLedgerView(APIView):
                 group=group,
                 limit=request.query_params.get("limit"),
                 offset=request.query_params.get("offset"),
+                search=request.query_params.get("search"),
             )
         )
 

@@ -9,6 +9,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useListSearch } from "../../shared/lib/useListSearch";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
@@ -29,6 +30,7 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { ImageViewerModal } from "../../shared/ui/ImageViewerModal";
+import { ListSearchbar, headerSearchLayout } from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -54,6 +56,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
   // pushed screen (e.g. expense details).
   const loadedLedgerCount = useRef(0);
   const [selectedTab, setSelectedTab] = useState("expenses");
+  const search = useListSearch(() => load(0).catch(() => undefined));
   const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
@@ -69,21 +72,25 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     [balances, group?.current_participant_id, group?.default_currency]
   );
 
-  async function load(offset = 0, simplified = simplifyBalances) {
+  async function load(offset = 0, simplified = simplifyBalances, searchTerm = search.termRef.current) {
     if (loadingMore && offset) return;
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("group", groupId));
     try {
-      const ledgerPath = `/api/groups/${groupId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}`;
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
+      const ledgerPath = `/api/groups/${groupId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
       const balancesPath = `/api/groups/${groupId}/balances/${
         simplified ? "?simplified=true" : ""
       }`;
+      // Search results bypass the offline cache so stale matches are not
+      // persisted; the unfiltered first page stays cached for offline use.
+      const ledgerCacheable = !offset && !searchTerm;
       const [detail, balanceRows, ledgerResponse] = await Promise.all([
         cachedGet<Group>(api, `/api/groups/${groupId}/`),
         cachedGet<GroupBalance[]>(api, balancesPath),
-        offset
-          ? api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
-          : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
+        ledgerCacheable
+          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
+          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
       ]);
       setGroup(detail);
       setBalances(balanceRows);
@@ -104,6 +111,8 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
   // ledger limit) and fired in parallel since the offsets are deterministic.
   async function refresh(simplified = simplifyBalances) {
     setPendingExpenses(await pendingExpensesForContext("group", groupId));
+    const searchTerm = search.termRef.current;
+    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
     const balancesPath = `/api/groups/${groupId}/balances/${
       simplified ? "?simplified=true" : ""
     }`;
@@ -112,8 +121,8 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
       cachedGet<Group>(api, `/api/groups/${groupId}/`),
       cachedGet<GroupBalance[]>(api, balancesPath),
       ...Array.from({ length: pageCount }, (_unused, index) => {
-        const path = `/api/groups/${groupId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}`;
-        return index === 0
+        const path = `/api/groups/${groupId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
+        return index === 0 && !searchTerm
           ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
           : api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
       })
@@ -137,6 +146,13 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     }, [groupId])
   );
 
+  // Searching only applies to the expenses list, so reveal it alongside the
+  // searchbar.
+  function openSearch() {
+    setSelectedTab("expenses");
+    search.open();
+  }
+
   async function handleSimplifyToggle(next: boolean) {
     setSimplifyBalances(next);
     await saveSimplifyBalancesPreference(groupId, next);
@@ -145,29 +161,35 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
 
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <TouchableRipple
-          borderless
-          onPress={() => group?.icon_url && setGroupImageVisible(true)}
-        >
-          <View style={styles.inline}>
-            <PersonAvatar
-              name={group?.name ?? t("group.title")}
-              imageUrl={group?.icon_url}
-              size={30}
-            />
-            <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
+      ...headerSearchLayout(search.active),
+      headerTitle: () =>
+        search.active ? (
+          <ListSearchbar value={search.input} onChangeText={search.setInput} onClose={search.close} compact />
+        ) : (
+          <TouchableRipple
+            borderless
+            onPress={() => group?.icon_url && setGroupImageVisible(true)}
+          >
+            <View style={styles.inline}>
+              <PersonAvatar
+                name={group?.name ?? t("group.title")}
+                imageUrl={group?.icon_url}
+                size={30}
+              />
+              <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
+            </View>
+          </TouchableRipple>
+        ),
+      headerRight: () =>
+        search.active ? null : (
+          <View style={{ flexDirection: "row" }}>
+            <IconButton icon="magnify" onPress={openSearch} />
+            <IconButton icon="chart-bar" onPress={() => navigation.navigate("GroupStatistics", { id: groupId })} />
+            <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
           </View>
-        </TouchableRipple>
-      ),
-      headerRight: () => (
-        <View style={{ flexDirection: "row" }}>
-          <IconButton icon="chart-bar" onPress={() => navigation.navigate("GroupStatistics", { id: groupId })} />
-          <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
-        </View>
-      )
+        )
     });
-  }, [group, groupId, navigation, t]);
+  }, [group, groupId, navigation, t, search.active, search.input]);
 
   async function invite() {
     const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, {});
@@ -346,19 +368,21 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
         {selectedTab === "expenses" ? (
           <>
             <Text variant="titleLarge">{t("group.expenses")}</Text>
-            <PendingExpenseList
-              mutations={pendingExpenses}
-              fallbackCurrency={group?.default_currency}
-              onOpen={(mutationId) =>
-                navigation.navigate("AddExpense", {
-                  pendingMutationId: mutationId,
-                  resetKey: Date.now(),
-                  returnToPrevious: true
-                })
-              }
-              onRetry={retryPendingExpenses}
-              onDelete={deletePendingExpense}
-            />
+            {!search.term && (
+              <PendingExpenseList
+                mutations={pendingExpenses}
+                fallbackCurrency={group?.default_currency}
+                onOpen={(mutationId) =>
+                  navigation.navigate("AddExpense", {
+                    pendingMutationId: mutationId,
+                    resetKey: Date.now(),
+                    returnToPrevious: true
+                  })
+                }
+                onRetry={retryPendingExpenses}
+                onDelete={deletePendingExpense}
+              />
+            )}
             {ledger.length > 0 &&
               ledger.map((item) =>
                 item.type === "expense" ? (
@@ -376,9 +400,11 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                   />
                 )
               )}
-            {ledger.length === 0 && pendingExpenses.length === 0 && (
+            {ledger.length === 0 && (search.term ? (
+              <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
+            ) : pendingExpenses.length === 0 && (
               <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
-            )}
+            ))}
             {nextOffset !== null && (
               <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
                 {t("activity.loadMore")}

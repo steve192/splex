@@ -149,6 +149,44 @@ def test_activity_feed_loads_when_actor_account_was_deleted():
 
 
 @pytest.mark.django_db
+def test_activity_search_filters_by_actor_amount_and_context():
+    user_model = get_user_model()
+    payer = user_model.objects.create_user(email="payer@example.com", display_name="Payer")
+    receiver = user_model.objects.create_user(email="receiver@example.com", display_name="Receiver")
+    group = create_group(actor=payer, name="Skitrip", default_currency="EUR")
+    _add_user_to_group(receiver, group)
+    payer_p = get_or_create_user_participant(payer)
+    receiver_p = get_or_create_user_participant(receiver)
+    create_settlement(
+        actor=payer,
+        group=group,
+        data={
+            "amount": "42.00",
+            "currency": "EUR",
+            "payer_participant_id": payer_p.id,
+            "receiver_participant_id": receiver_p.id,
+        },
+    )
+    client = _auth_client(receiver)
+
+    # Actor name match.
+    types = {row["event_type"] for row in client.get("/api/activity/?search=payer").data["results"]}
+    assert types and types <= {"group.created", "group.member_added", "settlement.created"}
+
+    # Amount match returns the settlement event.
+    results = client.get("/api/activity/?search=42.00").data["results"]
+    assert [row["event_type"] for row in results] == ["settlement.created"]
+
+    # Context (group name) match returns every event in the group.
+    results = client.get("/api/activity/?search=skitrip").data["results"]
+    assert len(results) >= 1
+    assert all(row["context_name"] == "Skitrip" for row in results)
+
+    # No match.
+    assert client.get("/api/activity/?search=nonexistent").data["results"] == []
+
+
+@pytest.mark.django_db
 def test_activity_list_only_returns_events_for_user_contexts():
     user_model = get_user_model()
     user_a = user_model.objects.create_user(email="a@example.com", display_name="A")

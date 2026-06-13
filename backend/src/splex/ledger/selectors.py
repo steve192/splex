@@ -2,13 +2,43 @@ from __future__ import annotations
 
 from splex.expenses.models import Expense
 from splex.ledger.serializers import serialize_ledger_item
+from splex.participants.models import Participant
 from splex.settlements.models import Settlement
 
 DEFAULT_LEDGER_LIMIT = 50
 MAX_LEDGER_LIMIT = 100
 
 
-def _ledger_items(*, group=None, friendship=None):
+def _participant_name_map(expenses):
+    """Resolve participant display names for the payers/payees of the given
+    expenses in a single query so search can match against them."""
+    participant_ids = set()
+    for expense in expenses:
+        for share in expense.payment_shares.all():
+            participant_ids.add(share.participant_id)
+        for share in expense.owed_shares.all():
+            participant_ids.add(share.participant_id)
+    participants = Participant.objects.filter(id__in=participant_ids).select_related("user")
+    return {participant.id: participant.effective_display_name for participant in participants}
+
+
+def _matches_search(item, term, participant_names):
+    if isinstance(item, Expense):
+        parts = [item.description or "", str(item.original_amount), str(item.converted_amount)]
+        for share in item.payment_shares.all():
+            parts.append(participant_names.get(share.participant_id, ""))
+        for share in item.owed_shares.all():
+            parts.append(participant_names.get(share.participant_id, ""))
+    else:
+        parts = [
+            item.payer_participant.effective_display_name,
+            item.receiver_participant.effective_display_name,
+            str(item.amount),
+        ]
+    return term in " ".join(parts).lower()
+
+
+def _ledger_items(*, group=None, friendship=None, search=None):
     expense_filter = {"deleted_at__isnull": True}
     settlement_filter = {"deleted_at__isnull": True}
     if group is not None:
@@ -35,13 +65,19 @@ def _ledger_items(*, group=None, friendship=None):
         item_date = getattr(item, "date", None) or item.created_at.date()
         return (item_date, item.created_at)
 
-    return sorted([*expenses, *settlements], key=_ledger_key, reverse=True)
+    items = sorted([*expenses, *settlements], key=_ledger_key, reverse=True)
+
+    term = (search or "").strip().lower()
+    if term:
+        participant_names = _participant_name_map(expenses)
+        items = [item for item in items if _matches_search(item, term, participant_names)]
+    return items
 
 
 def paginated_ledger_response(
-    *, group=None, friendship=None, limit=None, offset=None
+    *, group=None, friendship=None, limit=None, offset=None, search=None
 ) -> dict | list:
-    items = _ledger_items(group=group, friendship=friendship)
+    items = _ledger_items(group=group, friendship=friendship, search=search)
     if limit is None and offset is None:
         return [serialize_ledger_item(item) for item in items]
     resolved_limit = min(int(limit or DEFAULT_LEDGER_LIMIT), MAX_LEDGER_LIMIT)

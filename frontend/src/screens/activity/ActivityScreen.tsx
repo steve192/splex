@@ -2,17 +2,19 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useRef, useState } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
-import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
+import { Button, Card, IconButton, List, Text, TouchableRipple } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
+import { useListSearch } from "../../shared/lib/useListSearch";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { cachedGet, readCachedResponse } from "../../shared/lib/offlineCache";
 import { ActivityFeedEvent, Friend, Group } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
+import { ListSearchbar } from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -28,6 +30,7 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
   const [events, setEvents] = useState<ActivityFeedEvent[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
   const [loading, setLoading] = useState(false);
+  const search = useListSearch(() => load(0).catch(() => undefined));
   // Tracks how many remote events are currently shown (pending drafts are
   // prepended locally and excluded) so a focus refresh can refetch the same
   // amount and keep the scroll position when returning from a pushed screen.
@@ -61,19 +64,23 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     return [...pendingEvents, ...remoteEvents].sort((left, right) => right.created_at.localeCompare(left.created_at));
   }
 
-  async function load(offset = 0) {
+  async function load(offset = 0, searchTerm = search.termRef.current) {
     if (loading) return;
     setLoading(true);
     try {
-      const path = `/api/activity/?offset=${offset}&limit=${ACTIVITY_PAGE_SIZE}`;
-      const response = offset
-        ? await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path)
-        : await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path);
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
+      const path = `/api/activity/?offset=${offset}&limit=${ACTIVITY_PAGE_SIZE}${searchQuery}`;
+      // Search queries the synced feed only: it bypasses the offline cache and
+      // the locally-prepended pending drafts.
+      const response =
+        offset || searchTerm
+          ? await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path)
+          : await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path);
       if (offset) {
         setEvents((current) => [...current, ...response.results]);
         loadedRemoteCount.current += response.results.length;
       } else {
-        setEvents(await withPendingEvents(response.results));
+        setEvents(searchTerm ? response.results : await withPendingEvents(response.results));
         loadedRemoteCount.current = response.results.length;
       }
       setNextOffset(response.next_offset);
@@ -90,17 +97,19 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     if (loading) return;
     setLoading(true);
     try {
+      const searchTerm = search.termRef.current;
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
       const pageCount = Math.max(1, Math.ceil(loadedRemoteCount.current / ACTIVITY_PAGE_SIZE));
       const pages = await Promise.all(
         Array.from({ length: pageCount }, (_unused, index) => {
-          const path = `/api/activity/?offset=${index * ACTIVITY_PAGE_SIZE}&limit=${ACTIVITY_PAGE_SIZE}`;
-          return index === 0
+          const path = `/api/activity/?offset=${index * ACTIVITY_PAGE_SIZE}&limit=${ACTIVITY_PAGE_SIZE}${searchQuery}`;
+          return index === 0 && !searchTerm
             ? cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path)
             : api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path);
         })
       );
       const remote = pages.flatMap((page) => page.results);
-      setEvents(await withPendingEvents(remote));
+      setEvents(searchTerm ? remote : await withPendingEvents(remote));
       loadedRemoteCount.current = remote.length;
       setNextOffset(pages.at(-1)?.next_offset ?? null);
     } finally {
@@ -139,8 +148,20 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
 
   return (
     <Screen topInset scrollViewProps={{ onScroll: handleScroll }}>
-      <Text variant="headlineSmall">{t("tabs.activity")}</Text>
-      {!events.length && <EmptyState image={appImages.emptyActivity} text={t("activity.empty")} />}
+      {search.active ? (
+        <ListSearchbar value={search.input} onChangeText={search.setInput} onClose={search.close} />
+      ) : (
+        <View style={styles.rowBetween}>
+          <Text variant="headlineSmall">{t("tabs.activity")}</Text>
+          <IconButton icon="magnify" onPress={search.open} accessibilityLabel={t("common.search")} />
+        </View>
+      )}
+      {!events.length && (
+        <EmptyState
+          image={appImages.emptyActivity}
+          text={search.term ? t("common.noResults") : t("activity.empty")}
+        />
+      )}
       {events.map((item) => {
         const description = activityDescription(item, t);
         const context = activityContext(item, t);

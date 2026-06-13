@@ -10,6 +10,7 @@ import { appImages } from "../../shared/assets/images";
 import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useListSearch } from "../../shared/lib/useListSearch";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
@@ -22,6 +23,7 @@ import { Friend, LedgerItem } from "../../shared/types/models";
 import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
+import { ListSearchbar, headerSearchLayout } from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -48,19 +50,24 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
   const [snackbar, setSnackbar] = useState("");
+  const search = useListSearch(() => load(0).catch(() => undefined));
   const balanceSummary = useMemo(() => asNumber(friend?.balance), [friend?.balance]);
 
-  async function load(offset = 0) {
+  async function load(offset = 0, searchTerm = search.termRef.current) {
     if (loadingMore && offset) return;
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
     try {
-      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}`;
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
+      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
+      // Search results bypass the offline cache so stale matches are not
+      // persisted; the unfiltered first page stays cached for offline use.
+      const ledgerCacheable = !offset && !searchTerm;
       const [detail, ledgerResponse] = await Promise.all([
         cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
-        offset
-          ? api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
-          : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
+        ledgerCacheable
+          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
+          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
       ]);
       setFriend(detail);
       setLedger((current) => {
@@ -80,12 +87,14 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
   // ledger limit) and fired in parallel since the offsets are deterministic.
   async function refresh() {
     setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
+    const searchTerm = search.termRef.current;
+    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
     const pageCount = Math.max(1, Math.ceil(loadedLedgerCount.current / LEDGER_PAGE_SIZE));
     const [detail, ...pages] = await Promise.all([
       cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
       ...Array.from({ length: pageCount }, (_unused, index) => {
-        const path = `/api/friends/${friendshipId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}`;
-        return index === 0
+        const path = `/api/friends/${friendshipId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
+        return index === 0 && !searchTerm
           ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
           : api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
       })
@@ -105,26 +114,32 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
 
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.inline}>
-          <PersonAvatar name={friend?.display_name ?? t("friend.title")} imageUrl={friend?.avatar_url} size={30} />
-          <Text variant="titleMedium">{friend?.display_name ?? t("friend.title")}</Text>
-        </View>
-      ),
-      headerRight: () => (
-        <View style={{ flexDirection: "row" }}>
-          <IconButton
-            icon="chart-bar"
-            onPress={() => navigation.navigate("FriendStatistics", { id: friendshipId })}
-          />
-          <IconButton
-            icon="cog-outline"
-            onPress={() => navigation.navigate("FriendSettings", { id: friendshipId })}
-          />
-        </View>
-      )
+      ...headerSearchLayout(search.active),
+      headerTitle: () =>
+        search.active ? (
+          <ListSearchbar value={search.input} onChangeText={search.setInput} onClose={search.close} compact />
+        ) : (
+          <View style={styles.inline}>
+            <PersonAvatar name={friend?.display_name ?? t("friend.title")} imageUrl={friend?.avatar_url} size={30} />
+            <Text variant="titleMedium">{friend?.display_name ?? t("friend.title")}</Text>
+          </View>
+        ),
+      headerRight: () =>
+        search.active ? null : (
+          <View style={{ flexDirection: "row" }}>
+            <IconButton icon="magnify" onPress={search.open} />
+            <IconButton
+              icon="chart-bar"
+              onPress={() => navigation.navigate("FriendStatistics", { id: friendshipId })}
+            />
+            <IconButton
+              icon="cog-outline"
+              onPress={() => navigation.navigate("FriendSettings", { id: friendshipId })}
+            />
+          </View>
+        )
     });
-  }, [friend, friendshipId, navigation, t]);
+  }, [friend, friendshipId, navigation, t, search.active, search.input]);
 
   async function settle() {
     if (!friend || !settleTarget) return;
@@ -265,19 +280,21 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
         ) : null}
 
         <Text variant="titleLarge">{t("group.expenses")}</Text>
-        <PendingExpenseList
-          mutations={pendingExpenses}
-          fallbackCurrency={friend?.default_currency}
-          onOpen={(mutationId) =>
-            navigation.navigate("AddExpense", {
-              pendingMutationId: mutationId,
-              resetKey: Date.now(),
-              returnToPrevious: true
-            })
-          }
-          onRetry={retryPendingExpenses}
-          onDelete={deletePendingExpense}
-        />
+        {!search.term && (
+          <PendingExpenseList
+            mutations={pendingExpenses}
+            fallbackCurrency={friend?.default_currency}
+            onOpen={(mutationId) =>
+              navigation.navigate("AddExpense", {
+                pendingMutationId: mutationId,
+                resetKey: Date.now(),
+                returnToPrevious: true
+              })
+            }
+            onRetry={retryPendingExpenses}
+            onDelete={deletePendingExpense}
+          />
+        )}
         {ledger.map((item, index) =>
           item.type === "expense" ? (
             <ExpenseLedgerRow
@@ -294,9 +311,11 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
             />
           )
         )}
-        {!ledger.length && !pendingExpenses.length ? (
+        {!ledger.length && (search.term ? (
+          <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
+        ) : !pendingExpenses.length ? (
           <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
-        ) : null}
+        ) : null)}
         {nextOffset !== null && (
           <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
             {t("activity.loadMore")}
