@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { Button, IconButton, Portal, Snackbar, Text } from "react-native-paper";
 
@@ -28,6 +28,8 @@ import { styles } from "../../shared/ui/styles";
 
 type FriendDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "FriendDetail">;
 
+const LEDGER_PAGE_SIZE = 30;
+
 export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailScreenProps>) {
   const { t } = useI18n();
   const { api, user } = useAuth();
@@ -38,6 +40,10 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
   const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  // Tracks how many ledger items are currently shown so a focus refresh can
+  // refetch the same amount and keep the scroll position when returning from a
+  // pushed screen (e.g. expense details).
+  const loadedLedgerCount = useRef(0);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
@@ -49,7 +55,7 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
     if (offset) setLoadingMore(true);
     setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
     try {
-      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=30`;
+      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}`;
       const [detail, ledgerResponse] = await Promise.all([
         cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
         offset
@@ -57,16 +63,43 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
           : cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
       ]);
       setFriend(detail);
-      setLedger((current) => (offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results));
+      setLedger((current) => {
+        const next = offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results;
+        loadedLedgerCount.current = next.length;
+        return next;
+      });
       setNextOffset(ledgerResponse.next_offset);
     } finally {
       if (offset) setLoadingMore(false);
     }
   }
 
+  // Reloads as many items as are already shown so returning from a pushed
+  // screen does not collapse the list and lose the scroll position. The items
+  // are refetched in page-sized chunks (each within the backend's per-request
+  // ledger limit) and fired in parallel since the offsets are deterministic.
+  async function refresh() {
+    setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
+    const pageCount = Math.max(1, Math.ceil(loadedLedgerCount.current / LEDGER_PAGE_SIZE));
+    const [detail, ...pages] = await Promise.all([
+      cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
+      ...Array.from({ length: pageCount }, (_unused, index) => {
+        const path = `/api/friends/${friendshipId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}`;
+        return index === 0
+          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
+          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
+      })
+    ]);
+    const results = pages.flatMap((page) => page.results);
+    setFriend(detail);
+    setLedger(results);
+    loadedLedgerCount.current = results.length;
+    setNextOffset(pages.at(-1)?.next_offset ?? null);
+  }
+
   useFocusEffect(
     useCallback(() => {
-      load().catch(() => undefined);
+      refresh().catch(() => undefined);
     }, [friendshipId])
   );
 

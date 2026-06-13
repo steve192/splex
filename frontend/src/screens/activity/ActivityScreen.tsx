@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
 import { Button, Card, List, Text, TouchableRipple } from "react-native-paper";
 
@@ -20,12 +20,18 @@ import { activityContext, activityDescription, activityIcon } from "./activityHe
 
 type ActivityScreenProps = NativeStackScreenProps<ActivityStackParamList, "ActivityHome">;
 
+const ACTIVITY_PAGE_SIZE = 50;
+
 export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [events, setEvents] = useState<ActivityFeedEvent[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
   const [loading, setLoading] = useState(false);
+  // Tracks how many remote events are currently shown (pending drafts are
+  // prepended locally and excluded) so a focus refresh can refetch the same
+  // amount and keep the scroll position when returning from a pushed screen.
+  const loadedRemoteCount = useRef(0);
 
   async function withPendingEvents(remoteEvents: ActivityFeedEvent[]): Promise<ActivityFeedEvent[]> {
     const [pendingExpenses, groups, friends] = await Promise.all([
@@ -59,14 +65,16 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     if (loading) return;
     setLoading(true);
     try {
-      const path = `/api/activity/?offset=${offset}&limit=50`;
+      const path = `/api/activity/?offset=${offset}&limit=${ACTIVITY_PAGE_SIZE}`;
       const response = offset
         ? await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path)
         : await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path);
       if (offset) {
         setEvents((current) => [...current, ...response.results]);
+        loadedRemoteCount.current += response.results.length;
       } else {
         setEvents(await withPendingEvents(response.results));
+        loadedRemoteCount.current = response.results.length;
       }
       setNextOffset(response.next_offset);
     } finally {
@@ -74,9 +82,35 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     }
   }
 
+  // Reloads as many remote events as are already shown so returning from a
+  // pushed screen does not collapse the feed and lose the scroll position. The
+  // events are refetched in page-sized chunks (each within the backend's
+  // per-request limit) and fired in parallel since the offsets are deterministic.
+  async function refresh() {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const pageCount = Math.max(1, Math.ceil(loadedRemoteCount.current / ACTIVITY_PAGE_SIZE));
+      const pages = await Promise.all(
+        Array.from({ length: pageCount }, (_unused, index) => {
+          const path = `/api/activity/?offset=${index * ACTIVITY_PAGE_SIZE}&limit=${ACTIVITY_PAGE_SIZE}`;
+          return index === 0
+            ? cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path)
+            : api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path);
+        })
+      );
+      const remote = pages.flatMap((page) => page.results);
+      setEvents(await withPendingEvents(remote));
+      loadedRemoteCount.current = remote.length;
+      setNextOffset(pages.at(-1)?.next_offset ?? null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
-      load(0).catch(() => undefined);
+      refresh().catch(() => undefined);
     }, [])
   );
 
