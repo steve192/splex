@@ -25,6 +25,7 @@ import { styles } from "../../shared/ui/styles";
 import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
   applyPaymentsToForm,
+  buildExpenseLocationPayload,
   buildPayments,
   buildSplitPayload,
   effectiveSplitMethod,
@@ -399,10 +400,12 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         splitValues
       }),
       payments: buildPayments({ multiPayer, participants, paymentValues, payerId, amount }),
-      ...(locationForm.latitude && locationForm.longitude ? {
-        latitude: Math.round(locationForm.latitude * 1000000) / 1000000,
-        longitude: Math.round(locationForm.longitude * 1000000) / 1000000
-      } : {})
+      ...buildExpenseLocationPayload({
+        latitude: locationForm.latitude,
+        longitude: locationForm.longitude,
+        date,
+        editing
+      })
     };
     const payload = { context_type: contextType, context_id: contextId, expense };
     try {

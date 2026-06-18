@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Participant } from "../../shared/types/models";
 import {
   applyPaymentsToForm,
+  buildExpenseLocationPayload,
   buildPayments,
   buildSplitPayload,
   computeExpenseValidation,
@@ -11,6 +12,7 @@ import {
   hydrateSplit,
   normalizeExpenseAmountInput,
   perMemberShare,
+  shouldUseCurrentLocationForExpense,
   splitEvenly,
   splitTabValue
 } from "./expenseFormLogic";
@@ -38,6 +40,54 @@ describe("expense form logic", () => {
     expect(normalizeExpenseAmountInput("12,34")).toBe("12.34");
     expect(normalizeExpenseAmountInput("EUR 12.3a4")).toBe("12.34");
     expect(normalizeExpenseAmountInput("1.2.3,4")).toBe("1.234");
+  });
+
+  it("uses current location for new expenses only when the date is today", () => {
+    const today = new Date(2026, 5, 19);
+    expect(shouldUseCurrentLocationForExpense({ date: "", editing: false, today })).toBe(true);
+    expect(shouldUseCurrentLocationForExpense({ date: "2026-06-19", editing: false, today })).toBe(true);
+    expect(shouldUseCurrentLocationForExpense({ date: "2026-06-18", editing: false, today })).toBe(false);
+  });
+
+  it("keeps edit saves unaffected by the selected date", () => {
+    expect(
+      shouldUseCurrentLocationForExpense({
+        date: "2026-06-18",
+        editing: true,
+        today: new Date(2026, 5, 19)
+      })
+    ).toBe(true);
+  });
+
+  it("builds rounded location payloads only when location should be attached", () => {
+    const today = new Date(2026, 5, 19);
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
+        date: "2026-06-19",
+        editing: false,
+        today
+      })
+    ).toEqual({ latitude: 52.123457, longitude: 13.987654 });
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
+        date: "2026-06-18",
+        editing: false,
+        today
+      })
+    ).toBeUndefined();
+    expect(
+      buildExpenseLocationPayload({
+        latitude: null,
+        longitude: 13.9876543,
+        date: "",
+        editing: false,
+        today
+      })
+    ).toBeUndefined();
   });
 
   it("computes per-member shares for exact and percentage", () => {
