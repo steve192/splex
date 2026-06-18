@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -38,10 +39,17 @@ def parse_native_runtime_version(value: str) -> int:
 
 
 def update_frontend_package_json(version: str) -> None:
-    path = Path("frontend/package.json")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    data["version"] = version
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    subprocess.run(
+        [
+            "npm",
+            "version",
+            version,
+            "--no-git-tag-version",
+            "--allow-same-version",
+        ],
+        cwd="frontend",
+        check=True,
+    )
 
 
 def update_frontend_app_json(version: str, bump_native: bool) -> None:

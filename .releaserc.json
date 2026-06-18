@@ -37,6 +37,7 @@
       {
         "assets": [
           "frontend/package.json",
+          "frontend/package-lock.json",
           "frontend/app.json",
           "backend/pyproject.toml"
         ],
