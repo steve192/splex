@@ -30,8 +30,6 @@ import { Friend, Group, GroupBalance, Participant, SplitMethod } from "../../sha
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
-import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
@@ -40,7 +38,7 @@ import {
   getSuggestedFriends,
   shouldDeleteGroupOnLeave
 } from "./groupSettingsHelpers";
-import { canRemoveParticipant } from "./participantActions";
+import { GroupMembersSection } from "./GroupMembersSection";
 import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
 const DEFAULT_SPLIT_OPTIONS: Array<{ value: SplitMethod | "equal"; key: string }> = [
@@ -252,75 +250,19 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
           </Card.Content>
         </Card>
 
-        <View style={styles.rowBetween}>
-          <Text variant="titleLarge">{t("group.members")}</Text>
-          <Button mode="elevated" icon="link-variant" onPress={() => createInvite()}>
-            {t("invite.create")}
-          </Button>
-        </View>
-        <Card mode="elevated" style={styles.card}>
-          <Card.Content style={styles.gap}>
-            <Text variant="titleMedium">{t("participant.add")}</Text>
-            <TextInput
-              mode="outlined"
-              label={t("participant.name")}
-              value={newParticipantName}
-              onChangeText={setNewParticipantName}
-            />
-            {suggestedFriends.length ? (
-              <View style={styles.suggestionList}>
-                {suggestedFriends.map((friend) => (
-                  <FriendSuggestionItem
-                    key={friend.id}
-                    friend={friend}
-                    description={t("participant.registered")}
-                    onPress={() => addParticipant(friend)}
-                  />
-                ))}
-              </View>
-            ) : null}
-            <Button mode="contained" disabled={!newParticipantName.trim()} onPress={() => addParticipant()}>
-              {t("common.save")}
-            </Button>
-          </Card.Content>
-        </Card>
-        {group?.participants?.map((participant) => (
-          <Card key={participant.id} mode="elevated" style={styles.card}>
-            <Card.Content>
-              {participant.kind === "unregistered" ? (
-                <View style={styles.memberCardRow}>
-                  <ClickableAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
-                  <View style={styles.memberContent}>
-                    <Text variant="titleMedium">{participant.display_name}</Text>
-                    <Text variant="bodyMedium">{t("participant.unregistered")}</Text>
-                    <View style={[styles.rowActions, styles.memberActionRow]}>
-                      <Button mode="text" onPress={() => openRename(participant)}>
-                        {t("common.edit")}
-                      </Button>
-                      <Button mode="text" onPress={() => createInvite(participant.id)}>
-                        {t("invite.targeted")}
-                      </Button>
-                      {canRemoveParticipant(participant, group?.current_participant_id) ? (
-                        <Button mode="text" textColor={dangerColor} onPress={() => setRemoveTarget(participant)}>
-                          {t("common.delete")}
-                        </Button>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                <RegisteredParticipantItem
-                  participant={participant}
-                  description={t("participant.registered")}
-                  dangerColor={dangerColor}
-                  deleteLabel={t("common.delete")}
-                  removable={canRemoveParticipant(participant, group?.current_participant_id)}
-                  onRemove={() => setRemoveTarget(participant)}
-                />
-              )}
-            </Card.Content>
-          </Card>
-        ))}
+        <GroupMembersSection
+          participants={group?.participants ?? []}
+          currentParticipantId={group?.current_participant_id}
+          newParticipantName={newParticipantName}
+          onNewParticipantNameChange={setNewParticipantName}
+          suggestedFriends={suggestedFriends}
+          dangerColor={dangerColor}
+          onAddFriend={addParticipant}
+          onAddNew={() => addParticipant()}
+          onRename={openRename}
+          onRemove={setRemoveTarget}
+          onCreateInvite={createInvite}
+        />
 
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>
@@ -446,52 +388,6 @@ export function GroupSettingsScreen({ route, navigation }: Readonly<GroupSetting
   );
 }
 
-function FriendSuggestionItem({
-  friend,
-  description,
-  onPress
-}: Readonly<{
-  friend: Friend;
-  description: string;
-  onPress: () => void;
-}>) {
-  return (
-    <List.Item
-      style={styles.listItemDense}
-      title={friend.display_name}
-      description={description}
-      left={renderPersonAvatar(friend.display_name, friend.avatar_url)}
-      right={renderListIcon("account-plus")}
-      onPress={onPress}
-    />
-  );
-}
-
-function RegisteredParticipantItem({
-  participant,
-  description,
-  dangerColor,
-  deleteLabel,
-  removable,
-  onRemove
-}: Readonly<{
-  participant: Participant;
-  description: string;
-  dangerColor: string;
-  deleteLabel: string;
-  removable: boolean;
-  onRemove: () => void;
-}>) {
-  return (
-    <List.Item
-      title={participant.display_name}
-      description={description}
-      left={renderClickableAvatar(participant.display_name, participant.avatar_url)}
-      right={renderDeleteAction(removable, dangerColor, deleteLabel, onRemove)}
-    />
-  );
-}
-
 function ArchiveSwitch({
   value,
   onValueChange
@@ -505,39 +401,5 @@ function ArchiveSwitch({
 function renderArchiveSwitch(value: boolean, onValueChange: (value: boolean) => void) {
   return function ArchiveSwitchRenderer() {
     return <ArchiveSwitch value={value} onValueChange={onValueChange} />;
-  };
-}
-
-function renderPersonAvatar(name: string, imageUrl?: string) {
-  return function PersonAvatarRenderer() {
-    return <PersonAvatar name={name} imageUrl={imageUrl} />;
-  };
-}
-
-function renderClickableAvatar(name: string, imageUrl?: string) {
-  return function ClickableAvatarRenderer() {
-    return <ClickableAvatar name={name} imageUrl={imageUrl} />;
-  };
-}
-
-function renderListIcon(icon: string) {
-  return function ListIconRenderer(props: { color: string; style?: any }) {
-    return <List.Icon {...props} icon={icon} />;
-  };
-}
-
-function renderDeleteAction(
-  removable: boolean,
-  dangerColor: string,
-  deleteLabel: string,
-  onRemove: () => void
-) {
-  return function DeleteActionRenderer() {
-    if (!removable) return null;
-    return (
-      <Button mode="text" textColor={dangerColor} onPress={onRemove}>
-        {deleteLabel}
-      </Button>
-    );
   };
 }

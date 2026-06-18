@@ -1,28 +1,26 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Button, IconButton, Portal, Snackbar, Text } from "react-native-paper";
 
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { useAuth } from "../../features/auth/AuthContext";
-import { appImages } from "../../shared/assets/images";
 import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { useListSearch } from "../../shared/lib/useListSearch";
+import { LedgerList } from "../../shared/ledger/LedgerList";
+import { LEDGER_PAGE_SIZE, fetchLedgerPage } from "../../shared/ledger/ledgerApi";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
-import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
+import { usePendingExpenses } from "../../shared/ledger/usePendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
-import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber, formatMoney } from "../../shared/lib/money";
-import { PendingMutation } from "../../shared/sync/queue";
+import { useListSearch } from "../../shared/lib/useListSearch";
+import { usePaginatedFeed } from "../../shared/lib/usePaginatedFeed";
 import { Friend, LedgerItem } from "../../shared/types/models";
 import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
-import { EmptyState } from "../../shared/ui/EmptyState";
-import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { ListSearchbar, headerSearchLayout } from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
@@ -30,86 +28,41 @@ import { styles } from "../../shared/ui/styles";
 
 type FriendDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "FriendDetail">;
 
-const LEDGER_PAGE_SIZE = 30;
-
 export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailScreenProps>) {
   const { t } = useI18n();
   const { api, user } = useAuth();
   const { showSuccess } = useFeedback();
   const friendshipId = route.params.id;
   const [friend, setFriend] = useState<Friend | null>(null);
-  const [ledger, setLedger] = useState<LedgerItem[]>([]);
-  const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
-  const [nextOffset, setNextOffset] = useState<number | null>(0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  // Tracks how many ledger items are currently shown so a focus refresh can
-  // refetch the same amount and keep the scroll position when returning from a
-  // pushed screen (e.g. expense details).
-  const loadedLedgerCount = useRef(0);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
   const [snackbar, setSnackbar] = useState("");
-  const search = useListSearch(() => load(0).catch(() => undefined));
+  const search = useListSearch();
   const balanceSummary = useMemo(() => asNumber(friend?.balance), [friend?.balance]);
 
-  async function load(offset = 0, searchTerm = search.termRef.current) {
-    if (loadingMore && offset) return;
-    if (offset) setLoadingMore(true);
-    setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
-    try {
-      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-      const ledgerPath = `/api/friends/${friendshipId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
-      // Search results bypass the offline cache so stale matches are not
-      // persisted; the unfiltered first page stays cached for offline use.
-      const ledgerCacheable = !offset && !searchTerm;
-      const [detail, ledgerResponse] = await Promise.all([
-        cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
-        ledgerCacheable
-          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
-          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
-      ]);
-      setFriend(detail);
-      setLedger((current) => {
-        const next = offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results;
-        loadedLedgerCount.current = next.length;
-        return next;
-      });
-      setNextOffset(ledgerResponse.next_offset);
-    } finally {
-      if (offset) setLoadingMore(false);
-    }
-  }
+  const ledger = usePaginatedFeed<LedgerItem>({
+    pageSize: LEDGER_PAGE_SIZE,
+    searchTerm: search.term,
+    fetchPage: (params) => fetchLedgerPage(api, "friends", friendshipId, params)
+  });
 
-  // Reloads as many items as are already shown so returning from a pushed
-  // screen does not collapse the list and lose the scroll position. The items
-  // are refetched in page-sized chunks (each within the backend's per-request
-  // ledger limit) and fired in parallel since the offsets are deterministic.
-  async function refresh() {
-    setPendingExpenses(await pendingExpensesForContext("friendship", friendshipId));
-    const searchTerm = search.termRef.current;
-    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-    const pageCount = Math.max(1, Math.ceil(loadedLedgerCount.current / LEDGER_PAGE_SIZE));
-    const [detail, ...pages] = await Promise.all([
-      cachedGet<Friend>(api, `/api/friends/${friendshipId}/`),
-      ...Array.from({ length: pageCount }, (_unused, index) => {
-        const path = `/api/friends/${friendshipId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
-        return index === 0 && !searchTerm
-          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
-          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
-      })
-    ]);
-    const results = pages.flatMap((page) => page.results);
-    setFriend(detail);
-    setLedger(results);
-    loadedLedgerCount.current = results.length;
-    setNextOffset(pages.at(-1)?.next_offset ?? null);
-  }
+  const refreshFriend = useCallback(async () => {
+    setFriend(await cachedGet<Friend>(api, `/api/friends/${friendshipId}/`));
+  }, [api, friendshipId]);
+
+  // Reload the ledger and the friend's balance after a mutation (settle, or a
+  // pending draft removed/synced) that can change either.
+  const reload = useCallback(async () => {
+    await Promise.all([ledger.load(0), refreshFriend()]);
+  }, [ledger.load, refreshFriend]);
+
+  const pending = usePendingExpenses("friendship", friendshipId, reload);
 
   useFocusEffect(
     useCallback(() => {
-      refresh().catch(() => undefined);
-    }, [friendshipId])
+      Promise.all([ledger.refresh(), pending.refresh(), refreshFriend()]).catch(() => undefined);
+    }, [ledger.refresh, pending.refresh, refreshFriend])
   );
 
   useEffect(() => {
@@ -152,17 +105,7 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
     setSettleTarget(null);
     setSettleAmount("");
     showSuccess({ icon: "cash-check" });
-    await load();
-  }
-
-  async function deletePendingExpense(id: string) {
-    await removePendingExpense(id);
-    await load();
-  }
-
-  async function retryPendingExpenses() {
-    await retryPendingExpenseSync(api);
-    await load();
+    await reload();
   }
 
   async function remindToSettle() {
@@ -218,9 +161,9 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
   }
 
   const handleScroll = useInfiniteScroll({
-    loadingMore,
-    nextOffset,
-    onLoadMore: (offset) => load(offset).catch(() => undefined)
+    loadingMore: ledger.loadingMore,
+    nextOffset: ledger.nextOffset,
+    onLoadMore: (offset) => ledger.load(offset).catch(() => undefined)
   });
 
   return (
@@ -282,7 +225,7 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
         <Text variant="titleLarge">{t("group.expenses")}</Text>
         {!search.term && (
           <PendingExpenseList
-            mutations={pendingExpenses}
+            mutations={pending.items}
             fallbackCurrency={friend?.default_currency}
             onOpen={(mutationId) =>
               navigation.navigate("AddExpense", {
@@ -291,36 +234,21 @@ export function FriendDetailScreen({ route, navigation }: Readonly<FriendDetailS
                 returnToPrevious: true
               })
             }
-            onRetry={retryPendingExpenses}
-            onDelete={deletePendingExpense}
+            onRetry={pending.retry}
+            onDelete={pending.remove}
           />
         )}
-        {ledger.map((item, index) =>
-          item.type === "expense" ? (
-            <ExpenseLedgerRow
-              key={`expense-${item.expense.id}`}
-              expense={item.expense}
-              currentParticipantId={friend?.current_participant_id}
-              onPress={() => navigation.navigate("ExpenseDetail", { id: item.expense.id })}
-            />
-          ) : (
-            <SettlementLedgerRow
-              key={`settlement-${item.settlement.id || index}`}
-              settlement={item.settlement}
-              onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
-            />
-          )
-        )}
-        {!ledger.length && (search.term ? (
-          <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
-        ) : !pendingExpenses.length ? (
-          <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
-        ) : null)}
-        {nextOffset !== null && (
-          <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
-            {t("activity.loadMore")}
-          </Button>
-        )}
+        <LedgerList
+          items={ledger.items}
+          currentParticipantId={friend?.current_participant_id}
+          onOpenExpense={(id) => navigation.navigate("ExpenseDetail", { id })}
+          onOpenSettlement={(id) => navigation.navigate("SettlementDetail", { id })}
+          searching={!!search.term}
+          hasPending={pending.items.length > 0}
+          nextOffset={ledger.nextOffset}
+          loadingMore={ledger.loadingMore}
+          onLoadMore={ledger.load}
+        />
       </Screen>
 
       <Portal>

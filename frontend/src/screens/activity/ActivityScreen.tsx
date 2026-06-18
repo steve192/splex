@@ -1,24 +1,24 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useRef, useState } from "react";
-import { NativeScrollEvent, NativeSyntheticEvent, View } from "react-native";
-import { Button, Card, IconButton, List, Text, TouchableRipple } from "react-native-paper";
+import { useCallback } from "react";
+import { View } from "react-native";
+import { Button, IconButton, Text } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
+import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { useListSearch } from "../../shared/lib/useListSearch";
-import { formatDeviceDate } from "../../shared/lib/dates";
+import { usePaginatedFeed } from "../../shared/lib/usePaginatedFeed";
 import { cachedGet, readCachedResponse } from "../../shared/lib/offlineCache";
 import { ActivityFeedEvent, Friend, Group } from "../../shared/types/models";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ListSearchbar } from "../../shared/ui/ListSearchbar";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
-import { activityContext, activityDescription, activityIcon } from "./activityHelpers";
+import { ActivityListItem } from "./ActivityListItem";
 
 type ActivityScreenProps = NativeStackScreenProps<ActivityStackParamList, "ActivityHome">;
 
@@ -27,100 +27,59 @@ const ACTIVITY_PAGE_SIZE = 50;
 export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
-  const [events, setEvents] = useState<ActivityFeedEvent[]>([]);
-  const [nextOffset, setNextOffset] = useState<number | null>(0);
-  const [loading, setLoading] = useState(false);
-  const search = useListSearch(() => load(0).catch(() => undefined));
-  // Tracks how many remote events are currently shown (pending drafts are
-  // prepended locally and excluded) so a focus refresh can refetch the same
-  // amount and keep the scroll position when returning from a pushed screen.
-  const loadedRemoteCount = useRef(0);
+  const search = useListSearch();
 
-  async function withPendingEvents(remoteEvents: ActivityFeedEvent[]): Promise<ActivityFeedEvent[]> {
-    const [pendingExpenses, groups, friends] = await Promise.all([
-      listPendingExpenses(),
-      readCachedResponse<Group[]>("/api/groups/"),
-      readCachedResponse<Friend[]>("/api/friends/")
-    ]);
-    const pendingEvents = pendingExpenses.map<ActivityFeedEvent>((draft) => ({
-      id: `pending-${draft.mutationId}`,
-      event_type: "expense.created",
-      actor: t("common.you"),
-      created_at: draft.createdAt,
-      context_type: draft.contextType === "group" ? "group" : "friend",
-      context_name:
-        draft.contextType === "group"
-          ? groups?.find((group) => group.id === draft.contextId)?.name
-          : friends?.find((friend) => friend.id === draft.contextId)?.display_name,
-      pending_mutation_id: draft.mutationId,
-      payload: {
-        description: draft.description,
-        amount: draft.amount,
-        currency: draft.currency,
-        syncStatus: t("expense.pendingSync")
-      }
-    }));
-
-    return [...pendingEvents, ...remoteEvents].sort((left, right) => right.created_at.localeCompare(left.created_at));
-  }
-
-  async function load(offset = 0, searchTerm = search.termRef.current) {
-    if (loading) return;
-    setLoading(true);
-    try {
-      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-      const path = `/api/activity/?offset=${offset}&limit=${ACTIVITY_PAGE_SIZE}${searchQuery}`;
-      // Search queries the synced feed only: it bypasses the offline cache and
-      // the locally-prepended pending drafts.
-      const response =
-        offset || searchTerm
-          ? await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path)
-          : await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path);
-      if (offset) {
-        setEvents((current) => [...current, ...response.results]);
-        loadedRemoteCount.current += response.results.length;
-      } else {
-        setEvents(searchTerm ? response.results : await withPendingEvents(response.results));
-        loadedRemoteCount.current = response.results.length;
-      }
-      setNextOffset(response.next_offset);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Reloads as many remote events as are already shown so returning from a
-  // pushed screen does not collapse the feed and lose the scroll position. The
-  // events are refetched in page-sized chunks (each within the backend's
-  // per-request limit) and fired in parallel since the offsets are deterministic.
-  async function refresh() {
-    if (loading) return;
-    setLoading(true);
-    try {
-      const searchTerm = search.termRef.current;
-      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-      const pageCount = Math.max(1, Math.ceil(loadedRemoteCount.current / ACTIVITY_PAGE_SIZE));
-      const pages = await Promise.all(
-        Array.from({ length: pageCount }, (_unused, index) => {
-          const path = `/api/activity/?offset=${index * ACTIVITY_PAGE_SIZE}&limit=${ACTIVITY_PAGE_SIZE}${searchQuery}`;
-          return index === 0 && !searchTerm
-            ? cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path)
-            : api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path);
-        })
+  // Prepend not-yet-synced drafts as activity rows so they show up immediately.
+  const withPendingEvents = useCallback(
+    async (remoteEvents: ActivityFeedEvent[]): Promise<ActivityFeedEvent[]> => {
+      const [pendingExpenses, groups, friends] = await Promise.all([
+        listPendingExpenses(),
+        readCachedResponse<Group[]>("/api/groups/"),
+        readCachedResponse<Friend[]>("/api/friends/")
+      ]);
+      const pendingEvents = pendingExpenses.map<ActivityFeedEvent>((draft) => ({
+        id: `pending-${draft.mutationId}`,
+        event_type: "expense.created",
+        actor: t("common.you"),
+        created_at: draft.createdAt,
+        context_type: draft.contextType === "group" ? "group" : "friend",
+        context_name:
+          draft.contextType === "group"
+            ? groups?.find((group) => group.id === draft.contextId)?.name
+            : friends?.find((friend) => friend.id === draft.contextId)?.display_name,
+        pending_mutation_id: draft.mutationId,
+        payload: {
+          description: draft.description,
+          amount: draft.amount,
+          currency: draft.currency,
+          syncStatus: t("expense.pendingSync")
+        }
+      }));
+      return [...pendingEvents, ...remoteEvents].sort((left, right) =>
+        right.created_at.localeCompare(left.created_at)
       );
-      const remote = pages.flatMap((page) => page.results);
-      setEvents(searchTerm ? remote : await withPendingEvents(remote));
-      loadedRemoteCount.current = remote.length;
-      setNextOffset(pages.at(-1)?.next_offset ?? null);
-    } finally {
-      setLoading(false);
+    },
+    [t]
+  );
+
+  const { items, nextOffset, loadingMore, load, refresh } = usePaginatedFeed<ActivityFeedEvent>({
+    pageSize: ACTIVITY_PAGE_SIZE,
+    searchTerm: search.term,
+    mapInitial: withPendingEvents,
+    fetchPage: async ({ offset, limit, search: term, cacheable }) => {
+      const searchQuery = term ? `&search=${encodeURIComponent(term)}` : "";
+      const path = `/api/activity/?offset=${offset}&limit=${limit}${searchQuery}`;
+      const response = cacheable
+        ? await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path)
+        : await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path);
+      return { items: response.results, nextOffset: response.next_offset };
     }
-  }
+  });
 
   useFocusEffect(
     useCallback(() => {
       refresh().catch(() => undefined);
-    }, [])
+    }, [refresh])
   );
 
   function openActivityItem(item: ActivityFeedEvent) {
@@ -137,14 +96,11 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     }
   }
 
-  function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    if (loading || nextOffset === null) return;
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    const remaining = contentSize.height - (contentOffset.y + layoutMeasurement.height);
-    if (remaining < 320) {
-      load(nextOffset).catch(() => undefined);
-    }
-  }
+  const handleScroll = useInfiniteScroll({
+    loadingMore,
+    nextOffset,
+    onLoadMore: (offset) => load(offset).catch(() => undefined)
+  });
 
   return (
     <Screen topInset scrollViewProps={{ onScroll: handleScroll }}>
@@ -156,44 +112,17 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
           <IconButton icon="magnify" onPress={search.open} accessibilityLabel={t("common.search")} />
         </View>
       )}
-      {!events.length && (
+      {!items.length && (
         <EmptyState
           image={appImages.emptyActivity}
           text={search.term ? t("common.noResults") : t("activity.empty")}
         />
       )}
-      {events.map((item) => {
-        const description = activityDescription(item, t);
-        const context = activityContext(item, t);
-        const pendingStatus = item.pending_mutation_id ? t("expense.pendingSync") : "";
-        // Empty actor means the acting user deleted their account.
-        const actorName = item.actor || t("activity.deletedUser");
-        return (
-          <Card key={String(item.id)} mode="elevated" style={styles.card}>
-            <TouchableRipple
-              disabled={!item.expense_id && !item.settlement_id}
-              onPress={() => openActivityItem(item)}
-            >
-              <Card.Content>
-                <List.Item
-                  style={styles.listTile}
-                  title={t(`activity.${item.event_type}`, { actor: actorName })}
-                  description={[context, description, pendingStatus].filter(Boolean).join("\n")}
-                  left={() => <PersonAvatar name={actorName} imageUrl={item.actor_avatar_url} />}
-                  right={() => (
-                    <View style={styles.listTileRight}>
-                      <List.Icon icon={activityIcon(item.event_type)} />
-                      <Text variant="bodySmall">{formatDeviceDate(item.created_at)}</Text>
-                    </View>
-                  )}
-                />
-              </Card.Content>
-            </TouchableRipple>
-          </Card>
-        );
-      })}
+      {items.map((item) => (
+        <ActivityListItem key={String(item.id)} item={item} onPress={() => openActivityItem(item)} />
+      ))}
       {nextOffset !== null && (
-        <Button mode="elevated" loading={loading} onPress={() => load(nextOffset)}>
+        <Button mode="elevated" loading={loadingMore} onPress={() => load(nextOffset)}>
           {t("activity.loadMore")}
         </Button>
       )}

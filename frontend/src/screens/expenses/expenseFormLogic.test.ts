@@ -5,9 +5,11 @@ import {
   applyPaymentsToForm,
   buildPayments,
   buildSplitPayload,
+  computeExpenseValidation,
   currencyAmount,
   effectiveSplitMethod,
   hydrateSplit,
+  normalizeExpenseAmountInput,
   perMemberShare,
   splitEvenly,
   splitTabValue
@@ -30,6 +32,12 @@ describe("expense form logic", () => {
     expect(splitTabValue("equal_all")).toBe("equal");
     expect(splitTabValue("equal_selected")).toBe("equal");
     expect(splitTabValue("exact")).toBe("exact");
+  });
+
+  it("normalizes expense amount input", () => {
+    expect(normalizeExpenseAmountInput("12,34")).toBe("12.34");
+    expect(normalizeExpenseAmountInput("EUR 12.3a4")).toBe("12.34");
+    expect(normalizeExpenseAmountInput("1.2.3,4")).toBe("1.234");
   });
 
   it("computes per-member shares for exact and percentage", () => {
@@ -294,6 +302,89 @@ describe("expense form logic", () => {
       applyPaymentsToForm(undefined, s);
       expect(s.setMultiPayer).toHaveBeenCalledWith(false);
       expect(s.setPayerId).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe("computeExpenseValidation", () => {
+    const participants: Participant[] = [
+      { id: 1, display_name: "A", kind: "registered", user_id: 1 },
+      { id: 2, display_name: "B", kind: "registered", user_id: 2 }
+    ];
+    const base = {
+      amount: "10",
+      splitMethod: "equal_all" as const,
+      selectedParticipantIds: [1, 2],
+      splitValues: {},
+      multiPayer: false,
+      participants,
+      paymentValues: {}
+    };
+
+    it("treats an equal split across participants as valid", () => {
+      const result = computeExpenseValidation(base);
+      expect(result.tabValue).toBe("equal");
+      expect(result.splitConfigInvalid).toBe(false);
+      expect(result.paymentConfigInvalid).toBe(false);
+    });
+
+    it("flags an empty selection as invalid", () => {
+      expect(computeExpenseValidation({ ...base, selectedParticipantIds: [] }).splitConfigInvalid).toBe(true);
+    });
+
+    it("validates exact splits against the total", () => {
+      const incomplete = computeExpenseValidation({
+        ...base,
+        splitMethod: "exact",
+        splitValues: { 1: "4", 2: "4" }
+      });
+      expect(incomplete.exactLeft).toBeCloseTo(2);
+      expect(incomplete.splitConfigInvalid).toBe(true);
+
+      const complete = computeExpenseValidation({
+        ...base,
+        splitMethod: "exact",
+        splitValues: { 1: "4", 2: "6" }
+      });
+      expect(complete.exactLeft).toBeCloseTo(0);
+      expect(complete.splitConfigInvalid).toBe(false);
+    });
+
+    it("validates percentage splits against 100", () => {
+      const result = computeExpenseValidation({
+        ...base,
+        splitMethod: "percentage",
+        splitValues: { 1: "40", 2: "50" }
+      });
+      expect(result.percentageLeft).toBeCloseTo(10);
+      expect(result.splitConfigInvalid).toBe(true);
+    });
+
+    it("rejects adjusted splits that produce a negative share", () => {
+      const result = computeExpenseValidation({
+        ...base,
+        splitMethod: "adjusted_equal",
+        splitValues: { 1: "-100" }
+      });
+      expect(result.adjustedHasNegativeShare).toBe(true);
+      expect(result.splitConfigInvalid).toBe(true);
+    });
+
+    it("validates multi-payer amounts against the total", () => {
+      const balanced = computeExpenseValidation({
+        ...base,
+        multiPayer: true,
+        paymentValues: { 1: "6", 2: "4" }
+      });
+      expect(balanced.paymentLeft).toBeCloseTo(0);
+      expect(balanced.paymentConfigInvalid).toBe(false);
+
+      const unbalanced = computeExpenseValidation({
+        ...base,
+        multiPayer: true,
+        paymentValues: { 1: "6", 2: "2" }
+      });
+      expect(unbalanced.paymentLeft).toBeCloseTo(2);
+      expect(unbalanced.paymentConfigInvalid).toBe(true);
     });
   });
 });

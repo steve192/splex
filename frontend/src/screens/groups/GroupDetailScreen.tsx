@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Button, Dialog, IconButton, Portal, SegmentedButtons, Snackbar, Switch, Text, TouchableRipple, useTheme } from "react-native-paper";
@@ -9,35 +9,34 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { useListSearch } from "../../shared/lib/useListSearch";
+import { LedgerList } from "../../shared/ledger/LedgerList";
+import { LEDGER_PAGE_SIZE, fetchLedgerPage } from "../../shared/ledger/ledgerApi";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
-import { pendingExpensesForContext, removePendingExpense, retryPendingExpenses as retryPendingExpenseSync } from "../../shared/ledger/pendingExpenses";
+import { usePendingExpenses } from "../../shared/ledger/usePendingExpenses";
 import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
-import { SettlementLedgerRow } from "../../shared/ledger/SettlementLedgerRow";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { shareLink } from "../../shared/lib/shareLink";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import { asNumber } from "../../shared/lib/money";
 import { apiErrorMessage } from "../../shared/lib/apiErrors";
 import { loadSimplifyBalancesPreference, saveSimplifyBalancesPreference } from "../../shared/lib/groupPreferences";
-import { PendingMutation } from "../../shared/sync/queue";
+import { useListSearch } from "../../shared/lib/useListSearch";
+import { usePaginatedFeed } from "../../shared/lib/usePaginatedFeed";
 import { BalanceDetail, Group, GroupBalance, LedgerItem } from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { BalanceGraph } from "../../shared/ui/BalanceGraph";
 import { BalanceMemberCard } from "../../shared/ui/BalanceMemberCard";
-import { BalanceLine, BalanceSummaryCard } from "../../shared/ui/BalanceSummaryCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
-import { ExpenseLedgerRow } from "../../shared/ui/ExpenseLedgerRow";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { ImageViewerModal } from "../../shared/ui/ImageViewerModal";
 import { ListSearchbar, headerSearchLayout } from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
+import { GroupBalanceSummaryCard } from "./GroupBalanceSummaryCard";
+import { buildBalanceSummary } from "./groupBalanceSummary";
 
 type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
-
-const LEDGER_PAGE_SIZE = 30;
 
 export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScreenProps>) {
   const { t } = useI18n();
@@ -47,16 +46,8 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
   const groupId = route.params.id;
   const [group, setGroup] = useState<Group | null>(null);
   const [balances, setBalances] = useState<GroupBalance[]>([]);
-  const [ledger, setLedger] = useState<LedgerItem[]>([]);
-  const [pendingExpenses, setPendingExpenses] = useState<PendingMutation[]>([]);
-  const [nextOffset, setNextOffset] = useState<number | null>(0);
-  const [loadingMore, setLoadingMore] = useState(false);
-  // Tracks how many ledger items are currently shown so a focus refresh can
-  // refetch the same amount and keep the scroll position when returning from a
-  // pushed screen (e.g. expense details).
-  const loadedLedgerCount = useRef(0);
   const [selectedTab, setSelectedTab] = useState("expenses");
-  const search = useListSearch(() => load(0).catch(() => undefined));
+  const search = useListSearch();
   const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
   const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
@@ -72,78 +63,42 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     [balances, group?.current_participant_id, group?.default_currency]
   );
 
-  async function load(offset = 0, simplified = simplifyBalances, searchTerm = search.termRef.current) {
-    if (loadingMore && offset) return;
-    if (offset) setLoadingMore(true);
-    setPendingExpenses(await pendingExpensesForContext("group", groupId));
-    try {
-      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-      const ledgerPath = `/api/groups/${groupId}/ledger/?offset=${offset}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
-      const balancesPath = `/api/groups/${groupId}/balances/${
-        simplified ? "?simplified=true" : ""
-      }`;
-      // Search results bypass the offline cache so stale matches are not
-      // persisted; the unfiltered first page stays cached for offline use.
-      const ledgerCacheable = !offset && !searchTerm;
-      const [detail, balanceRows, ledgerResponse] = await Promise.all([
+  const ledger = usePaginatedFeed<LedgerItem>({
+    pageSize: LEDGER_PAGE_SIZE,
+    searchTerm: search.term,
+    fetchPage: (params) => fetchLedgerPage(api, "groups", groupId, params)
+  });
+
+  const refreshGroup = useCallback(
+    async (simplified: boolean) => {
+      const balancesPath = `/api/groups/${groupId}/balances/${simplified ? "?simplified=true" : ""}`;
+      const [detail, balanceRows] = await Promise.all([
         cachedGet<Group>(api, `/api/groups/${groupId}/`),
-        cachedGet<GroupBalance[]>(api, balancesPath),
-        ledgerCacheable
-          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, ledgerPath)
-          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(ledgerPath)
+        cachedGet<GroupBalance[]>(api, balancesPath)
       ]);
       setGroup(detail);
       setBalances(balanceRows);
-      setLedger((current) => {
-        const next = offset ? [...current, ...ledgerResponse.results] : ledgerResponse.results;
-        loadedLedgerCount.current = next.length;
-        return next;
-      });
-      setNextOffset(ledgerResponse.next_offset);
-    } finally {
-      if (offset) setLoadingMore(false);
-    }
-  }
+    },
+    [api, groupId]
+  );
 
-  // Reloads as many items as are already shown so returning from a pushed
-  // screen does not collapse the list and lose the scroll position. The items
-  // are refetched in page-sized chunks (each within the backend's per-request
-  // ledger limit) and fired in parallel since the offsets are deterministic.
-  async function refresh(simplified = simplifyBalances) {
-    setPendingExpenses(await pendingExpensesForContext("group", groupId));
-    const searchTerm = search.termRef.current;
-    const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : "";
-    const balancesPath = `/api/groups/${groupId}/balances/${
-      simplified ? "?simplified=true" : ""
-    }`;
-    const pageCount = Math.max(1, Math.ceil(loadedLedgerCount.current / LEDGER_PAGE_SIZE));
-    const [detail, balanceRows, ...pages] = await Promise.all([
-      cachedGet<Group>(api, `/api/groups/${groupId}/`),
-      cachedGet<GroupBalance[]>(api, balancesPath),
-      ...Array.from({ length: pageCount }, (_unused, index) => {
-        const path = `/api/groups/${groupId}/ledger/?offset=${index * LEDGER_PAGE_SIZE}&limit=${LEDGER_PAGE_SIZE}${searchQuery}`;
-        return index === 0 && !searchTerm
-          ? cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
-          : api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
-      })
-    ]);
-    const results = pages.flatMap((page) => page.results);
-    setGroup(detail);
-    setBalances(balanceRows);
-    setLedger(results);
-    loadedLedgerCount.current = results.length;
-    setNextOffset(pages.at(-1)?.next_offset ?? null);
-  }
+  // Reload the ledger and balances after a mutation (settle, or a pending draft
+  // removed/synced) that can change either.
+  const reload = useCallback(async () => {
+    await Promise.all([ledger.load(0), refreshGroup(simplifyBalances)]);
+  }, [ledger.load, refreshGroup, simplifyBalances]);
+
+  const pending = usePendingExpenses("group", groupId, reload);
 
   useFocusEffect(
     useCallback(() => {
       loadSimplifyBalancesPreference(groupId)
         .then((preference) => {
           setSimplifyBalances(preference);
-          return refresh(preference);
+          return Promise.all([ledger.refresh(), pending.refresh(), refreshGroup(preference)]);
         })
         .catch(() => undefined);
-    }, [groupId])
+    }, [groupId, ledger.refresh, pending.refresh, refreshGroup])
   );
 
   // Searching only applies to the expenses list, so reveal it alongside the
@@ -156,7 +111,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
   async function handleSimplifyToggle(next: boolean) {
     setSimplifyBalances(next);
     await saveSimplifyBalancesPreference(groupId, next);
-    await load(0, next);
+    await refreshGroup(next);
   }
 
   useEffect(() => {
@@ -212,17 +167,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     setSettleTarget(null);
     setSettleAmount("");
     showSuccess({ icon: "cash-check" });
-    await load();
-  }
-
-  async function deletePendingExpense(id: string) {
-    await removePendingExpense(id);
-    await load();
-  }
-
-  async function retryPendingExpenses() {
-    await retryPendingExpenseSync(api);
-    await load();
+    await reload();
   }
 
   function toggleExpanded(participantId: number) {
@@ -298,9 +243,9 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
 
   const handleScroll = useInfiniteScroll({
     enabled: selectedTab === "expenses",
-    loadingMore,
-    nextOffset,
-    onLoadMore: (offset) => load(offset).catch(() => undefined)
+    loadingMore: ledger.loadingMore,
+    nextOffset: ledger.nextOffset,
+    onLoadMore: (offset) => ledger.load(offset).catch(() => undefined)
   });
 
   return (
@@ -329,32 +274,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
           </Button>
         </View>
 
-        <BalanceSummaryCard
-          total={balanceSummary.total}
-          currency={balanceSummary.currency}
-          detailLines={
-            <>
-              {balanceSummary.incoming.map((detail) => (
-                <BalanceLine
-                  key={`incoming-${detail.from_participant_id}-${detail.to_participant_id}`}
-                  variant="incoming"
-                  person={detail.from_display_name}
-                  amount={String(asNumber(detail.amount))}
-                  currency={detail.currency}
-                />
-              ))}
-              {balanceSummary.outgoing.map((detail) => (
-                <BalanceLine
-                  key={`outgoing-${detail.from_participant_id}-${detail.to_participant_id}`}
-                  variant="outgoing"
-                  person={detail.to_display_name}
-                  amount={String(asNumber(detail.amount))}
-                  currency={detail.currency}
-                />
-              ))}
-            </>
-          }
-        />
+        <GroupBalanceSummaryCard summary={balanceSummary} />
 
         <SegmentedButtons
           value={selectedTab}
@@ -370,7 +290,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
             <Text variant="titleLarge">{t("group.expenses")}</Text>
             {!search.term && (
               <PendingExpenseList
-                mutations={pendingExpenses}
+                mutations={pending.items}
                 fallbackCurrency={group?.default_currency}
                 onOpen={(mutationId) =>
                   navigation.navigate("AddExpense", {
@@ -379,37 +299,21 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                     returnToPrevious: true
                   })
                 }
-                onRetry={retryPendingExpenses}
-                onDelete={deletePendingExpense}
+                onRetry={pending.retry}
+                onDelete={pending.remove}
               />
             )}
-            {ledger.length > 0 &&
-              ledger.map((item) =>
-                item.type === "expense" ? (
-                  <ExpenseLedgerRow
-                    key={`expense-${item.expense.id}`}
-                    expense={item.expense}
-                    currentParticipantId={group?.current_participant_id}
-                    onPress={() => navigation.navigate("ExpenseDetail", { id: item.expense.id })}
-                  />
-                ) : (
-                  <SettlementLedgerRow
-                    key={`settlement-${item.settlement.id}`}
-                    settlement={item.settlement}
-                    onPress={() => navigation.navigate("SettlementDetail", { id: item.settlement.id })}
-                  />
-                )
-              )}
-            {ledger.length === 0 && (search.term ? (
-              <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
-            ) : pendingExpenses.length === 0 && (
-              <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
-            ))}
-            {nextOffset !== null && (
-              <Button mode="text" loading={loadingMore} onPress={() => load(nextOffset)}>
-                {t("activity.loadMore")}
-              </Button>
-            )}
+            <LedgerList
+              items={ledger.items}
+              currentParticipantId={group?.current_participant_id}
+              onOpenExpense={(id) => navigation.navigate("ExpenseDetail", { id })}
+              onOpenSettlement={(id) => navigation.navigate("SettlementDetail", { id })}
+              searching={!!search.term}
+              hasPending={pending.items.length > 0}
+              nextOffset={ledger.nextOffset}
+              loadingMore={ledger.loadingMore}
+              onLoadMore={ledger.load}
+            />
           </>
         ) : (
           <>
@@ -509,23 +413,4 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
       />
     </View>
   );
-}
-
-function buildBalanceSummary(
-  balances: GroupBalance[],
-  currentParticipantId: number | undefined,
-  fallbackCurrency: string | undefined
-) {
-  const currentRow = balances.find((row) => row.participant_id === currentParticipantId);
-  const details = currentRow?.details ?? [];
-  const incoming = details.filter((detail) => detail.to_participant_id === currentParticipantId);
-  const outgoing = details.filter((detail) => detail.from_participant_id === currentParticipantId);
-  const incomingTotal = incoming.reduce((sum, detail) => sum + asNumber(detail.amount), 0);
-  const outgoingTotal = outgoing.reduce((sum, detail) => sum + asNumber(detail.amount), 0);
-  return {
-    currency: currentRow?.currency ?? fallbackCurrency ?? "EUR",
-    incoming,
-    outgoing,
-    total: incomingTotal - outgoingTotal
-  };
 }

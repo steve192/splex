@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -7,13 +7,8 @@ export type ListSearch = {
   active: boolean;
   /** Raw, un-debounced text bound to the searchbar input. */
   input: string;
-  /** Current committed (debounced) term, also exposed via {@link termRef}. */
+  /** Debounced term; consumers refetch their list when this changes. */
   term: string;
-  /**
-   * Ref mirror of the committed term so data-loading callbacks can read it
-   * without having to be recreated whenever the term changes.
-   */
-  termRef: { readonly current: string };
   setInput: (text: string) => void;
   /** Reveals the searchbar. */
   open: () => void;
@@ -22,23 +17,15 @@ export type ListSearch = {
 };
 
 /**
- * Search state shared by the searchable list screens (group / friend ledgers
- * and the activity feed): a debounced term, an "active" flag for the
- * searchbar, and a ref mirror of the term for use inside data-loading
- * callbacks.
- *
- * `onCommit` runs whenever the debounced term changes (skipping the initial
- * empty value so it does not race a screen's own first load), letting the
- * screen refetch its list with the new term applied.
+ * Searchbar UI state for the searchable list screens: an "active" flag plus the
+ * raw input debounced into a committed `term`. The data side (refetching when
+ * `term` changes) lives in {@link usePaginatedFeed}, keeping this concerned only
+ * with input.
  */
-export function useListSearch(onCommit: () => void): ListSearch {
+export function useListSearch(): ListSearch {
   const [active, setActive] = useState(false);
   const [input, setInput] = useState("");
   const [term, setTerm] = useState("");
-  const termRef = useRef("");
-  const committedOnce = useRef(false);
-  const onCommitRef = useRef(onCommit);
-  onCommitRef.current = onCommit;
 
   // Debounce the raw input into the committed term so typing does not fire a
   // request per keystroke.
@@ -47,17 +34,6 @@ export function useListSearch(onCommit: () => void): ListSearch {
     return () => clearTimeout(handle);
   }, [input]);
 
-  // Notify the screen whenever the committed term changes, skipping the initial
-  // empty value so it does not race the screen's focus-effect first load.
-  useEffect(() => {
-    termRef.current = term;
-    if (!committedOnce.current) {
-      committedOnce.current = true;
-      return;
-    }
-    onCommitRef.current();
-  }, [term]);
-
   const open = useCallback(() => setActive(true), []);
   const close = useCallback(() => {
     setActive(false);
@@ -65,5 +41,5 @@ export function useListSearch(onCommit: () => void): ListSearch {
     setTerm("");
   }, []);
 
-  return { active, input, term, termRef, setInput, open, close };
+  return { active, input, term, setInput, open, close };
 }

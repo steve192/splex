@@ -22,6 +22,13 @@ export function currencyAmount(value: number, currency: string): string {
   return `${formatMoney(value)} ${currency}`;
 }
 
+export function normalizeExpenseAmountInput(value: string): string {
+  const filtered = value.replaceAll(/[^0-9.,]/g, "");
+  const normalized = filtered.replaceAll(",", ".");
+  const parts = normalized.split(".");
+  return parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
+}
+
 export function effectiveSplitMethod(
   splitMethod: SplitMethod,
   selectedAllParticipants: boolean
@@ -193,6 +200,87 @@ export function perMemberShare({
     splitValues,
     totalAmount
   });
+}
+
+export type ExpenseValidation = {
+  totalAmount: number;
+  tabValue: SplitTab;
+  selectedEqualShares: Record<number, number>;
+  exactLeft: number;
+  percentageLeft: number;
+  adjustedHasNegativeShare: boolean;
+  /** True when the chosen split does not add up and the expense cannot be saved. */
+  splitConfigInvalid: boolean;
+  paymentLeft: number;
+  /** True when multiple payers are set but their amounts do not sum to the total. */
+  paymentConfigInvalid: boolean;
+};
+
+/**
+ * Derives every split/payment figure and validity flag the expense form needs
+ * from the raw form values. Pure so it can be unit-tested and memoized.
+ */
+export function computeExpenseValidation({
+  amount,
+  splitMethod,
+  selectedParticipantIds,
+  splitValues,
+  multiPayer,
+  participants,
+  paymentValues
+}: {
+  amount: string;
+  splitMethod: SplitMethod;
+  selectedParticipantIds: number[];
+  splitValues: Record<number, string>;
+  multiPayer: boolean;
+  participants: Participant[];
+  paymentValues: Record<number, string>;
+}): ExpenseValidation {
+  const totalAmount = asNumber(amount);
+  const tabValue = splitTabValue(splitMethod);
+  const selectedEqualShares = splitEvenly(totalAmount, selectedParticipantIds);
+
+  const distributedSplit = selectedParticipantIds.reduce((sum, id) => sum + asNumber(splitValues[id]), 0);
+  const exactLeft = totalAmount - distributedSplit;
+  const percentageLeft = 100 - distributedSplit;
+
+  const adjustedHasNegativeShare =
+    tabValue === "adjusted_equal" &&
+    selectedParticipantIds.some(
+      (id) =>
+        perMemberShare({
+          participantId: id,
+          tabValue,
+          selectedParticipantIds,
+          selectedEqualShares,
+          splitValues,
+          totalAmount
+        }) < -SPLIT_TOLERANCE
+    );
+
+  let splitConfigInvalid: boolean;
+  if (!selectedParticipantIds.length) splitConfigInvalid = true;
+  else if (tabValue === "equal") splitConfigInvalid = false;
+  else if (tabValue === "exact") splitConfigInvalid = Math.abs(exactLeft) > SPLIT_TOLERANCE;
+  else if (tabValue === "percentage") splitConfigInvalid = Math.abs(percentageLeft) > SPLIT_TOLERANCE;
+  else splitConfigInvalid = adjustedHasNegativeShare;
+
+  const distributedPayments = participants.reduce((sum, participant) => sum + asNumber(paymentValues[participant.id]), 0);
+  const paymentLeft = multiPayer ? totalAmount - distributedPayments : 0;
+  const paymentConfigInvalid = multiPayer ? Math.abs(paymentLeft) > SPLIT_TOLERANCE : false;
+
+  return {
+    totalAmount,
+    tabValue,
+    selectedEqualShares,
+    exactLeft,
+    percentageLeft,
+    adjustedHasNegativeShare,
+    splitConfigInvalid,
+    paymentLeft,
+    paymentConfigInvalid
+  };
 }
 
 type PaymentApplier = {

@@ -1,20 +1,8 @@
-import { useNetInfo } from "@react-native-community/netinfo";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, View } from "react-native";
-import {
-  ActivityIndicator,
-  Button,
-  Card,
-  Divider,
-  HelperText,
-  IconButton,
-  Text,
-  TextInput,
-  TouchableRipple,
-  useTheme
-} from "react-native-paper";
+import { View } from "react-native";
+import { Button, Card, HelperText, Text, TextInput, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList, AddStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
@@ -25,7 +13,7 @@ import { CURRENCIES } from "../../shared/lib/currencies";
 import { useLocationForm } from "../../shared/location/useLocationForm";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import { loadRememberContextPreference, saveRememberContextPreference } from "../../shared/lib/lastContextPreference";
-import { asNumber, buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
+import { buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
 import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
 import { DatePickerSheet } from "../../shared/ui/DatePickerSheet";
@@ -41,17 +29,17 @@ import {
   buildSplitPayload,
   effectiveSplitMethod,
   hydrateSplit,
+  normalizeExpenseAmountInput,
   perMemberShare,
-  splitEvenly,
-  splitTabValue,
-  SPLIT_TOLERANCE
+  splitTabValue
 } from "./expenseFormLogic";
+import { useExpenseValidation } from "./useExpenseValidation";
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
-import { ReceiptList } from "../../shared/receipts/ReceiptList";
-import { pickReceipt, uploadReceipt } from "../../shared/receipts/receiptService";
-import type { Receipt } from "../../shared/types/models";
+import { ExpenseOptionsCard } from "./ExpenseOptionsCard";
+import { ReceiptsCard } from "./ReceiptsCard";
+import { useReceiptUpload } from "./useReceiptUpload";
 
 type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
 
@@ -97,16 +85,23 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   // It links any draft receipts the user uploads before save to the eventual
   // expense (see uploadReceipt + backend attach_drafts_to_expense).
   const [draftClientId] = useState(() => pendingMutationId ?? createClientId());
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [rememberContext, setRememberContext] = useState(false);
 
-  // Receipts require a live network connection: a draft upload talks to the
-  // backend immediately, and a pending-sync mutation has no server-side expense
-  // yet to attach against.
-  const netInfo = useNetInfo();
-  const isOnline = netInfo.isConnected !== false && netInfo.isInternetReachable !== false;
-  const canUploadReceipts = isOnline && !pendingMutationId;
+  const {
+    receipts,
+    setReceipts,
+    uploading: uploadingReceipt,
+    canUpload: canUploadReceipts,
+    add: handleAddReceipt,
+    remove: handleReceiptRemoved
+  } = useReceiptUpload({
+    expenseId,
+    pendingMutationId,
+    contextType,
+    contextId,
+    draftClientId,
+    onMissingContext: () => setMessage(t("expense.contextChoose"))
+  });
 
   const locationForm = useLocationForm(user?.location_tracking_enabled ?? false);
 
@@ -172,54 +167,25 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     participants.length > 0 &&
     selectedParticipantIds.length === participants.length &&
     participants.every((participant) => selectedParticipantIds.includes(participant.id));
-  const totalAmount = asNumber(amount);
-  const tabValue = splitTabValue(splitMethod);
-
-  const selectedEqualShares = useMemo(
-    () => splitEvenly(totalAmount, selectedParticipantIds),
-    [totalAmount, selectedParticipantIds]
-  );
-
-  const exactLeft = useMemo(() => {
-    const distributed = selectedParticipantIds.reduce((sum, id) => sum + asNumber(splitValues[id]), 0);
-    return totalAmount - distributed;
-  }, [selectedParticipantIds, splitValues, totalAmount]);
-
-  const percentageLeft = useMemo(() => {
-    const used = selectedParticipantIds.reduce((sum, id) => sum + asNumber(splitValues[id]), 0);
-    return 100 - used;
-  }, [selectedParticipantIds, splitValues]);
-
-  const adjustedHasNegativeShare = useMemo(() => {
-    if (tabValue !== "adjusted_equal") return false;
-    return selectedParticipantIds.some(
-      (id) =>
-        perMemberShare({
-          participantId: id,
-          tabValue,
-          selectedParticipantIds,
-          selectedEqualShares,
-          splitValues,
-          totalAmount
-        }) < -SPLIT_TOLERANCE
-    );
-  }, [selectedEqualShares, selectedParticipantIds, splitValues, tabValue, totalAmount]);
-
-  const paymentLeft = useMemo(() => {
-    if (!multiPayer) return 0;
-    const distributed = participants.reduce((sum, participant) => sum + asNumber(paymentValues[participant.id]), 0);
-    return totalAmount - distributed;
-  }, [multiPayer, participants, paymentValues, totalAmount]);
-
-  const splitConfigInvalid = useMemo(() => {
-    if (!selectedParticipantIds.length) return true;
-    if (tabValue === "equal") return false;
-    if (tabValue === "exact") return Math.abs(exactLeft) > SPLIT_TOLERANCE;
-    if (tabValue === "percentage") return Math.abs(percentageLeft) > SPLIT_TOLERANCE;
-    return adjustedHasNegativeShare;
-  }, [adjustedHasNegativeShare, exactLeft, percentageLeft, selectedParticipantIds.length, tabValue]);
-
-  const paymentConfigInvalid = multiPayer ? Math.abs(paymentLeft) > SPLIT_TOLERANCE : false;
+  const {
+    totalAmount,
+    tabValue,
+    selectedEqualShares,
+    exactLeft,
+    percentageLeft,
+    adjustedHasNegativeShare,
+    splitConfigInvalid,
+    paymentLeft,
+    paymentConfigInvalid
+  } = useExpenseValidation({
+    amount,
+    splitMethod,
+    selectedParticipantIds,
+    splitValues,
+    multiPayer,
+    participants,
+    paymentValues
+  });
 
   useEffect(() => {
     resetForm(route?.params ?? {});
@@ -416,36 +382,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setPaymentValues((current) => ({ ...current, [participantId]: value }));
   }
 
-  async function handleAddReceipt() {
-    if (uploadingReceipt) return;
-    const asset = await pickReceipt();
-    if (!asset) return;
-    if (!expenseId && !contextId) {
-      setMessage(t("expense.contextChoose"));
-      return;
-    }
-    setUploadingReceipt(true);
-    try {
-      const ctx = expenseId
-        ? { expenseId }
-        : {
-            clientId: draftClientId,
-            groupId: contextType === "group" ? contextId ?? undefined : undefined,
-            friendshipId: contextType === "friendship" ? contextId ?? undefined : undefined,
-          };
-      const uploaded = await uploadReceipt(api, asset, ctx);
-      setReceipts((current) => [...current, uploaded]);
-    } catch (error) {
-      Alert.alert(error instanceof Error ? error.message : t("receipts.uploadFailed"));
-    } finally {
-      setUploadingReceipt(false);
-    }
-  }
-
-  function handleReceiptRemoved(receiptId: number) {
-    setReceipts((current) => current.filter((r) => r.id !== receiptId));
-  }
-
   async function save() {
     if (!contextId) return;
     if (splitConfigInvalid || paymentConfigInvalid) return;
@@ -602,15 +538,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 label={t("expense.amount")}
                 keyboardType="decimal-pad"
                 value={amount}
-                onChangeText={(text) => {
-                  // Allow only digits and decimal separators (. or ,)
-                  const filtered = text.replaceAll(/[^0-9.,]/g, "");
-                  // Normalize: replace , with . and remove extra decimal separators
-                  const normalized = filtered.replaceAll(",", ".");
-                  const parts = normalized.split(".");
-                  const valid = parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
-                  setAmount(valid);
-                }}
+                onChangeText={(text) => setAmount(normalizeExpenseAmountInput(text))}
                 autoFocus={!amount && activeSheet === null}
               />
               <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={styles.selfCenter}>
@@ -630,66 +558,23 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
         {canRevealOptions ? (
           <>
-            <Card mode="elevated" style={styles.card}>
-              <Card.Content style={styles.optionRowCard}>
-                <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("context")}>
-                  <View style={styles.rowBetween}>
-                    <Text variant="titleMedium">{t("expense.contextLabel")}</Text>
-                    <Text variant="bodyMedium">{selectedContext?.name ?? t("expense.contextChoose")}</Text>
-                  </View>
-                </TouchableRipple>
-                {selectedContext ? (
-                  <>
-                    <Divider />
-                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("date")}>
-                      <View style={styles.rowBetween}>
-                        <Text variant="titleMedium">{t("expense.date")}</Text>
-                        <Text variant="bodyMedium">{date || t("common.today")}</Text>
-                      </View>
-                    </TouchableRipple>
-                    <Divider />
-                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("payer")}>
-                      <View style={styles.rowBetween}>
-                        <Text variant="titleMedium">{t("expense.paidBy")}</Text>
-                        <Text variant="bodyMedium">{paymentSummary()}</Text>
-                      </View>
-                    </TouchableRipple>
-                    <Divider />
-                    <TouchableRipple style={styles.optionRow} onPress={() => setActiveSheet("split")}>
-                      <View style={styles.rowBetween}>
-                        <Text variant="titleMedium">{t("expense.split")}</Text>
-                        <Text variant="bodyMedium">{splitSummary()}</Text>
-                      </View>
-                    </TouchableRipple>
-                  </>
-                ) : null}
-              </Card.Content>
-            </Card>
+            <ExpenseOptionsCard
+              contextName={selectedContext?.name}
+              hasContext={!!selectedContext}
+              date={date}
+              payerLabel={paymentSummary()}
+              splitLabel={splitSummary()}
+              onOpen={setActiveSheet}
+            />
 
-            {selectedContext && (canUploadReceipts || receipts.length > 0) ? (
-              <Card mode="elevated" style={styles.card}>
-                <Card.Content style={styles.gap}>
-                  <View style={styles.rowBetween}>
-                    <Text variant="titleMedium">{t("receipts.section")}</Text>
-                    {canUploadReceipts && uploadingReceipt && <ActivityIndicator />}
-                    {canUploadReceipts && !uploadingReceipt && (
-                      <IconButton
-                        icon="paperclip"
-                        onPress={handleAddReceipt}
-                        accessibilityLabel={t("receipts.addAction")}
-                      />
-                    )}
-                  </View>
-                  {!canUploadReceipts && (
-                    <HelperText type="info">{t("receipts.offlineHint")}</HelperText>
-                  )}
-                  <ReceiptList
-                    receipts={receipts}
-                    allowRemove={canUploadReceipts}
-                    onRemoved={handleReceiptRemoved}
-                  />
-                </Card.Content>
-              </Card>
+            {selectedContext ? (
+              <ReceiptsCard
+                receipts={receipts}
+                canUpload={canUploadReceipts}
+                uploading={uploadingReceipt}
+                onAdd={handleAddReceipt}
+                onRemove={handleReceiptRemoved}
+              />
             ) : null}
 
             <Button mode="contained" icon="check" loading={saving} disabled={!valid || saving} onPress={save}>
