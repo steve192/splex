@@ -3,7 +3,13 @@ import { KeyboardAvoidingView, Platform, ScrollView, ScrollViewProps, StyleProp,
 import { useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useKeyboardHeight } from "../lib/useKeyboardHeight";
 import { ContentWidth } from "./ContentWidth";
+import {
+  DEFAULT_SCREEN_KEYBOARD_DISMISS_MODE,
+  DEFAULT_SCREEN_KEYBOARD_TAPS,
+  screenBottomPadding
+} from "./screenKeyboard";
 import { styles } from "./styles";
 
 type ScreenProps = {
@@ -16,6 +22,8 @@ type ScreenProps = {
 export function Screen({ children, topInset = false, contentContainerStyle, scrollViewProps }: Readonly<ScreenProps>) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+  const baseBottomPadding = 20 + insets.bottom;
 
   return (
     <KeyboardAvoidingView
@@ -24,7 +32,8 @@ export function Screen({ children, topInset = false, contentContainerStyle, scro
     >
       <ScrollView
         {...scrollViewProps}
-        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={scrollViewProps?.keyboardDismissMode ?? DEFAULT_SCREEN_KEYBOARD_DISMISS_MODE}
+        keyboardShouldPersistTaps={scrollViewProps?.keyboardShouldPersistTaps ?? DEFAULT_SCREEN_KEYBOARD_TAPS}
         contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets
         scrollEventThrottle={scrollViewProps?.scrollEventThrottle ?? 16}
@@ -33,7 +42,7 @@ export function Screen({ children, topInset = false, contentContainerStyle, scro
           {
             backgroundColor: theme.colors.background,
             paddingTop: 20 + (topInset ? insets.top : 0),
-            paddingBottom: 20 + insets.bottom
+            paddingBottom: screenBottomPadding(baseBottomPadding, keyboardHeight)
           },
           contentContainerStyle
         ]}
