@@ -5,6 +5,7 @@ import { useI18n } from "../i18n/I18nContext";
 import { LedgerItem } from "../types/models";
 import { EmptyState } from "../ui/EmptyState";
 import { ExpenseLedgerRow } from "../ui/ExpenseLedgerRow";
+import { ledgerEmptyStateKey } from "./ledgerListState";
 import { SettlementLedgerRow } from "./SettlementLedgerRow";
 
 type LedgerListProps = {
@@ -36,6 +37,13 @@ export function LedgerList({
   onLoadMore
 }: Readonly<LedgerListProps>) {
   const { t } = useI18n();
+  const emptyStateKey = ledgerEmptyStateKey({
+    hasPending,
+    itemCount: items.length,
+    loadingInitial,
+    searching
+  });
+
   return (
     <>
       {items.map((item, index) =>
@@ -54,13 +62,7 @@ export function LedgerList({
           />
         )
       )}
-      {items.length === 0 &&
-        !loadingInitial &&
-        (searching ? (
-          <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
-        ) : hasPending ? null : (
-          <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
-        ))}
+      {emptyStateKey ? <EmptyState image={appImages.emptyExpenses} text={t(emptyStateKey)} /> : null}
       {nextOffset !== null && items.length > 0 && (
         <Button mode="text" loading={loadingMore} onPress={() => onLoadMore(nextOffset)}>
           {t("activity.loadMore")}

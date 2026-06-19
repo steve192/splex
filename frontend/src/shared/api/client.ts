@@ -2,7 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 import { handleDemoRequest } from "../demo/demoBackend";
-import { persistDemoMode } from "../demo/demoMode";
+import {
+  disableDemoMode as persistDisabledDemoMode,
+  enableDemoMode as persistEnabledDemoMode
+} from "../demo/demoMode";
 
 export type Tokens = {
   access: string;
@@ -66,6 +69,8 @@ function parseJsonBody<T>(body: string): T {
   return JSON.parse(body) as T;
 }
 
+type ApiMethod = "GET" | "POST" | "PATCH" | "DELETE";
+
 type NativeFileUpload = {
   uri: string;
   fieldName: string;
@@ -114,6 +119,87 @@ async function fetchWithTimeout(
   }
 }
 
+function demoMethod(options: RequestInit): ApiMethod {
+  return (options.method ?? "GET").toUpperCase() as ApiMethod;
+}
+
+function buildRequestHeaders(options: RequestInit, tokens: Tokens | null): Headers {
+  const headers = new Headers(options.headers);
+  headers.set("Accept", "application/json");
+  // For multipart uploads, fetch() needs to set the Content-Type itself so
+  // the boundary parameter is included. Skip our default JSON header then.
+  if (!isFormDataBody(options.body)) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (tokens?.access) {
+    headers.set("Authorization", `Bearer ${tokens.access}`);
+  }
+  return headers;
+}
+
+function logRequestStarted(path: string, options: RequestInit, tokens: Tokens | null, retried: boolean): void {
+  if (!shouldLogPath(path)) return;
+  apiDebug("request started", {
+    method: options.method ?? "GET",
+    path,
+    hasAccessToken: Boolean(tokens?.access),
+    retried
+  });
+}
+
+async function fetchApiResponse(
+  path: string,
+  requestUrl: string,
+  options: RequestInit,
+  headers: Headers
+): Promise<Response> {
+  try {
+    return await fetchWithTimeout(requestUrl, { ...options, headers });
+  } catch (error) {
+    if (shouldLogPath(path)) {
+      apiDebug("request failed before response", { path, error });
+    }
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError("Network unavailable", { offline: true });
+  }
+}
+
+function shouldRefreshAccessToken(response: Response, tokens: Tokens | null, retried: boolean): boolean {
+  return response.status === 401 && Boolean(tokens?.refresh) && !retried;
+}
+
+function parseErrorData(text: string): Record<string, unknown> | undefined {
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+}
+
+async function readApiResponse<T>(path: string, requestUrl: string, response: Response): Promise<T> {
+  if (!response.ok) {
+    const text = await response.text();
+    if (shouldLogPath(path)) {
+      apiDebug("response not ok", { path, status: response.status, body: text });
+    }
+    throw new ApiError(formatResponseError(requestUrl, response.status, text), {
+      status: response.status,
+      data: parseErrorData(text)
+    });
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    const text = await response.text();
+    throw new ApiError(formatResponseError(requestUrl, response.status, text), { status: response.status });
+  }
+  return response.json() as Promise<T>;
+}
+
 export class ApiClient {
   private tokens: Tokens | null = null;
   private refreshPromise: Promise<void> | null = null;
@@ -140,9 +226,14 @@ export class ApiClient {
     return this.demoMode;
   }
 
-  async setDemoMode(enabled: boolean): Promise<void> {
-    this.demoMode = enabled;
-    await persistDemoMode(enabled);
+  async enableDemoMode(): Promise<void> {
+    this.demoMode = true;
+    await persistEnabledDemoMode();
+  }
+
+  async disableDemoMode(): Promise<void> {
+    this.demoMode = false;
+    await persistDisabledDemoMode();
   }
 
   async getBaseUrl(): Promise<string> {
@@ -163,48 +254,16 @@ export class ApiClient {
 
   async request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
     if (this.demoMode) {
-      const method = (options.method ?? "GET").toUpperCase() as
-        | "GET"
-        | "POST"
-        | "PATCH"
-        | "DELETE";
-      return handleDemoRequest<T>(method, path);
+      return handleDemoRequest<T>(demoMethod(options), path);
     }
-    const headers = new Headers(options.headers);
-    headers.set("Accept", "application/json");
-    // For multipart uploads, fetch() needs to set the Content-Type itself so
-    // the boundary parameter is included.  Skip our default JSON header then.
-    if (!isFormDataBody(options.body)) {
-      headers.set("Content-Type", "application/json");
-    }
-    if (this.tokens?.access) {
-      headers.set("Authorization", `Bearer ${this.tokens.access}`);
-    }
-    if (shouldLogPath(path)) {
-      apiDebug("request started", {
-        method: options.method ?? "GET",
-        path,
-        hasAccessToken: Boolean(this.tokens?.access),
-        retried
-      });
-    }
-    let response: Response;
+    const headers = buildRequestHeaders(options, this.tokens);
+    logRequestStarted(path, options, this.tokens, retried);
     const requestUrl = `${await this.getBaseUrl()}${path}`;
-    try {
-      response = await fetchWithTimeout(requestUrl, { ...options, headers });
-    } catch (error) {
-      if (shouldLogPath(path)) {
-        apiDebug("request failed before response", { path, error });
-      }
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      throw new ApiError("Network unavailable", { offline: true });
-    }
+    const response = await fetchApiResponse(path, requestUrl, options, headers);
     if (shouldLogPath(path)) {
       apiDebug("response received", { path, status: response.status, ok: response.ok });
     }
-    if (response.status === 401 && this.tokens?.refresh && !retried) {
+    if (shouldRefreshAccessToken(response, this.tokens, retried)) {
       apiDebug("response was 401; refreshing access token", { path });
       this.refreshPromise ??= this.refreshAccessToken().finally(() => {
         this.refreshPromise = null;
@@ -212,28 +271,7 @@ export class ApiClient {
       await this.refreshPromise;
       return this.request<T>(path, options, true);
     }
-    if (!response.ok) {
-      const text = await response.text();
-      if (shouldLogPath(path)) {
-        apiDebug("response not ok", { path, status: response.status, body: text });
-      }
-      let errorData: Record<string, unknown> | undefined;
-      try {
-        errorData = JSON.parse(text) as Record<string, unknown>;
-      } catch {
-        // Text might not be JSON, that's ok
-      }
-      throw new ApiError(formatResponseError(requestUrl, response.status, text), { status: response.status, data: errorData });
-    }
-    if (response.status === 204) {
-      return undefined as T;
-    }
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.toLowerCase().includes("application/json")) {
-      const text = await response.text();
-      throw new ApiError(formatResponseError(requestUrl, response.status, text), { status: response.status });
-    }
-    return response.json() as Promise<T>;
+    return readApiResponse<T>(path, requestUrl, response);
   }
 
   private async refreshAccessToken(): Promise<void> {

@@ -23,12 +23,12 @@ export function notifyDemoWriteBlocked(): void {
   for (const listener of listeners) listener();
 }
 
-export async function persistDemoMode(enabled: boolean): Promise<void> {
-  if (enabled) {
-    await AsyncStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
-  } else {
-    await AsyncStorage.removeItem(DEMO_MODE_STORAGE_KEY);
-  }
+export async function enableDemoMode(): Promise<void> {
+  await AsyncStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
+}
+
+export async function disableDemoMode(): Promise<void> {
+  await AsyncStorage.removeItem(DEMO_MODE_STORAGE_KEY);
 }
 
 export async function loadPersistedDemoMode(): Promise<boolean> {

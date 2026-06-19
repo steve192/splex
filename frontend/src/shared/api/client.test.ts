@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const store: Record<string, string> = {};
 const platform = vi.hoisted(() => ({ OS: "web" as string }));
 const handleDemoRequest = vi.hoisted(() => vi.fn());
-const persistDemoMode = vi.hoisted(() => vi.fn(async () => undefined));
+const disableDemoMode = vi.hoisted(() => vi.fn(async () => undefined));
+const enableDemoMode = vi.hoisted(() => vi.fn(async () => undefined));
 const fileSystemUploadAsync = vi.hoisted(() => vi.fn());
 
 vi.mock("react-native", () => ({ Platform: platform }));
@@ -21,7 +22,7 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
   }
 }));
 vi.mock("../demo/demoBackend", () => ({ handleDemoRequest }));
-vi.mock("../demo/demoMode", () => ({ persistDemoMode }));
+vi.mock("../demo/demoMode", () => ({ disableDemoMode, enableDemoMode }));
 vi.mock("expo-file-system/legacy", () => ({
   FileSystemUploadType: { MULTIPART: 1 },
   uploadAsync: fileSystemUploadAsync
@@ -42,7 +43,8 @@ beforeEach(() => {
   for (const key of Object.keys(store)) delete store[key];
   platform.OS = "web";
   handleDemoRequest.mockReset();
-  persistDemoMode.mockClear();
+  disableDemoMode.mockClear();
+  enableDemoMode.mockClear();
   fileSystemUploadAsync.mockReset();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
@@ -208,8 +210,8 @@ describe("ApiClient demo mode", () => {
   it("routes requests to the demo backend and persists the flag", async () => {
     handleDemoRequest.mockResolvedValue({ demo: true });
     const api = new ApiClient();
-    await api.setDemoMode(true);
-    expect(persistDemoMode).toHaveBeenCalledWith(true);
+    await api.enableDemoMode();
+    expect(enableDemoMode).toHaveBeenCalledTimes(1);
     expect(api.isDemoMode()).toBe(true);
 
     const result = await api.get<{ demo: boolean }>("/api/x/");
@@ -220,7 +222,7 @@ describe("ApiClient demo mode", () => {
 
   it("fetchBinary refuses to run in demo mode", async () => {
     const api = new ApiClient();
-    await api.setDemoMode(true);
+    await api.enableDemoMode();
     await expect(api.fetchBinary("/api/receipts/1/")).rejects.toMatchObject({ status: 400 });
   });
 });

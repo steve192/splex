@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { StyleProp, View, ViewStyle } from "react-native";
 import { Card, List, Text, TouchableRipple } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
@@ -18,6 +18,30 @@ type ActivityListItemProps = {
   onPress: () => void;
 };
 
+type ActivityActorAvatarProps = {
+  actorName: string;
+  imageUrl?: string;
+};
+
+function ActivityActorAvatar({ actorName, imageUrl }: Readonly<ActivityActorAvatarProps>) {
+  return <PersonAvatar name={actorName} imageUrl={imageUrl} />;
+}
+
+type ActivityListItemMetaProps = {
+  createdAt: string;
+  eventType: ActivityFeedEvent["event_type"];
+  style?: StyleProp<ViewStyle>;
+};
+
+function ActivityListItemMeta({ createdAt, eventType, style }: Readonly<ActivityListItemMetaProps>) {
+  return (
+    <View style={[style, styles.listTileRight]}>
+      <List.Icon icon={activityIcon(eventType)} />
+      <Text variant="bodySmall">{formatDeviceDate(createdAt)}</Text>
+    </View>
+  );
+}
+
 /** A single entry in the activity feed. */
 export function ActivityListItem({ item, onPress }: Readonly<ActivityListItemProps>) {
   const { t } = useI18n();
@@ -36,12 +60,9 @@ export function ActivityListItem({ item, onPress }: Readonly<ActivityListItemPro
             descriptionNumberOfLines={ACTIVITY_TITLE_NUMBER_OF_LINES}
             title={t(`activity.${item.event_type}`, { actor: actorName })}
             description={[context, description, pendingStatus].filter(Boolean).join("\n")}
-            left={() => <PersonAvatar name={actorName} imageUrl={item.actor_avatar_url} />}
+            left={() => <ActivityActorAvatar actorName={actorName} imageUrl={item.actor_avatar_url} />}
             right={({ style }) => (
-              <View style={[style, styles.listTileRight]}>
-                <List.Icon icon={activityIcon(item.event_type)} />
-                <Text variant="bodySmall">{formatDeviceDate(item.created_at)}</Text>
-              </View>
+              <ActivityListItemMeta createdAt={item.created_at} eventType={item.event_type} style={style} />
             )}
           />
         </Card.Content>

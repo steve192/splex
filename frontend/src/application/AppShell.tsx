@@ -8,7 +8,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
@@ -34,7 +34,7 @@ import { UpdateSnackbar } from "../shared/updates/UpdateSnackbar";
 export function AppShell() {
   const api = useMemo(() => new ApiClient(), []);
   const systemThemeMode = useColorScheme();
-  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   let resolvedThemeMode: "light" | "dark";
   if (themeMode === "system") {
     resolvedThemeMode = systemThemeMode === "dark" ? "dark" : "light";
@@ -44,7 +44,7 @@ export function AppShell() {
 
   useEffect(() => {
     AsyncStorage.getItem("splex.theme").then((stored) => {
-      if (stored === "light" || stored === "dark" || stored === "system") setThemeModeState(stored);
+      if (stored === "light" || stored === "dark" || stored === "system") setThemeMode(stored);
     });
     // On web, eagerly register/refresh the service worker so a deployed update
     // takes over the existing tab without the user manually closing it.
@@ -56,16 +56,17 @@ export function AppShell() {
     () => createNavigationTheme(resolvedThemeMode, paperTheme),
     [paperTheme, resolvedThemeMode]
   );
+  const updateThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeMode(mode);
+    AsyncStorage.setItem("splex.theme", mode).catch(() => undefined);
+  }, []);
   const preferences = useMemo(
     () => ({
       themeMode,
       resolvedThemeMode,
-      setThemeMode(mode: ThemeMode) {
-        setThemeModeState(mode);
-        AsyncStorage.setItem("splex.theme", mode).catch(() => undefined);
-      }
+      setThemeMode: updateThemeMode
     }),
-    [resolvedThemeMode, themeMode]
+    [resolvedThemeMode, themeMode, updateThemeMode]
   );
 
   const linking = useMemo<LinkingOptions<RootStackParamList>>(
@@ -127,48 +128,48 @@ export function AppShell() {
 
   return (
     <GestureHandlerRootView style={styles.flex}>
-    <PreferencesContext.Provider value={preferences}>
-      <I18nProvider>
-        {/* AuthProvider must sit ABOVE PaperProvider so the Portal host that
+      <PreferencesContext.Provider value={preferences}>
+        <I18nProvider>
+          {/* AuthProvider must sit ABOVE PaperProvider so the Portal host that
             backs <Dialog>/<Portal>/<Modal> from react-native-paper has access
             to AuthContext via React context.  Paper's Portal re-parents
             children under Portal.Host (which lives inside PaperProvider);
             anything portalled would otherwise lose every context provided
             below PaperProvider. */}
-        <AuthProvider api={api}>
-          <PaperProvider
-            theme={paperTheme}
-            settings={{
-              icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
-            }}
-          >
-            <SafeAreaProvider>
-              <FeedbackProvider>
-                <SnackbarProvider>
-                  <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
-                    <NavigationContainer
-                      theme={navigationTheme}
-                      linking={linking}
-                      documentTitle={{
-                        formatter(options) {
-                          return options?.title ? `Splex | ${options.title}` : "Splex";
-                        }
-                      }}
-                    >
-                      <AppNavigator />
-                    </NavigationContainer>
-                    <UpdateSnackbar />
-                    <DemoWriteBlockedSnackbar />
-                    <PwaInstallPrompt />
-                  </View>
-                </SnackbarProvider>
-              </FeedbackProvider>
-              <StatusBar style={resolvedThemeMode === "dark" ? "light" : "dark"} />
-            </SafeAreaProvider>
-          </PaperProvider>
-        </AuthProvider>
-      </I18nProvider>
-    </PreferencesContext.Provider>
+          <AuthProvider api={api}>
+            <PaperProvider
+              theme={paperTheme}
+              settings={{
+                icon: (props) => <MaterialCommunityIcons {...props} name={props.name as any} />
+              }}
+            >
+              <SafeAreaProvider>
+                <FeedbackProvider>
+                  <SnackbarProvider>
+                    <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
+                      <NavigationContainer
+                        theme={navigationTheme}
+                        linking={linking}
+                        documentTitle={{
+                          formatter(options) {
+                            return options?.title ? `Splex | ${options.title}` : "Splex";
+                          }
+                        }}
+                      >
+                        <AppNavigator />
+                      </NavigationContainer>
+                      <UpdateSnackbar />
+                      <DemoWriteBlockedSnackbar />
+                      <PwaInstallPrompt />
+                    </View>
+                  </SnackbarProvider>
+                </FeedbackProvider>
+                <StatusBar style={resolvedThemeMode === "dark" ? "light" : "dark"} />
+              </SafeAreaProvider>
+            </PaperProvider>
+          </AuthProvider>
+        </I18nProvider>
+      </PreferencesContext.Provider>
     </GestureHandlerRootView>
   );
 }

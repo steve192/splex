@@ -3,15 +3,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   canStartPendingAction,
   pendingActionMatches,
-  PendingActionKey,
 } from "./pendingActionState";
 
 export function usePendingAction<
-  ActionKey extends PendingActionKey = PendingActionKey,
+  ActionKey extends string = string,
 >() {
   const pendingRef = useRef<ActionKey | null>(null);
   const mountedRef = useRef(true);
-  const [pending, setPendingState] = useState<ActionKey | null>(null);
+  const [pending, setPending] = useState<ActionKey | null>(null);
 
   useEffect(() => {
     return () => {
@@ -19,10 +18,10 @@ export function usePendingAction<
     };
   }, []);
 
-  const setPending = useCallback((key: ActionKey | null) => {
+  const updatePending = useCallback((key: ActionKey | null) => {
     pendingRef.current = key;
     if (mountedRef.current) {
-      setPendingState(key);
+      setPending(key);
     }
   }, []);
 
@@ -32,14 +31,14 @@ export function usePendingAction<
       action: () => Promise<Result> | Result,
     ): Promise<Result | undefined> => {
       if (!canStartPendingAction(pendingRef.current)) return undefined;
-      setPending(key);
+      updatePending(key);
       try {
         return await action();
       } finally {
-        setPending(null);
+        updatePending(null);
       }
     },
-    [setPending],
+    [updatePending],
   );
 
   const isPending = useCallback(

@@ -52,8 +52,8 @@ export function useCachedQuery<T>({
       const next = await load({ cachedGet: cachedOnlyGet });
       setData(next);
       setError(null);
-    } catch (caught) {
-      setError(caught);
+    } catch (error_) {
+      setError(error_);
     }
   }, [cachedOnlyGet, load]);
 
@@ -87,9 +87,9 @@ export function useCachedQuery<T>({
       const next = await load(helpers);
       setData(next);
       return next;
-    } catch (caught) {
-      setError(caught);
-      throw caught;
+    } catch (error_) {
+      setError(error_);
+      throw error_;
     } finally {
       setForegroundLoading(false);
     }

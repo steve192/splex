@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import az from "./locales/az.json";
 import be from "./locales/be.json";
@@ -104,32 +104,34 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [locale, setLocaleState] = useState<Locale>("en");
+  const [locale, setLocale] = useState<Locale>("en");
 
   useEffect(() => {
     AsyncStorage.getItem(LOCALE_STORAGE_KEY).then((stored) => {
       if (stored && isSupportedLocale(stored)) {
-        setLocaleState(stored);
+        setLocale(stored);
         return;
       }
       const detected = detectDeviceLocale();
-      setLocaleState(detected);
+      setLocale(detected);
       AsyncStorage.setItem(LOCALE_STORAGE_KEY, detected).catch(() => undefined);
     });
+  }, []);
+
+  const updateLocale = useCallback((nextLocale: Locale) => {
+    setLocale(nextLocale);
+    AsyncStorage.setItem(LOCALE_STORAGE_KEY, nextLocale).catch(() => undefined);
   }, []);
 
   const value = useMemo<I18nContextValue>(
     () => ({
       locale,
-      setLocale(nextLocale: Locale) {
-        setLocaleState(nextLocale);
-        AsyncStorage.setItem(LOCALE_STORAGE_KEY, nextLocale).catch(() => undefined);
-      },
+      setLocale: updateLocale,
       t(key: string, params?: Params) {
         return lookupTranslation(locale, translations, key, params);
       }
     }),
-    [locale]
+    [locale, updateLocale]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

@@ -35,9 +35,9 @@ export function LocationsMap({ points, height = 280 }: Readonly<LocationsMapProp
   const [tileUrl, setTileUrl] = useState<string>(DEFAULT_TILE_URL);
 
   const closeFullscreen = useCallback(() => {
-    if (fullscreenHistoryPushed.current && window.history.state?.[FULLSCREEN_HISTORY_KEY]) {
+    if (fullscreenHistoryPushed.current && globalThis.history.state?.[FULLSCREEN_HISTORY_KEY]) {
       fullscreenHistoryPushed.current = false;
-      window.history.back();
+      globalThis.history.back();
       return;
     }
     setFullscreenVisible(false);
@@ -55,7 +55,7 @@ export function LocationsMap({ points, height = 280 }: Readonly<LocationsMapProp
   useEffect(() => {
     if (!fullscreenVisible) return;
 
-    window.history.pushState({ [FULLSCREEN_HISTORY_KEY]: true }, "");
+    globalThis.history.pushState({ [FULLSCREEN_HISTORY_KEY]: true }, "");
     fullscreenHistoryPushed.current = true;
 
     function handlePopState() {
@@ -67,12 +67,12 @@ export function LocationsMap({ points, height = 280 }: Readonly<LocationsMapProp
       if (event.key === "Escape") closeFullscreen();
     }
 
-    window.addEventListener("popstate", handlePopState);
-    window.addEventListener("keydown", handleKeyDown);
+    globalThis.addEventListener("popstate", handlePopState);
+    globalThis.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("keydown", handleKeyDown);
+      globalThis.removeEventListener("popstate", handlePopState);
+      globalThis.removeEventListener("keydown", handleKeyDown);
     };
   }, [fullscreenVisible, closeFullscreen]);
 
@@ -124,7 +124,7 @@ function LocationsMapCanvas({ points, tileUrl, height, mode }: Readonly<Location
     if (!container.current) return;
 
     if (!map.current) {
-      map.current = L.map(container.current, leafletGestureOptions(mode) as L.MapOptions);
+      map.current = L.map(container.current, leafletGestureOptions(mode));
       markerLayer.current = L.layerGroup().addTo(map.current);
     }
 
@@ -168,7 +168,7 @@ function LocationsMapCanvas({ points, tileUrl, height, mode }: Readonly<Location
       map.current.fitBounds(L.latLngBounds(latLngs), { padding: [24, 24] });
     }
 
-    window.requestAnimationFrame(() => map.current?.invalidateSize());
+    globalThis.requestAnimationFrame(() => map.current?.invalidateSize());
   }, [points]);
 
   return (

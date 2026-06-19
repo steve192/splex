@@ -25,6 +25,7 @@ import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { asNumber } from "../../shared/lib/money";
+import { detailActionState } from "../../shared/ledger/detailActionState";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
 import { Expense, Friend, Group } from "../../shared/types/models";
 import { LocationMap } from "../../shared/ui/LocationMap";
@@ -66,6 +67,10 @@ export function ExpenseDetailScreen({
   >(null);
   const [groupArchived, setGroupArchived] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const actionState = detailActionState({
+    archived: groupArchived,
+    deleted: Boolean(expense?.deleted_at)
+  });
   const converted = expense
     ? expense.original_currency !== expense.converted_currency ||
       expense.original_amount !== expense.converted_amount
@@ -266,9 +271,9 @@ export function ExpenseDetailScreen({
               </Card>
             ) : null}
 
-            {expense.deleted_at ? (
+            {actionState === "deleted" ? (
               <Text variant="bodyMedium">{t("expense.deleted")}</Text>
-            ) : groupArchived ? (
+            ) : actionState === "archived" ? (
               <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
             ) : (
               <Button

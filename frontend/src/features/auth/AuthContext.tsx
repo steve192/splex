@@ -66,7 +66,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
     (async () => {
       if (await loadPersistedDemoMode()) {
         // Restore the demo session without contacting the backend.
-        await api.setDemoMode(true);
+        await api.enableDemoMode();
         api.setTokens(DEMO_TOKENS);
         setTokens(DEMO_TOKENS);
         setUser(DEMO_USER);
@@ -164,7 +164,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
         await completeLogin(response);
       },
       async loginAsDemo() {
-        await api.setDemoMode(true);
+        await api.enableDemoMode();
         await tokenStorage.set(DEMO_TOKENS);
         await setStoredUser(DEMO_USER);
         api.setTokens(DEMO_TOKENS);
@@ -176,7 +176,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
         const refresh = tokens?.refresh;
         const wasDemoMode = api.isDemoMode();
         if (wasDemoMode) {
-          await api.setDemoMode(false);
+          await api.disableDemoMode();
         } else {
           // Disable this device's push subscription and blacklist the refresh
           // token while credentials are still valid, then wipe local state.

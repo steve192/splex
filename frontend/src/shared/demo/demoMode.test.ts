@@ -19,10 +19,11 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 import {
   DEMO_MODE_STORAGE_KEY,
   DemoWriteBlockedError,
+  disableDemoMode,
+  enableDemoMode,
   loadPersistedDemoMode,
   notifyDemoWriteBlocked,
-  onDemoWriteBlocked,
-  persistDemoMode
+  onDemoWriteBlocked
 } from "./demoMode";
 
 describe("demo mode persistence", () => {
@@ -35,14 +36,14 @@ describe("demo mode persistence", () => {
   });
 
   it("persists and reads back the enabled flag", async () => {
-    await persistDemoMode(true);
+    await enableDemoMode();
     expect(store[DEMO_MODE_STORAGE_KEY]).toBe("1");
     expect(await loadPersistedDemoMode()).toBe(true);
   });
 
   it("clears the flag when disabled", async () => {
-    await persistDemoMode(true);
-    await persistDemoMode(false);
+    await enableDemoMode();
+    await disableDemoMode();
     expect(store[DEMO_MODE_STORAGE_KEY]).toBeUndefined();
     expect(await loadPersistedDemoMode()).toBe(false);
   });

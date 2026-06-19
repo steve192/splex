@@ -24,6 +24,7 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
+import { detailActionState } from "../../shared/ledger/detailActionState";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
 import {
   Friend,
@@ -70,6 +71,10 @@ export function SettlementDetailScreen({
   const [activeSheet, setActiveSheet] = useState<"payer" | "receiver" | null>(
     null,
   );
+  const actionState = detailActionState({
+    archived: groupArchived,
+    deleted: Boolean(settlement?.deleted_at)
+  });
 
   async function load() {
     const row = await api.get<Settlement>(`/api/settlements/${settlementId}/`);
@@ -196,9 +201,9 @@ export function SettlementDetailScreen({
               </Card.Content>
             </Card>
 
-            {settlement.deleted_at ? (
+            {actionState === "deleted" ? (
               <Text variant="bodyMedium">{t("settlement.deleted")}</Text>
-            ) : groupArchived ? (
+            ) : actionState === "archived" ? (
               <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
             ) : (
               <View style={styles.rowActions}>

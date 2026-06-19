@@ -1,14 +1,12 @@
-export type PendingActionKey = string;
-
 export function canStartPendingAction(
-  pending: PendingActionKey | null,
+  pending: string | null,
 ): boolean {
   return pending === null;
 }
 
 export function pendingActionMatches(
-  pending: PendingActionKey | null,
-  key: PendingActionKey,
+  pending: string | null,
+  key: string,
 ): boolean {
   return pending === key;
 }
