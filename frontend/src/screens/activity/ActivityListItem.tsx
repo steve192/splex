@@ -33,6 +33,7 @@ export function ActivityListItem({ item, onPress }: Readonly<ActivityListItemPro
           <List.Item
             style={styles.listTile}
             titleNumberOfLines={ACTIVITY_TITLE_NUMBER_OF_LINES}
+            descriptionNumberOfLines={ACTIVITY_TITLE_NUMBER_OF_LINES}
             title={t(`activity.${item.event_type}`, { actor: actorName })}
             description={[context, description, pendingStatus].filter(Boolean).join("\n")}
             left={() => <PersonAvatar name={actorName} imageUrl={item.actor_avatar_url} />}
