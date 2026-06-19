@@ -6,7 +6,12 @@ import { formatDeviceDate } from "../../shared/lib/dates";
 import { ActivityFeedEvent } from "../../shared/types/models";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
-import { activityContext, activityDescription, activityIcon } from "./activityHelpers";
+import {
+  ACTIVITY_TITLE_NUMBER_OF_LINES,
+  activityContext,
+  activityDescription,
+  activityIcon
+} from "./activityHelpers";
 
 type ActivityListItemProps = {
   item: ActivityFeedEvent;
@@ -27,11 +32,12 @@ export function ActivityListItem({ item, onPress }: Readonly<ActivityListItemPro
         <Card.Content>
           <List.Item
             style={styles.listTile}
+            titleNumberOfLines={ACTIVITY_TITLE_NUMBER_OF_LINES}
             title={t(`activity.${item.event_type}`, { actor: actorName })}
             description={[context, description, pendingStatus].filter(Boolean).join("\n")}
             left={() => <PersonAvatar name={actorName} imageUrl={item.actor_avatar_url} />}
-            right={() => (
-              <View style={styles.listTileRight}>
+            right={({ style }) => (
+              <View style={[style, styles.listTileRight]}>
                 <List.Icon icon={activityIcon(item.event_type)} />
                 <Text variant="bodySmall">{formatDeviceDate(item.created_at)}</Text>
               </View>

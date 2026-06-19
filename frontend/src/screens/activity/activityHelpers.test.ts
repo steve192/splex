@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { ActivityFeedEvent } from "../../shared/types/models";
-import { activityContext, activityDescription, activityIcon } from "./activityHelpers";
+import {
+  ACTIVITY_TITLE_NUMBER_OF_LINES,
+  activityContext,
+  activityDescription,
+  activityIcon
+} from "./activityHelpers";
 
 function fakeT(key: string, params?: Record<string, string | number>): string {
   if (!params) return key;
@@ -117,5 +122,11 @@ describe("activityIcon", () => {
     ["invitation.accepted", "history"]
   ])("maps %s to %s", (eventType, icon) => {
     expect(activityIcon(eventType)).toBe(icon);
+  });
+});
+
+describe("ACTIVITY_TITLE_NUMBER_OF_LINES", () => {
+  it("keeps activity titles unrestricted so narrow cards can wrap naturally", () => {
+    expect(ACTIVITY_TITLE_NUMBER_OF_LINES).toBe(0);
   });
 });

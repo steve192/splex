@@ -1,6 +1,8 @@
 import { TranslateFn } from "../../shared/i18n/I18nContext";
 import { ActivityFeedEvent } from "../../shared/types/models";
 
+export const ACTIVITY_TITLE_NUMBER_OF_LINES = 0;
+
 /**
  * Build the secondary text shown under an activity entry.
  *
