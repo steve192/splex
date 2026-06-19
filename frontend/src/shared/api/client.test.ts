@@ -4,6 +4,7 @@ const store: Record<string, string> = {};
 const platform = vi.hoisted(() => ({ OS: "web" as string }));
 const handleDemoRequest = vi.hoisted(() => vi.fn());
 const persistDemoMode = vi.hoisted(() => vi.fn(async () => undefined));
+const fileSystemUploadAsync = vi.hoisted(() => vi.fn());
 
 vi.mock("react-native", () => ({ Platform: platform }));
 vi.mock("@react-native-async-storage/async-storage", () => ({
@@ -21,6 +22,10 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 }));
 vi.mock("../demo/demoBackend", () => ({ handleDemoRequest }));
 vi.mock("../demo/demoMode", () => ({ persistDemoMode }));
+vi.mock("expo-file-system/legacy", () => ({
+  FileSystemUploadType: { MULTIPART: 1 },
+  uploadAsync: fileSystemUploadAsync
+}));
 
 import { API_REQUEST_TIMEOUT_MS, ApiClient, ApiError, tokenStorage } from "./client";
 
@@ -38,6 +43,7 @@ beforeEach(() => {
   platform.OS = "web";
   handleDemoRequest.mockReset();
   persistDemoMode.mockClear();
+  fileSystemUploadAsync.mockReset();
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -251,6 +257,94 @@ describe("ApiClient.fetchBinary", () => {
     const api = new ApiClient();
     fetchMock.mockRejectedValueOnce(new Error("net"));
     await expect(api.fetchBinary("/api/receipts/1/")).rejects.toMatchObject({ offline: true });
+  });
+});
+
+describe("ApiClient.uploadFile", () => {
+  it("uploads a native local file as multipart with auth and form parameters", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    await api.setBaseUrl("https://host.example.com");
+    api.setTokens({ access: "abc", refresh: "r" });
+    fileSystemUploadAsync.mockResolvedValueOnce({
+      status: 201,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: 12 })
+    });
+
+    const result = await api.uploadFile<{ id: number }>("/api/receipts/", {
+      uri: "file:///cache/receipt.pdf",
+      fieldName: "file",
+      mimeType: "application/pdf",
+      parameters: { original_filename: "Dinner.pdf", group_id: "3" }
+    });
+
+    expect(result).toEqual({ id: 12 });
+    expect(fileSystemUploadAsync).toHaveBeenCalledWith("https://host.example.com/api/receipts/", "file:///cache/receipt.pdf", {
+      uploadType: 1,
+      fieldName: "file",
+      mimeType: "application/pdf",
+      parameters: { original_filename: "Dinner.pdf", group_id: "3" },
+      headers: { Accept: "application/json", Authorization: "Bearer abc" },
+      httpMethod: "POST"
+    });
+  });
+
+  it("refreshes on 401 and retries the native file upload once", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    api.setTokens({ access: "old", refresh: "r" });
+    fileSystemUploadAsync
+      .mockResolvedValueOnce({ status: 401, headers: {}, body: "{}" })
+      .mockResolvedValueOnce({ status: 201, headers: { "content-type": "application/json" }, body: JSON.stringify({ ok: true }) });
+    fetchMock.mockResolvedValueOnce(jsonResponse({ access: "new", refresh: "r2" }));
+
+    await expect(
+      api.uploadFile("/api/receipts/", {
+        uri: "file:///cache/receipt.pdf",
+        fieldName: "file"
+      })
+    ).resolves.toEqual({ ok: true });
+
+    expect(fileSystemUploadAsync).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/auth/token/refresh/");
+    expect(fileSystemUploadAsync.mock.calls[1][2].headers.Authorization).toBe("Bearer new");
+  });
+
+  it("preserves parsed backend details for native upload error responses", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    fileSystemUploadAsync.mockResolvedValueOnce({
+      status: 400,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ detail: "File type not recognized." })
+    });
+
+    await expect(
+      api.uploadFile("/api/receipts/", {
+        uri: "file:///cache/receipt.txt",
+        fieldName: "file"
+      })
+    ).rejects.toMatchObject({
+      status: 400,
+      data: { detail: "File type not recognized." }
+    });
+  });
+
+  it("throws a non-offline ApiError when the native upload fails before a response", async () => {
+    platform.OS = "android";
+    const api = new ApiClient();
+    fileSystemUploadAsync.mockRejectedValueOnce(new Error("cannot read file"));
+
+    await expect(
+      api.uploadFile("/api/receipts/", {
+        uri: "file:///cache/missing.pdf",
+        fieldName: "file"
+      })
+    ).rejects.toMatchObject({
+      message: "Upload failed before the server responded.",
+      offline: false
+    });
   });
 });
 

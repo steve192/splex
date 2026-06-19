@@ -28,6 +28,15 @@ export const RECEIPT_ALLOWED_MIME_TYPES = [
   "application/pdf",
 ];
 
+const RECEIPT_FORM_FIELDS = {
+  file: "file",
+  originalFilename: "original_filename",
+  expenseId: "expense_id",
+  groupId: "group_id",
+  friendshipId: "friendship_id",
+  clientId: "client_id",
+} as const;
+
 export type PickedReceipt = {
   uri: string;
   name: string;
@@ -69,22 +78,41 @@ export async function uploadReceipt(
   asset: PickedReceipt,
   ctx: UploadContext
 ): Promise<Receipt> {
+  const fields = receiptUploadFields(asset, ctx);
+  if (Platform.OS !== "web") {
+    return api.uploadFile<Receipt>("/api/receipts/", {
+      uri: asset.uri,
+      fieldName: RECEIPT_FORM_FIELDS.file,
+      mimeType: asset.mimeType,
+      parameters: fields
+    });
+  }
+
   const form = new FormData();
-  if (Platform.OS === "web" && asset.file) {
-    form.append("file", asset.file, asset.name);
+  if (asset.file) {
+    form.append(RECEIPT_FORM_FIELDS.file, asset.file, asset.name);
   } else {
-    // React Native FormData accepts {uri, name, type} for file fields.
-    form.append("file", {
+    form.append(RECEIPT_FORM_FIELDS.file, {
       uri: asset.uri,
       name: asset.name,
       type: asset.mimeType,
     } as unknown as Blob);
   }
-  if (ctx.expenseId) form.append("expense_id", String(ctx.expenseId));
-  if (ctx.groupId) form.append("group_id", String(ctx.groupId));
-  if (ctx.friendshipId) form.append("friendship_id", String(ctx.friendshipId));
-  if (ctx.clientId) form.append("client_id", ctx.clientId);
+  for (const [key, value] of Object.entries(fields)) {
+    form.append(key, value);
+  }
   return api.upload<Receipt>("/api/receipts/", form);
+}
+
+function receiptUploadFields(asset: PickedReceipt, ctx: UploadContext): Record<string, string> {
+  const fields: Record<string, string> = {
+    [RECEIPT_FORM_FIELDS.originalFilename]: asset.name
+  };
+  if (ctx.expenseId) fields[RECEIPT_FORM_FIELDS.expenseId] = String(ctx.expenseId);
+  if (ctx.groupId) fields[RECEIPT_FORM_FIELDS.groupId] = String(ctx.groupId);
+  if (ctx.friendshipId) fields[RECEIPT_FORM_FIELDS.friendshipId] = String(ctx.friendshipId);
+  if (ctx.clientId) fields[RECEIPT_FORM_FIELDS.clientId] = ctx.clientId;
+  return fields;
 }
 
 export function deleteReceipt(api: ApiClient, receiptId: number): Promise<void> {

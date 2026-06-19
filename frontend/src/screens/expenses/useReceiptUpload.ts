@@ -4,9 +4,9 @@ import { Alert } from "react-native";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { pickReceipt, uploadReceipt } from "../../shared/receipts/receiptService";
 import { ContextType, Receipt } from "../../shared/types/models";
+import { receiptUploadErrorMessage } from "./useReceiptUploadHelpers";
 
 type Options = {
   expenseId?: number;
@@ -60,7 +60,7 @@ export function useReceiptUpload({
       const uploaded = await uploadReceipt(api, asset, ctx);
       setReceipts((current) => [...current, uploaded]);
     } catch (error) {
-      Alert.alert(apiWriteErrorMessage(error, t));
+      Alert.alert(receiptUploadErrorMessage(error, t));
     } finally {
       setUploading(false);
     }

@@ -21,6 +21,8 @@ from splex.groups.models import Group
 
 logger = logging.getLogger(__name__)
 
+RECEIPT_ORIGINAL_FILENAME_FIELD = "original_filename"
+
 
 class ReceiptUploadView(APIView):
     """``POST /api/receipts/`` - multipart upload of a new receipt.
@@ -49,7 +51,11 @@ class ReceiptUploadView(APIView):
             receipt = upload_receipt(
                 actor=request.user,
                 file_obj=file_obj,
-                original_filename=getattr(file_obj, "name", "receipt") or "receipt",
+                original_filename=(
+                    request.data.get(RECEIPT_ORIGINAL_FILENAME_FIELD)
+                    or getattr(file_obj, "name", "receipt")
+                    or "receipt"
+                ),
                 declared_content_type=getattr(file_obj, "content_type", None),
                 size_bytes=getattr(file_obj, "size", None) or 0,
                 group=group,

@@ -28,7 +28,7 @@ def _auth_client(user) -> APIClient:
 
 def _upload(client, *, group_id=None, friendship_id=None, expense_id=None,
             client_id="", content=PDF_BYTES, content_type="application/pdf",
-            name="receipt.pdf"):
+            name="receipt.pdf", original_filename=""):
     fields = {"file": SimpleUploadedFile(name, content, content_type=content_type)}
     if group_id:
         fields["group_id"] = str(group_id)
@@ -38,6 +38,8 @@ def _upload(client, *, group_id=None, friendship_id=None, expense_id=None,
         fields["expense_id"] = str(expense_id)
     if client_id:
         fields["client_id"] = client_id
+    if original_filename:
+        fields["original_filename"] = original_filename
     return client.post("/api/receipts/", fields, format="multipart")
 
 
@@ -69,6 +71,20 @@ def test_upload_pdf_creates_receipt_in_storage(alice, group, media_root):
     assert default_storage.exists(receipt.storage_path)
     assert receipt.expense_id is None  # still a draft
     assert receipt.client_id == "abc123"
+
+
+@pytest.mark.django_db
+def test_upload_prefers_explicit_original_filename(alice, group, media_root):
+    response = _upload(
+        _auth_client(alice),
+        group_id=group.id,
+        client_id="native-upload",
+        name="DocumentPicker-1234.pdf",
+        original_filename="Dinner receipt.pdf",
+    )
+    assert response.status_code == 201, response.content
+    receipt = Receipt.objects.get(pk=response.json()["id"])
+    assert receipt.original_filename == "Dinner receipt.pdf"
 
 
 @pytest.mark.django_db

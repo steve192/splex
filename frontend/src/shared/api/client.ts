@@ -26,9 +26,9 @@ function summarizeResponseBody(body: string): string {
   return normalized.slice(0, 220);
 }
 
-function formatResponseError(url: string, response: Response, body: string): string {
+function formatResponseError(url: string, status: number, body: string): string {
   const summary = summarizeResponseBody(body);
-  return `${summary} (${response.status}) at ${url}`;
+  return `${summary} (${status}) at ${url}`;
 }
 
 const API_DEBUG_ENABLED =
@@ -47,6 +47,31 @@ function apiDebug(message: string, details?: unknown) {
 function shouldLogPath(path: string): boolean {
   return path.includes("/invitations/") || path.includes("/auth/magic");
 }
+
+function isFormDataBody(body: RequestInit["body"]): boolean {
+  if (!body || typeof body !== "object") return false;
+  if (typeof FormData !== "undefined" && body instanceof FormData) return true;
+  return typeof (body as { getParts?: unknown }).getParts === "function";
+}
+
+function getHeaderValue(headers: Record<string, string>, name: string): string {
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === lowerName) return value;
+  }
+  return "";
+}
+
+function parseJsonBody<T>(body: string): T {
+  return JSON.parse(body) as T;
+}
+
+type NativeFileUpload = {
+  uri: string;
+  fieldName: string;
+  mimeType?: string;
+  parameters?: Record<string, string>;
+};
 
 export class ApiError extends Error {
   status?: number;
@@ -149,7 +174,7 @@ export class ApiClient {
     headers.set("Accept", "application/json");
     // For multipart uploads, fetch() needs to set the Content-Type itself so
     // the boundary parameter is included.  Skip our default JSON header then.
-    if (!(options.body instanceof FormData)) {
+    if (!isFormDataBody(options.body)) {
       headers.set("Content-Type", "application/json");
     }
     if (this.tokens?.access) {
@@ -198,7 +223,7 @@ export class ApiClient {
       } catch {
         // Text might not be JSON, that's ok
       }
-      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status, data: errorData });
+      throw new ApiError(formatResponseError(requestUrl, response.status, text), { status: response.status, data: errorData });
     }
     if (response.status === 204) {
       return undefined as T;
@@ -206,7 +231,7 @@ export class ApiClient {
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.toLowerCase().includes("application/json")) {
       const text = await response.text();
-      throw new ApiError(formatResponseError(requestUrl, response, text), { status: response.status });
+      throw new ApiError(formatResponseError(requestUrl, response.status, text), { status: response.status });
     }
     return response.json() as Promise<T>;
   }
@@ -263,6 +288,64 @@ export class ApiClient {
 
   upload<T>(path: string, formData: FormData): Promise<T> {
     return this.request<T>(path, { method: "POST", body: formData });
+  }
+
+  async uploadFile<T>(path: string, file: NativeFileUpload, retried = false): Promise<T> {
+    if (this.demoMode) {
+      throw new ApiError("File uploads are not available in demo mode.", { status: 400 });
+    }
+    if (Platform.OS === "web") {
+      throw new ApiError("Native file uploads are not available on web.", { status: 400 });
+    }
+    const FileSystem = await import("expo-file-system/legacy");
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (this.tokens?.access) {
+      headers.Authorization = `Bearer ${this.tokens.access}`;
+    }
+    const requestUrl = `${await this.getBaseUrl()}${path}`;
+    let result: { status: number; body: string; headers: Record<string, string> };
+    try {
+      result = await FileSystem.uploadAsync(requestUrl, file.uri, {
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: file.fieldName,
+        mimeType: file.mimeType,
+        parameters: file.parameters,
+        headers,
+        httpMethod: "POST"
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError("Upload failed before the server responded.");
+    }
+    if (result.status === 401 && this.tokens?.refresh && !retried) {
+      this.refreshPromise ??= this.refreshAccessToken().finally(() => {
+        this.refreshPromise = null;
+      });
+      await this.refreshPromise;
+      return this.uploadFile<T>(path, file, true);
+    }
+    if (result.status >= 400) {
+      let errorData: Record<string, unknown> | undefined;
+      try {
+        errorData = parseJsonBody<Record<string, unknown>>(result.body);
+      } catch {
+        // Text might not be JSON, that's ok
+      }
+      throw new ApiError(formatResponseError(requestUrl, result.status, result.body), {
+        status: result.status,
+        data: errorData
+      });
+    }
+    if (result.status === 204) {
+      return undefined as T;
+    }
+    const contentType = getHeaderValue(result.headers, "content-type").toLowerCase();
+    if (!contentType.includes("application/json")) {
+      throw new ApiError(formatResponseError(requestUrl, result.status, result.body), { status: result.status });
+    }
+    return parseJsonBody<T>(result.body);
   }
 
   /**
