@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       force_android_build:
-        description: "Force building APK + AAB even if the native fingerprint did not change"
+        description: "Force building AAB + APK even if the native fingerprint did not change"
         type: boolean
         default: false
       skip_default_branch_ci_check:
@@ -14,7 +14,7 @@ on:
   workflow_call:
     inputs:
       force_android_build:
-        description: "Force building APK + AAB even if the native fingerprint did not change"
+        description: "Force building AAB + APK even if the native fingerprint did not change"
         type: boolean
         default: false
       skip_default_branch_ci_check:
@@ -301,7 +301,7 @@ jobs:
         run: npm run publish-expo-production
 
   build-android:
-    name: Build Android (APK + AAB)
+    name: Build Android (AAB + APK)
     needs: [semantic-preview, tag, publish-docker, publish-expo-update, check-fingerprint]
     if: needs.check-fingerprint.outputs.changed == 'true' || inputs.force_android_build
     runs-on: ubuntu-latest
@@ -334,23 +334,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Android APK
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          RELEASE_VERSION: ${{ needs.semantic-preview.outputs.version }}
-        run: |
-          docker run \
-            -e EXPO_TOKEN="$EXPO_TOKEN" \
-            -v "$(pwd)":/builder \
-            ghcr.io/steve192/splex-easbuilder:latest \
-            production-apk "splex-${RELEASE_VERSION}.apk"
-
-      # Reclaim disk between the two builds — the APK build leaves Gradle
-      # intermediates inside its container layer (a few GB) which would
-      # otherwise stack with the AAB build's working space.
-      - name: Reclaim disk between builds
-        run: docker system prune -af --volumes
-
       - name: Build Android AAB
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -362,13 +345,30 @@ jobs:
             ghcr.io/steve192/splex-easbuilder:latest \
             production "splex-${RELEASE_VERSION}.aab"
 
-      - name: Attach APK and AAB to GitHub release
+      # Reclaim disk between the two builds — the AAB build leaves Gradle
+      # intermediates inside its container layer (a few GB) which would
+      # otherwise stack with the APK build's working space.
+      - name: Reclaim disk between builds
+        run: docker system prune -af --volumes
+
+      - name: Build Android APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RELEASE_VERSION: ${{ needs.semantic-preview.outputs.version }}
+        run: |
+          docker run \
+            -e EXPO_TOKEN="$EXPO_TOKEN" \
+            -v "$(pwd)":/builder \
+            ghcr.io/steve192/splex-easbuilder:latest \
+            production-apk "splex-${RELEASE_VERSION}.apk"
+
+      - name: Attach AAB and APK to GitHub release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.semantic-preview.outputs.tag }}
           files: |
-            frontend/splex-${{ needs.semantic-preview.outputs.version }}.apk
             frontend/splex-${{ needs.semantic-preview.outputs.version }}.aab
+            frontend/splex-${{ needs.semantic-preview.outputs.version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
