@@ -219,6 +219,18 @@ export const styles = StyleSheet.create({
   optionRowCard: {
     padding: 0
   },
+  optionRowContent: {
+    cursor: "pointer" as any,
+    flex: 1,
+    paddingLeft: 16,
+    paddingVertical: 14
+  },
+  optionRowWithAction: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
+    paddingRight: 4
+  },
   bold: {
     fontWeight: "700"
   },

@@ -26,9 +26,12 @@ class ExpenseDetailView(APIView):
         )
         serializer = ExpenseCreateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        expense = update_expense(
-            actor=request.user, expense=expense, data=serializer.validated_data
-        )
+        try:
+            expense = update_expense(
+                actor=request.user, expense=expense, data=serializer.validated_data
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense.id
         )

@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   Button,
   Card,
+  Dialog,
   HelperText,
+  Portal,
   Text,
   TextInput,
   useTheme,
@@ -70,7 +72,11 @@ import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
 import { ExpenseOptionsCard } from "./ExpenseOptionsCard";
-import { activeExpenseContexts } from "./expenseContexts";
+import {
+  activeExpenseContexts,
+  eligibleExpenseMoveGroups,
+  hasAlternativeExpenseMoveGroup,
+} from "./expenseContexts";
 import { expenseEditViewState } from "./expenseLoading";
 import { ReceiptsCard } from "./ReceiptsCard";
 import { useReceiptUpload } from "./useReceiptUpload";
@@ -129,6 +135,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [archivedContextOption, setArchivedContextOption] =
     useState<ContextOption | null>(null);
   const [loadedExpense, setLoadedExpense] = useState<Expense | null>(null);
+  const [moveGroupDetails, setMoveGroupDetails] = useState<Group[]>([]);
+  const [contextMoveInfoVisible, setContextMoveInfoVisible] = useState(false);
   const [loadingEditExpense, setLoadingEditExpense] = useState(editing);
   const [editLoadFailed, setEditLoadFailed] = useState(false);
   const [deletingPendingExpense, setDeletingPendingExpense] = useState(false);
@@ -180,6 +188,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setContextArchived(false);
     setArchivedContextOption(null);
     setLoadedExpense(null);
+    setMoveGroupDetails([]);
+    setContextMoveInfoVisible(false);
     setLoadingEditExpense(
       Boolean(params.expenseId || params.pendingMutationId),
     );
@@ -218,6 +228,20 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       return a.name.localeCompare(b.name);
     });
   }, [groups, friends]);
+
+  const eligibleMoveGroups = useMemo(
+    () => eligibleExpenseMoveGroups(moveGroupDetails, loadedExpense),
+    [loadedExpense, moveGroupDetails],
+  );
+  const canMoveGroupExpense = hasAlternativeExpenseMoveGroup(
+    loadedExpense?.group_id,
+    eligibleMoveGroups,
+  );
+  const contextEditable =
+    !editing || (loadedExpense?.group_id != null && canMoveGroupExpense);
+  const pickerGroups =
+    editing && loadedExpense?.group_id != null ? eligibleMoveGroups : groups;
+  const pickerFriends = editing ? [] : friends;
 
   const selectedContext =
     contextOptions.find(
@@ -300,6 +324,31 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       loadContexts().catch(() => undefined);
     }, [loadContexts]),
   );
+
+  useEffect(() => {
+    if (!loadedExpense?.group_id) {
+      setMoveGroupDetails([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      groups.map((group) =>
+        cachedGet<Group>(api, `/api/groups/${group.id}/`).catch(() => null),
+      ),
+    )
+      .then((rows) => {
+        if (cancelled) return;
+        setMoveGroupDetails(
+          rows.filter((group): group is Group => group !== null),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMoveGroupDetails([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, groups, loadedExpense?.group_id]);
 
   useEffect(() => {
     if (!expenseId) return;
@@ -519,6 +568,15 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   }
 
   function selectContext(option: ContextOption) {
+    if (editing && loadedExpense?.friendship_id) return;
+    if (
+      editing &&
+      loadedExpense?.group_id &&
+      (option.type !== "group" ||
+        !eligibleMoveGroups.some((group) => group.id === option.id))
+    ) {
+      return;
+    }
     setContextType(option.type);
     setContextId(option.id);
     setCurrency(option.currency);
@@ -595,6 +653,12 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         date,
         editing,
       }),
+      ...(expenseId
+        ? {
+            context_type: contextType,
+            context_id: contextId,
+          }
+        : {}),
     };
     const payload = {
       context_type: contextType,
@@ -831,6 +895,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               payerLabel={paymentSummary()}
               splitLabel={splitSummary()}
               onOpen={setActiveSheet}
+              contextEditable={contextEditable}
+              showContextInfo={editing && loadedExpense?.group_id != null}
+              onShowContextInfo={() => setContextMoveInfoVisible(true)}
               disabled={contextArchived}
             />
 
@@ -948,15 +1015,33 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         onSplitValueChange={setSplitValue}
       />
       <ContextPickerSheet
-        visible={activeSheet === "context" && !contextArchived}
-        groups={groups}
-        friends={friends}
+        visible={
+          activeSheet === "context" && !contextArchived && contextEditable
+        }
+        groups={pickerGroups}
+        friends={pickerFriends}
         onSelect={selectContext}
         onDismiss={() => setActiveSheet(null)}
         showRemember={calledFromNavigation}
         remember={rememberContext}
         onToggleRemember={toggleRememberContext}
       />
+      <Portal>
+        <Dialog
+          visible={contextMoveInfoVisible}
+          onDismiss={() => setContextMoveInfoVisible(false)}
+        >
+          <Dialog.Title>{t("expense.contextMoveInfoTitle")}</Dialog.Title>
+          <Dialog.Content>
+            <Text>{t("expense.contextMoveInfoBody")}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setContextMoveInfoVisible(false)}>
+              {t("common.ok")}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 

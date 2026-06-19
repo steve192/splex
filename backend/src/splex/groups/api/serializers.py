@@ -92,6 +92,10 @@ class RenameParticipantSerializer(serializers.Serializer):
 
 
 class ExpenseCreateSerializer(serializers.Serializer):
+    context_type = serializers.ChoiceField(
+        choices=["group", "friendship"], required=False
+    )
+    context_id = serializers.IntegerField(required=False)
     client_id = serializers.CharField(required=False, allow_blank=True)
     description = serializers.CharField(max_length=240)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
