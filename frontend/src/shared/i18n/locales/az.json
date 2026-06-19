@@ -446,6 +446,8 @@
   "location.requesting": "İcazə istənilir...",
   "location.disabled": "Deaktivdir",
   "map.openInMaps": "Maps-də aç",
+  "map.fullscreen": "Xəritəni tam ekranda aç",
+  "map.closeFullscreen": "Tam ekran xəritəsini bağla",
   "tabs.account": "Hesab",
   "tabs.activity": "Fəaliyyət",
   "tabs.add": "Əlavə et",

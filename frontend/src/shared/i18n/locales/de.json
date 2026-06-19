@@ -446,6 +446,8 @@
   "location.requesting": "Berechtigung wird angefordert...",
   "location.disabled": "Deaktiviert",
   "map.openInMaps": "In Karten öffnen",
+  "map.fullscreen": "Karte im Vollbild öffnen",
+  "map.closeFullscreen": "Vollbildkarte schließen",
   "tabs.account": "Konto",
   "tabs.activity": "Aktivität",
   "tabs.add": "Hinzufügen",

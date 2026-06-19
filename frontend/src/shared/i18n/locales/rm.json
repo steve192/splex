@@ -446,6 +446,8 @@
   "location.requesting": "Dumonda permissiun...",
   "location.disabled": "Deactivà",
   "map.openInMaps": "Avrir en Maps",
+  "map.fullscreen": "Avrir la charta en maletg entir",
+  "map.closeFullscreen": "Serrar la charta en maletg entir",
   "tabs.account": "Conto",
   "tabs.activity": "Activitad",
   "tabs.add": "Agiuntar",

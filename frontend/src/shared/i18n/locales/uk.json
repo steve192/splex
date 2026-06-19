@@ -446,6 +446,8 @@
   "location.requesting": "Запит дозволу...",
   "location.disabled": "Вимкнено",
   "map.openInMaps": "Відкрити в Maps",
+  "map.fullscreen": "Відкрити карту на весь екран",
+  "map.closeFullscreen": "Закрити повноекранну карту",
   "tabs.account": "Обліковий запис",
   "tabs.activity": "Активність",
   "tabs.add": "Додати",

@@ -446,6 +446,8 @@
   "location.requesting": "Заявяване на разрешение...",
   "location.disabled": "Изключено",
   "map.openInMaps": "Отвори в Maps",
+  "map.fullscreen": "Отвори картата на цял екран",
+  "map.closeFullscreen": "Затвори картата на цял екран",
   "tabs.account": "Профил",
   "tabs.activity": "Активност",
   "tabs.add": "Добави",

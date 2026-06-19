@@ -446,6 +446,8 @@
   "location.requesting": "Toestemming aanvragen...",
   "location.disabled": "Uitgeschakeld",
   "map.openInMaps": "Openen in Maps",
+  "map.fullscreen": "Kaart op volledig scherm openen",
+  "map.closeFullscreen": "Kaart op volledig scherm sluiten",
   "tabs.account": "Account",
   "tabs.activity": "Activiteit",
   "tabs.add": "Toevoegen",

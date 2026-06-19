@@ -446,6 +446,8 @@
   "location.requesting": "A pedir permissão...",
   "location.disabled": "Desativado",
   "map.openInMaps": "Abrir em Mapas",
+  "map.fullscreen": "Abrir mapa em tela cheia",
+  "map.closeFullscreen": "Fechar mapa em tela cheia",
   "tabs.account": "Conta",
   "tabs.activity": "Atividade",
   "tabs.add": "Adicionar",

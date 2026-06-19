@@ -446,6 +446,8 @@
   "location.requesting": "Küsin luba...",
   "location.disabled": "Väljas",
   "map.openInMaps": "Ava kaardirakenduses",
+  "map.fullscreen": "Ava kaart täisekraanil",
+  "map.closeFullscreen": "Sulge täisekraanil kaart",
   "tabs.account": "Konto",
   "tabs.activity": "Tegevus",
   "tabs.add": "Lisa",

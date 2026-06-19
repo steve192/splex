@@ -446,6 +446,8 @@
   "location.requesting": "Vyžaduje sa povolenie...",
   "location.disabled": "Vypnuté",
   "map.openInMaps": "Otvoriť v Mapách",
+  "map.fullscreen": "Otvoriť mapu na celú obrazovku",
+  "map.closeFullscreen": "Zavrieť mapu na celú obrazovku",
   "tabs.account": "Účet",
   "tabs.activity": "Aktivita",
   "tabs.add": "Pridať",

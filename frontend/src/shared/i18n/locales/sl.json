@@ -446,6 +446,8 @@
   "location.requesting": "Zahtevanje dovoljenja...",
   "location.disabled": "Onemogočeno",
   "map.openInMaps": "Odpri v Zemljevidih",
+  "map.fullscreen": "Odpri zemljevid v celozaslonskem načinu",
+  "map.closeFullscreen": "Zapri celozaslonski zemljevid",
   "tabs.account": "Račun",
   "tabs.activity": "Dejavnost",
   "tabs.add": "Dodaj",

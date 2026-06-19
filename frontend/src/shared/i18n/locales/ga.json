@@ -446,6 +446,8 @@
   "location.requesting": "Cead á iarraidh...",
   "location.disabled": "Díchumasaithe",
   "map.openInMaps": "Oscail i Maps",
+  "map.fullscreen": "Oscail an léarscáil i lánscáileán",
+  "map.closeFullscreen": "Dún an léarscáil lánscáileáin",
   "tabs.account": "Cuntas",
   "tabs.activity": "Gníomhaíocht",
   "tabs.add": "Cuir leis",

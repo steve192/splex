@@ -446,6 +446,8 @@
   "location.requesting": "Duke kërkuar leje...",
   "location.disabled": "I çaktivizuar",
   "map.openInMaps": "Hap në Maps",
+  "map.fullscreen": "Hap hartën në ekran të plotë",
+  "map.closeFullscreen": "Mbyll hartën në ekran të plotë",
   "tabs.account": "Llogaria",
   "tabs.activity": "Aktiviteti",
   "tabs.add": "Shto",

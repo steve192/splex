@@ -175,8 +175,8 @@ export function ExpenseDetailScreen({
           <>
             <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
             {expense.latitude && expense.longitude ? (
-              <Card mode="elevated" style={styles.gap}>
-                <Card.Content>
+              <Card mode="elevated">
+                <Card.Content style={styles.gap}>
                   <LocationMap
                     latitude={expense.latitude}
                     longitude={expense.longitude}

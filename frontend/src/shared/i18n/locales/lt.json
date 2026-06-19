@@ -446,6 +446,8 @@
   "location.requesting": "Prašoma leidimo...",
   "location.disabled": "Išjungta",
   "map.openInMaps": "Atidaryti žemėlapiuose",
+  "map.fullscreen": "Atidaryti žemėlapį per visą ekraną",
+  "map.closeFullscreen": "Uždaryti viso ekrano žemėlapį",
   "tabs.account": "Paskyra",
   "tabs.activity": "Veikla",
   "tabs.add": "Pridėti",

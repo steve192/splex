@@ -446,6 +446,8 @@
   "location.requesting": "Erlaabnis gëtt gefrot...",
   "location.disabled": "Desaktivéiert",
   "map.openInMaps": "An Kaarten opmaachen",
+  "map.fullscreen": "Kaart am Vollbild opmaachen",
+  "map.closeFullscreen": "Vollbild-Kaart zoumaachen",
   "tabs.account": "Kont",
   "tabs.activity": "Aktivitéit",
   "tabs.add": "Derbäisetzen",

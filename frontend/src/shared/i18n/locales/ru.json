@@ -446,6 +446,8 @@
   "location.requesting": "Запрашивается разрешение...",
   "location.disabled": "Отключено",
   "map.openInMaps": "Открыть в Картах",
+  "map.fullscreen": "Открыть карту на весь экран",
+  "map.closeFullscreen": "Закрыть полноэкранную карту",
   "tabs.account": "Аккаунт",
   "tabs.activity": "Активность",
   "tabs.add": "Добавить",

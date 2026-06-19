@@ -446,6 +446,8 @@
   "location.requesting": "Bið um leyfi...",
   "location.disabled": "Óvirkt",
   "map.openInMaps": "Opna í Maps",
+  "map.fullscreen": "Opna kortið á öllum skjánum",
+  "map.closeFullscreen": "Loka korti á öllum skjánum",
   "tabs.account": "Aðgangur",
   "tabs.activity": "Virkni",
   "tabs.add": "Bæta við",

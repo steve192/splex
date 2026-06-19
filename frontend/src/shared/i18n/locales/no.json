@@ -446,6 +446,8 @@
   "location.requesting": "Ber om tillatelse...",
   "location.disabled": "Deaktivert",
   "map.openInMaps": "Åpne i Maps",
+  "map.fullscreen": "Åpne kartet i fullskjerm",
+  "map.closeFullscreen": "Lukk fullskjermkartet",
   "tabs.account": "Konto",
   "tabs.activity": "Aktivitet",
   "tabs.add": "Legg til",

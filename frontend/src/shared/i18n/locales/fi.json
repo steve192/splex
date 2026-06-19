@@ -446,6 +446,8 @@
   "location.requesting": "Pyydetään lupaa...",
   "location.disabled": "Pois käytöstä",
   "map.openInMaps": "Avaa Mapsissa",
+  "map.fullscreen": "Avaa kartta koko näytöllä",
+  "map.closeFullscreen": "Sulje koko näytön kartta",
   "tabs.account": "Tili",
   "tabs.activity": "Tapahtumat",
   "tabs.add": "Lisää",

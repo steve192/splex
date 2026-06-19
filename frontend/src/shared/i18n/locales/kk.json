@@ -446,6 +446,8 @@
   "location.requesting": "Рұқсат сұралуда...",
   "location.disabled": "Өшірулі",
   "map.openInMaps": "Карталарда ашу",
+  "map.fullscreen": "Картаны толық экранда ашу",
+  "map.closeFullscreen": "Толық экрандағы картаны жабу",
   "tabs.account": "Тіркелгі",
   "tabs.activity": "Белсенділік",
   "tabs.add": "Қосу",

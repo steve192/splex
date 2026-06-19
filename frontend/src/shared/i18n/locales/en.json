@@ -446,6 +446,8 @@
   "location.requesting": "Requesting permission...",
   "location.disabled": "Disabled",
   "map.openInMaps": "Open in Maps",
+  "map.fullscreen": "Open map fullscreen",
+  "map.closeFullscreen": "Close fullscreen map",
   "tabs.account": "Account",
   "tabs.activity": "Activity",
   "tabs.add": "Add",

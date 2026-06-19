@@ -446,6 +446,8 @@
   "location.requesting": "Pieprasa atļauju...",
   "location.disabled": "Izslēgts",
   "map.openInMaps": "Atvērt kartēs",
+  "map.fullscreen": "Atvērt karti pilnekrānā",
+  "map.closeFullscreen": "Aizvērt pilnekrāna karti",
   "tabs.account": "Konts",
   "tabs.activity": "Aktivitātes",
   "tabs.add": "Pievienot",

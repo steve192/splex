@@ -446,6 +446,8 @@
   "location.requesting": "Се бара дозвола...",
   "location.disabled": "Оневозможено",
   "map.openInMaps": "Отвори во Maps",
+  "map.fullscreen": "Отвори ја картата на цел екран",
+  "map.closeFullscreen": "Затвори ја картата на цел екран",
   "tabs.account": "Сметка",
   "tabs.activity": "Активност",
   "tabs.add": "Додај",

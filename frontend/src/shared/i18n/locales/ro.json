@@ -446,6 +446,8 @@
   "location.requesting": "Se solicită permisiunea...",
   "location.disabled": "Dezactivat",
   "map.openInMaps": "Deschide în Hărți",
+  "map.fullscreen": "Deschide harta pe tot ecranul",
+  "map.closeFullscreen": "Închide harta pe tot ecranul",
   "tabs.account": "Cont",
   "tabs.activity": "Activitate",
   "tabs.add": "Adaugă",

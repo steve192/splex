@@ -446,6 +446,8 @@
   "location.requesting": "Trwa proszenie o uprawnienie...",
   "location.disabled": "Wyłączone",
   "map.openInMaps": "Otwórz w Mapach",
+  "map.fullscreen": "Otwórz mapę na pełnym ekranie",
+  "map.closeFullscreen": "Zamknij mapę pełnoekranową",
   "tabs.account": "Konto",
   "tabs.activity": "Aktywność",
   "tabs.add": "Dodaj",

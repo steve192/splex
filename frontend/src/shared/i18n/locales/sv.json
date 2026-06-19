@@ -446,6 +446,8 @@
   "location.requesting": "Begär behörighet...",
   "location.disabled": "Av",
   "map.openInMaps": "Öppna i Maps",
+  "map.fullscreen": "Öppna kartan i helskärm",
+  "map.closeFullscreen": "Stäng helskärmskartan",
   "tabs.account": "Konto",
   "tabs.activity": "Aktivitet",
   "tabs.add": "Lägg till",

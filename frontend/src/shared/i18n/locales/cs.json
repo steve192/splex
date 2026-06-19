@@ -446,6 +446,8 @@
   "location.requesting": "Žádost o oprávnění...",
   "location.disabled": "Vypnuto",
   "map.openInMaps": "Otevřít v Mapách",
+  "map.fullscreen": "Otevřít mapu na celou obrazovku",
+  "map.closeFullscreen": "Zavřít mapu na celou obrazovku",
   "tabs.account": "Účet",
   "tabs.activity": "Aktivita",
   "tabs.add": "Přidat",

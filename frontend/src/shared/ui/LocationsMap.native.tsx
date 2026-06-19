@@ -1,78 +1,65 @@
 import { useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { Modal, StyleSheet, View } from "react-native";
+import { IconButton, useTheme } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useI18n } from "../i18n/I18nContext";
+import {
+  buildLocationsMapHtml,
+  DEFAULT_TILE_URL,
+  type MapPoint,
+  type LocationsMapMode
+} from "./locationsMapModel";
 import { LEAFLET_CSS, LEAFLET_JS } from "./leafletAssets.generated";
 
-export interface MapPoint {
-  readonly latitude: number;
-  readonly longitude: number;
-  readonly label?: string;
-}
+export type { MapPoint } from "./locationsMapModel";
 
 export interface LocationsMapProps {
   readonly points: ReadonlyArray<MapPoint>;
   readonly height?: number;
 }
 
-const DEFAULT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+function buildNativeHtml(points: ReadonlyArray<MapPoint>, tileUrl: string, mode: LocationsMapMode): string {
+  return buildLocationsMapHtml(points, tileUrl, { mode })
+    .split("__SPLEX_LEAFLET_CSS__")
+    .join(LEAFLET_CSS)
+    .split("__SPLEX_LEAFLET_JS__")
+    .join(LEAFLET_JS);
+}
 
-function buildHtml(points: ReadonlyArray<MapPoint>, tileUrl: string): string {
-  const safeTileUrl = JSON.stringify(tileUrl);
-  const safePoints = JSON.stringify(
-    points.map((p) => ({ lat: p.latitude, lng: p.longitude, label: p.label ?? "" }))
+interface LocationsMapCanvasProps {
+  readonly html: string;
+  readonly height?: number;
+  readonly mode: LocationsMapMode;
+}
+
+function LocationsMapCanvas({ html, height, mode }: Readonly<LocationsMapCanvasProps>) {
+  const interactive = mode === "interactive";
+
+  return (
+    <View style={[componentStyles.mapFrame, height ? { height } : componentStyles.fullscreenMapFrame]}>
+      <WebView
+        originWhitelist={["*"]}
+        source={{ html }}
+        style={componentStyles.map}
+        pointerEvents={interactive ? "auto" : "none"}
+        javaScriptEnabled
+        domStorageEnabled
+        scrollEnabled={false}
+        nestedScrollEnabled={interactive}
+        androidLayerType="hardware"
+      />
+    </View>
   );
-  return `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <style>${LEAFLET_CSS}</style>
-    <style>
-      html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: transparent; }
-      .splex-marker {
-        background-color: #3b82f6;
-        width: 18px; height: 24px;
-        border-radius: 9px 9px 0 0;
-        border: 2px solid white;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <script>${LEAFLET_JS}</script>
-    <script>
-      var points = ${safePoints};
-      var map = L.map('map', { zoomControl: false, attributionControl: false });
-      L.tileLayer(${safeTileUrl}, { maxZoom: 19 }).addTo(map);
-      var icon = L.divIcon({
-        html: '<div class="splex-marker"></div>',
-        iconSize: [18, 24],
-        iconAnchor: [9, 24],
-        className: ''
-      });
-      if (points.length === 0) {
-        map.setView([0, 0], 1);
-      } else {
-        var latLngs = points.map(function (p) {
-          var marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
-          if (p.label) marker.bindPopup(p.label);
-          return [p.lat, p.lng];
-        });
-        if (latLngs.length === 1) {
-          map.setView(latLngs[0], 13);
-        } else {
-          map.fitBounds(L.latLngBounds(latLngs), { padding: [24, 24] });
-        }
-      }
-    </script>
-  </body>
-</html>`;
 }
 
 export function LocationsMap({ points, height = 280 }: Readonly<LocationsMapProps>) {
   const { api } = useAuth();
+  const { t } = useI18n();
+  const theme = useTheme();
+  const [fullscreenVisible, setFullscreenVisible] = useState(false);
   const [tileUrl, setTileUrl] = useState<string>(DEFAULT_TILE_URL);
 
   useEffect(() => {
@@ -84,19 +71,70 @@ export function LocationsMap({ points, height = 280 }: Readonly<LocationsMapProp
       .catch(() => undefined);
   }, [api]);
 
-  const html = useMemo(() => buildHtml(points, tileUrl), [points, tileUrl]);
+  const inlineHtml = useMemo(() => buildNativeHtml(points, tileUrl, "static"), [points, tileUrl]);
+  const fullscreenHtml = useMemo(() => buildNativeHtml(points, tileUrl, "interactive"), [points, tileUrl]);
 
   return (
-    <View style={{ height, borderRadius: 8, overflow: "hidden" }}>
-      <WebView
-        originWhitelist={["*"]}
-        source={{ html }}
-        style={{ flex: 1, backgroundColor: "transparent" }}
-        javaScriptEnabled
-        domStorageEnabled
-        scrollEnabled={false}
-        androidLayerType="hardware"
+    <View style={componentStyles.root}>
+      <LocationsMapCanvas html={inlineHtml} height={height} mode="static" />
+      <IconButton
+        icon="fullscreen"
+        mode="contained-tonal"
+        accessibilityLabel={t("map.fullscreen")}
+        containerColor={theme.colors.surface}
+        iconColor={theme.colors.onSurface}
+        onPress={() => setFullscreenVisible(true)}
+        style={[componentStyles.mapActionButton, { borderColor: theme.colors.outlineVariant }]}
       />
+      <Modal visible={fullscreenVisible} animationType="fade" onRequestClose={() => setFullscreenVisible(false)}>
+        <SafeAreaView style={[componentStyles.fullscreen, { backgroundColor: theme.colors.background }]}>
+          <LocationsMapCanvas html={fullscreenHtml} mode="interactive" />
+          <IconButton
+            icon="close"
+            mode="contained-tonal"
+            accessibilityLabel={t("map.closeFullscreen")}
+            containerColor={theme.colors.surface}
+            iconColor={theme.colors.onSurface}
+            onPress={() => setFullscreenVisible(false)}
+            style={[componentStyles.fullscreenCloseButton, { borderColor: theme.colors.outlineVariant }]}
+          />
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
+
+const componentStyles = StyleSheet.create({
+  fullscreen: {
+    flex: 1
+  },
+  fullscreenCloseButton: {
+    borderWidth: 1,
+    position: "absolute",
+    right: 12,
+    top: 12,
+    zIndex: 1000
+  },
+  fullscreenMapFrame: {
+    flex: 1
+  },
+  map: {
+    backgroundColor: "transparent",
+    flex: 1
+  },
+  mapActionButton: {
+    borderWidth: 1,
+    position: "absolute",
+    right: 8,
+    top: 8,
+    zIndex: 1000
+  },
+  mapFrame: {
+    borderRadius: 8,
+    overflow: "hidden",
+    zIndex: 0
+  },
+  root: {
+    position: "relative"
+  }
+});

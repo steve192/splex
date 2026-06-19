@@ -446,6 +446,8 @@
   "location.requesting": "Engedély kérése...",
   "location.disabled": "Letiltva",
   "map.openInMaps": "Megnyitás a Mapsben",
+  "map.fullscreen": "Térkép megnyitása teljes képernyőn",
+  "map.closeFullscreen": "Teljes képernyős térkép bezárása",
   "tabs.account": "Fiók",
   "tabs.activity": "Aktivitás",
   "tabs.add": "Hozzáadás",

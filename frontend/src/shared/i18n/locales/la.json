@@ -446,6 +446,8 @@
   "location.requesting": "Permissio petitur...",
   "location.disabled": "Inhibitum",
   "map.openInMaps": "Aperi in tabulis",
+  "map.fullscreen": "Aperi tabulam pleno scrinio",
+  "map.closeFullscreen": "Claude tabulam pleno scrinio",
   "tabs.account": "Ratio",
   "tabs.activity": "Actio",
   "tabs.add": "Adde",

@@ -446,6 +446,8 @@
   "location.requesting": "Qed jintalab permess...",
   "location.disabled": "Diżattivat",
   "map.openInMaps": "Iftaħ fil-Maps",
+  "map.fullscreen": "Iftaħ il-mappa bi skrin sħiħ",
+  "map.closeFullscreen": "Agħlaq il-mappa bi skrin sħiħ",
   "tabs.account": "Kont",
   "tabs.activity": "Attività",
   "tabs.add": "Żid",

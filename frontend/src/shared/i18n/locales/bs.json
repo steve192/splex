@@ -446,6 +446,8 @@
   "location.requesting": "Traženje dozvole...",
   "location.disabled": "Onemogućeno",
   "map.openInMaps": "Otvori u Mapama",
+  "map.fullscreen": "Otvori kartu preko cijelog ekrana",
+  "map.closeFullscreen": "Zatvori kartu preko cijelog ekrana",
   "tabs.account": "Račun",
   "tabs.activity": "Aktivnost",
   "tabs.add": "Dodaj",

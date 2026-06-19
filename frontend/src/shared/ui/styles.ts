@@ -211,6 +211,9 @@ export const styles = StyleSheet.create({
     minHeight: 64,
     paddingVertical: 6
   },
+  mapMeta: {
+    alignItems: "center"
+  },
   optionRow: {
     cursor: "pointer" as any,
     paddingHorizontal: 16,

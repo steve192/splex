@@ -446,6 +446,8 @@
   "location.requesting": "Γίνεται αίτημα άδειας...",
   "location.disabled": "Απενεργοποιημένο",
   "map.openInMaps": "Άνοιγμα στους Χάρτες",
+  "map.fullscreen": "Άνοιγμα χάρτη σε πλήρη οθόνη",
+  "map.closeFullscreen": "Κλείσιμο χάρτη πλήρους οθόνης",
   "tabs.account": "Λογαριασμός",
   "tabs.activity": "Δραστηριότητα",
   "tabs.add": "Προσθήκη",

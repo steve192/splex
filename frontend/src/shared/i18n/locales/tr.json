@@ -446,6 +446,8 @@
   "location.requesting": "İzin isteniyor...",
   "location.disabled": "Kapalı",
   "map.openInMaps": "Maps'te aç",
+  "map.fullscreen": "Haritayı tam ekran aç",
+  "map.closeFullscreen": "Tam ekran haritayı kapat",
   "tabs.account": "Hesap",
   "tabs.activity": "Etkinlik",
   "tabs.add": "Ekle",

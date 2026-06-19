@@ -446,6 +446,8 @@
   "location.requesting": "S'està demanant permís...",
   "location.disabled": "Desactivat",
   "map.openInMaps": "Obre a Mapes",
+  "map.fullscreen": "Obre el mapa a pantalla completa",
+  "map.closeFullscreen": "Tanca el mapa a pantalla completa",
   "tabs.account": "Compte",
   "tabs.activity": "Activitat",
   "tabs.add": "Afegeix",

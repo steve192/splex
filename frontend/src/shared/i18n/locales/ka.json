@@ -446,6 +446,8 @@
   "location.requesting": "მიმდინარეობს ნებართვის მოთხოვნა...",
   "location.disabled": "გამორთულია",
   "map.openInMaps": "რუკებში გახსნა",
+  "map.fullscreen": "რუკის სრულ ეკრანზე გახსნა",
+  "map.closeFullscreen": "სრულეკრანიანი რუკის დახურვა",
   "tabs.account": "ანგარიში",
   "tabs.activity": "აქტივობა",
   "tabs.add": "დამატება",

@@ -446,6 +446,8 @@
   "location.requesting": "Թույլտվություն է հարցվում...",
   "location.disabled": "Անջատված է",
   "map.openInMaps": "Բացել Maps-ում",
+  "map.fullscreen": "Բացել քարտեզը ամբողջ էկրանով",
+  "map.closeFullscreen": "Փակել ամբողջ էկրանով քարտեզը",
   "tabs.account": "Հաշիվ",
   "tabs.activity": "Գործունեություն",
   "tabs.add": "Ավելացնել",
