@@ -20,6 +20,7 @@ type PendingExpenseListProps = {
   onOpen: (mutationId: string) => void;
   onRetry: () => Promise<void> | void;
   onDelete: (mutationId: string) => Promise<void> | void;
+  mutationsDisabled?: boolean;
 };
 
 export function PendingExpenseList({
@@ -28,6 +29,7 @@ export function PendingExpenseList({
   onOpen,
   onRetry,
   onDelete,
+  mutationsDisabled = false,
 }: Readonly<PendingExpenseListProps>) {
   const { t } = useI18n();
   const theme = useTheme();
@@ -53,7 +55,10 @@ export function PendingExpenseList({
           >
             <TouchableRipple
               style={styles.clickable}
-              onPress={() => onOpen(mutation.id)}
+              disabled={mutationsDisabled}
+              onPress={
+                mutationsDisabled ? undefined : () => onOpen(mutation.id)
+              }
             >
               <Card.Content>
                 <List.Item
@@ -68,7 +73,7 @@ export function PendingExpenseList({
                           compact
                           mode="text"
                           loading={isPending("retry")}
-                          disabled={hasPending}
+                          disabled={hasPending || mutationsDisabled}
                           onPress={() => runPendingAction("retry", onRetry)}
                         >
                           {t("expense.retrySync")}

@@ -250,6 +250,7 @@
   "friend.title": "Freund",
   "group.create": "Gruppe erstellen",
   "group.archived": "Archiviert",
+  "group.archivedReadOnly": "Diese Gruppe ist archiviert. Hebe die Archivierung auf, bevor du Ausgaben, Ausgleiche oder Mitglieder änderst.",
   "group.createdAt": "Erstellt",
   "group.defaultSplit": "Standardaufteilung",
   "group.delete": "Gruppe löschen",

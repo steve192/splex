@@ -250,6 +250,7 @@
   "friend.title": "Venn",
   "group.create": "Opprett gruppe",
   "group.archived": "Arkivert",
+  "group.archivedReadOnly": "Denne gruppen er arkivert. Fjern den fra arkivet før du endrer utgifter, oppgjør eller medlemmer.",
   "group.createdAt": "Opprettet",
   "group.defaultSplit": "Standarddeling",
   "group.delete": "Slett gruppe",

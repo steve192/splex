@@ -250,6 +250,7 @@
   "friend.title": "Дос",
   "group.create": "Топ құру",
   "group.archived": "Мұрағатталған",
+  "group.archivedReadOnly": "Бұл топ мұрағатталған. Шығындарды, есеп айырысуларды немесе мүшелерді өзгертпес бұрын оны мұрағаттан шығарыңыз.",
   "group.createdAt": "Құрылған",
   "group.defaultSplit": "Әдепкі бөлу",
   "group.delete": "Топты жою",

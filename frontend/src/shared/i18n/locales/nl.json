@@ -250,6 +250,7 @@
   "friend.title": "Vriend",
   "group.create": "Groep maken",
   "group.archived": "Gearchiveerd",
+  "group.archivedReadOnly": "Deze groep is gearchiveerd. Haal de groep uit het archief voordat je uitgaven, verrekeningen of leden wijzigt.",
   "group.createdAt": "Aangemaakt",
   "group.defaultSplit": "Standaardsplit",
   "group.delete": "Groep verwijderen",

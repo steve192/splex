@@ -250,6 +250,7 @@
   "friend.title": "Сябар",
   "group.create": "Стварыць групу",
   "group.archived": "Архівавана",
+  "group.archivedReadOnly": "Гэтая група заархівавана. Разархівуйце яе перад змяненнем выдаткаў, разлікаў або ўдзельнікаў.",
   "group.createdAt": "Створана",
   "group.defaultSplit": "Падзел па змаўчанні",
   "group.delete": "Выдаліць групу",

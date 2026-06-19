@@ -250,6 +250,7 @@
   "friend.title": "Draugs",
   "group.create": "Izveidot grupu",
   "group.archived": "Arhivēta",
+  "group.archivedReadOnly": "Šī grupa ir arhivēta. Pirms maināt izdevumus, norēķinus vai dalībniekus, atarhivējiet to.",
   "group.createdAt": "Izveidota",
   "group.defaultSplit": "Noklusējuma sadalījums",
   "group.delete": "Dzēst grupu",

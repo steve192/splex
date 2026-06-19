@@ -250,6 +250,7 @@
   "friend.title": "Amicus",
   "group.create": "Crea gregem",
   "group.archived": "In archivo",
+  "group.archivedReadOnly": "Hic grex in archivo est. Ex archivo eum remove antequam impensas, solutiones aut sodales mutes.",
   "group.createdAt": "Creatum",
   "group.defaultSplit": "Divisio primaria",
   "group.delete": "Gregem dele",

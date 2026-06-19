@@ -250,6 +250,7 @@
   "friend.title": "Priateľ",
   "group.create": "Vytvoriť skupinu",
   "group.archived": "Archivované",
+  "group.archivedReadOnly": "Táto skupina je archivovaná. Pred zmenou výdavkov, vyrovnaní alebo členov ju odarchivujte.",
   "group.createdAt": "Vytvorené",
   "group.defaultSplit": "Predvolené rozdelenie",
   "group.delete": "Odstrániť skupinu",

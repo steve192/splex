@@ -39,6 +39,7 @@ import {
   SelectionSheet,
 } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
+import { isGroupArchived } from "../groups/groupArchivePolicy";
 
 type SettlementDetailScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "SettlementDetail">
@@ -65,6 +66,7 @@ export function SettlementDetailScreen({
   const [payerId, setPayerId] = useState<number | null>(null);
   const [receiverId, setReceiverId] = useState<number | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [groupArchived, setGroupArchived] = useState(false);
   const [activeSheet, setActiveSheet] = useState<"payer" | "receiver" | null>(
     null,
   );
@@ -75,9 +77,11 @@ export function SettlementDetailScreen({
     setAmount(row.amount);
     setPayerId(row.payer_participant_id);
     setReceiverId(row.receiver_participant_id);
+    setGroupArchived(false);
     if (row.group_id) {
       const group = await api.get<Group>(`/api/groups/${row.group_id}/`);
       setParticipants(group.participants ?? []);
+      setGroupArchived(isGroupArchived(group));
     } else if (row.friendship_id) {
       const friend = await api.get<Friend>(
         `/api/friends/${row.friendship_id}/`,
@@ -101,6 +105,7 @@ export function SettlementDetailScreen({
   }, [navigation, settlement, t]);
 
   async function deleteSettlement() {
+    if (groupArchived) return;
     await runPendingAction("delete", async () => {
       try {
         await api.delete(`/api/settlements/${settlementId}/`);
@@ -115,6 +120,7 @@ export function SettlementDetailScreen({
   }
 
   async function saveEdit() {
+    if (groupArchived) return;
     await runPendingAction("save", async () => {
       try {
         await api.patch(`/api/settlements/${settlementId}/`, {
@@ -192,6 +198,8 @@ export function SettlementDetailScreen({
 
             {settlement.deleted_at ? (
               <Text variant="bodyMedium">{t("settlement.deleted")}</Text>
+            ) : groupArchived ? (
+              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
             ) : (
               <View style={styles.rowActions}>
                 <Button
@@ -254,18 +262,25 @@ export function SettlementDetailScreen({
                 mode="outlined"
                 label={t("expense.amount")}
                 value={amount}
+                disabled={groupArchived}
                 onChangeText={setAmount}
                 keyboardType="decimal-pad"
               />
               <List.Item
                 title={t("settlement.payer")}
                 description={participantName(payerId)}
-                onPress={() => setActiveSheet("payer")}
+                disabled={groupArchived}
+                onPress={
+                  groupArchived ? undefined : () => setActiveSheet("payer")
+                }
               />
               <List.Item
                 title={t("settlement.receiver")}
                 description={participantName(receiverId)}
-                onPress={() => setActiveSheet("receiver")}
+                disabled={groupArchived}
+                onPress={
+                  groupArchived ? undefined : () => setActiveSheet("receiver")
+                }
               />
             </View>
           </Dialog.Content>
@@ -280,7 +295,8 @@ export function SettlementDetailScreen({
                 !amount ||
                 !payerId ||
                 !receiverId ||
-                payerId === receiverId
+                payerId === receiverId ||
+                groupArchived
               }
               onPress={saveEdit}
             >
@@ -290,7 +306,7 @@ export function SettlementDetailScreen({
         </Dialog>
       </Portal>
       <SelectionSheet
-        visible={activeSheet === "payer"}
+        visible={activeSheet === "payer" && !groupArchived}
         title={t("settlement.payer")}
         options={participantOptions}
         value={payerId}
@@ -298,7 +314,7 @@ export function SettlementDetailScreen({
         onDismiss={() => setActiveSheet(null)}
       />
       <SelectionSheet
-        visible={activeSheet === "receiver"}
+        visible={activeSheet === "receiver" && !groupArchived}
         title={t("settlement.receiver")}
         options={participantOptions}
         value={receiverId}

@@ -250,6 +250,7 @@
   "friend.title": "Friend",
   "group.create": "Create group",
   "group.archived": "Archived",
+  "group.archivedReadOnly": "This group is archived. Unarchive it before changing expenses, settlements, or members.",
   "group.createdAt": "Created",
   "group.defaultSplit": "Default split",
   "group.delete": "Delete group",

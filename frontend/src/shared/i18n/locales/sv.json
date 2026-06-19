@@ -250,6 +250,7 @@
   "friend.title": "Vän",
   "group.create": "Skapa grupp",
   "group.archived": "Arkiverad",
+  "group.archivedReadOnly": "Den här gruppen är arkiverad. Avarkivera den innan du ändrar utgifter, avräkningar eller medlemmar.",
   "group.createdAt": "Skapad",
   "group.defaultSplit": "Standardfördelning",
   "group.delete": "Ta bort grupp",

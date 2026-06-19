@@ -11,6 +11,7 @@ interface LocationSuggestionsInputProps {
   loading?: boolean;
   maxLength?: number;
   label?: string;
+  disabled?: boolean;
 }
 
 export function LocationSuggestionsInput({
@@ -19,7 +20,8 @@ export function LocationSuggestionsInput({
   suggestions,
   loading = false,
   maxLength = 240,
-  label = "Description"
+  label = "Description",
+  disabled = false
 }: Readonly<LocationSuggestionsInputProps>) {
   const { t } = useI18n();
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -41,8 +43,9 @@ export function LocationSuggestionsInput({
         onFocus={() => setShowSuggestions(true)}
         maxLength={maxLength}
         multiline
+        disabled={disabled}
       />
-      {shouldShowSuggestions && (
+      {shouldShowSuggestions && !disabled && (
         <View style={{ marginVertical: 8 }}>
           <Text variant="labelSmall" style={{ marginBottom: 8 }}>
             {t("expense.suggestedNearby")}

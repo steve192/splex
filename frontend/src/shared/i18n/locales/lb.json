@@ -250,6 +250,7 @@
   "friend.title": "Frënd",
   "group.create": "Grupp uleeën",
   "group.archived": "Archivéiert",
+  "group.archivedReadOnly": "Dëse Grupp ass archivéiert. Hief d'Archivéieren op, ier s du Ausgaben, Ausgläicher oder Memberen ännners.",
   "group.createdAt": "Ugeluecht",
   "group.defaultSplit": "Standardopdeelung",
   "group.delete": "Grupp läschen",

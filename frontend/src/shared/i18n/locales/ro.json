@@ -250,6 +250,7 @@
   "friend.title": "Prieten",
   "group.create": "Creează grup",
   "group.archived": "Arhivat",
+  "group.archivedReadOnly": "Acest grup este arhivat. Scoate-l din arhivă înainte de a modifica cheltuieli, decontări sau membri.",
   "group.createdAt": "Creat",
   "group.defaultSplit": "Împărțire implicită",
   "group.delete": "Șterge grupul",

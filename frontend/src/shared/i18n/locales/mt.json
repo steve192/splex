@@ -250,6 +250,7 @@
   "friend.title": "Ħabib",
   "group.create": "Oħloq grupp",
   "group.archived": "Arkivjat",
+  "group.archivedReadOnly": "Dan il-grupp huwa arkivjat. Neħħih mill-arkivju qabel tibdel spejjeż, saldi jew membri.",
   "group.createdAt": "Maħluq",
   "group.defaultSplit": "Qsim awtomatiku",
   "group.delete": "Ħassar grupp",

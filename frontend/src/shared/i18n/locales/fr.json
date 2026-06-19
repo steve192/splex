@@ -250,6 +250,7 @@
   "friend.title": "Ami",
   "group.create": "Créer un groupe",
   "group.archived": "Archivé",
+  "group.archivedReadOnly": "Ce groupe est archivé. Désarchivez-le avant de modifier les dépenses, les règlements ou les membres.",
   "group.createdAt": "Créé",
   "group.defaultSplit": "Répartition par défaut",
   "group.delete": "Supprimer le groupe",

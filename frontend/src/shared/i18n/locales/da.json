@@ -250,6 +250,7 @@
   "friend.title": "Ven",
   "group.create": "Opret gruppe",
   "group.archived": "Arkiveret",
+  "group.archivedReadOnly": "Denne gruppe er arkiveret. Fjern arkiveringen, før du ændrer udgifter, afregninger eller medlemmer.",
   "group.createdAt": "Oprettet",
   "group.defaultSplit": "Standardfordeling",
   "group.delete": "Slet gruppe",

@@ -250,6 +250,7 @@
   "friend.title": "Arkadaş",
   "group.create": "Grup oluştur",
   "group.archived": "Arşivlendi",
+  "group.archivedReadOnly": "Bu grup arşivlendi. Giderleri, kapatmaları veya üyeleri değiştirmeden önce arşivden çıkarın.",
   "group.createdAt": "Oluşturuldu",
   "group.defaultSplit": "Varsayılan bölüşüm",
   "group.delete": "Grubu sil",

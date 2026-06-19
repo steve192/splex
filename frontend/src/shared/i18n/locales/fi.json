@@ -250,6 +250,7 @@
   "friend.title": "Ystävä",
   "group.create": "Luo ryhmä",
   "group.archived": "Arkistoitu",
+  "group.archivedReadOnly": "Tämä ryhmä on arkistoitu. Poista arkistointi ennen kulujen, selvitysten tai jäsenten muuttamista.",
   "group.createdAt": "Luotu",
   "group.defaultSplit": "Oletusjako",
   "group.delete": "Poista ryhmä",

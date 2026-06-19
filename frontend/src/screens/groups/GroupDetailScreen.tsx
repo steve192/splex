@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Button,
+  Card,
   Dialog,
   IconButton,
   Portal,
@@ -69,6 +70,7 @@ import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { GroupBalanceSummaryCard } from "./GroupBalanceSummaryCard";
 import { buildBalanceSummary } from "./groupBalanceSummary";
+import { groupMutationDisabled, isGroupArchived } from "./groupArchivePolicy";
 
 type GroupDetailScreenProps = NativeStackScreenProps<
   OverviewStackParamList,
@@ -137,6 +139,8 @@ export function GroupDetailScreen({
     },
   );
   const group = groupQuery.data?.group ?? null;
+  const groupArchived = isGroupArchived(group);
+  const actionsDisabled = groupMutationDisabled(group, hasPending);
   const balances = groupQuery.data?.balances ?? [];
   const balanceSummary = useMemo(
     () =>
@@ -257,6 +261,7 @@ export function GroupDetailScreen({
   ]);
 
   async function invite() {
+    if (groupArchived) return;
     await runPendingAction("invite", async () => {
       let response: { url: string };
       try {
@@ -280,6 +285,7 @@ export function GroupDetailScreen({
   }
 
   async function settle() {
+    if (groupArchived) return;
     if (!settleTarget) return;
     await runPendingAction("settle", async () => {
       try {
@@ -315,6 +321,7 @@ export function GroupDetailScreen({
   }
 
   function openSettleDialog(detail: BalanceDetail) {
+    if (groupArchived) return;
     setSettleTarget({
       amount: detail.amount,
       currency: detail.currency,
@@ -330,6 +337,7 @@ export function GroupDetailScreen({
   }
 
   async function remindToSettle(row: GroupBalance) {
+    if (groupArchived) return;
     // The card-level remind action targets the row owner.  The net amount
     // they owe is stored as a negative number on the row, so we send its
     // absolute value through the API.
@@ -359,6 +367,7 @@ export function GroupDetailScreen({
   }
 
   async function remindToTrackExpenses() {
+    if (groupArchived) return;
     await runPendingAction("track-reminder", async () => {
       try {
         const result = await api.post<{ recipients: number; sent: number }>(
@@ -394,10 +403,18 @@ export function GroupDetailScreen({
   return (
     <View style={styles.flex}>
       <Screen scrollViewProps={{ onScroll: handleScroll }}>
+        {groupArchived ? (
+          <Card mode="contained" style={styles.card}>
+            <Card.Content>
+              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
+            </Card.Content>
+          </Card>
+        ) : null}
         <View style={styles.rowActions}>
           <Button
             mode="contained"
             accessibilityLabel={t("expense.add")}
+            disabled={actionsDisabled}
             onPress={() =>
               navigation.navigate("AddExpense", {
                 contextType: "group",
@@ -417,7 +434,7 @@ export function GroupDetailScreen({
             mode="elevated"
             icon="link-variant"
             loading={isPending("invite")}
-            disabled={hasPending}
+            disabled={actionsDisabled}
             onPress={() => invite()}
           >
             {t("invite.create")}
@@ -426,7 +443,7 @@ export function GroupDetailScreen({
             mode="elevated"
             icon="bell-outline"
             loading={isPending("track-reminder")}
-            disabled={hasPending}
+            disabled={actionsDisabled}
             onPress={() => setTrackReminderConfirmVisible(true)}
           >
             {t("invite.remind")}
@@ -465,6 +482,7 @@ export function GroupDetailScreen({
                 }
                 onRetry={pending.retry}
                 onDelete={pending.remove}
+                mutationsDisabled={groupArchived}
               />
             )}
             <LedgerList
@@ -515,7 +533,7 @@ export function GroupDetailScreen({
                   onSettle={(detail) => openSettleDialog(detail)}
                   onRemindSettle={(targetRow) => remindToSettle(targetRow)}
                   currentParticipantId={group?.current_participant_id}
-                  actionsDisabled={hasPending}
+                  actionsDisabled={actionsDisabled}
                   pendingReminderParticipantId={pendingReminderParticipantId}
                 />
               ))
@@ -583,7 +601,7 @@ export function GroupDetailScreen({
             </Button>
             <Button
               loading={isPending("track-reminder")}
-              disabled={hasPending}
+              disabled={actionsDisabled}
               onPress={remindToTrackExpenses}
             >
               {t("invite.remind")}

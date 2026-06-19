@@ -250,6 +250,7 @@
   "friend.title": "Ami",
   "group.create": "Crear grupp",
   "group.archived": "Archivà",
+  "group.archivedReadOnly": "Questa gruppa è archivada. Prenda ella or da l'archiv avant che midar expensas, pajaments u commembers.",
   "group.createdAt": "Creà",
   "group.defaultSplit": "Spartiziun predefinida",
   "group.delete": "Stizzar grupp",

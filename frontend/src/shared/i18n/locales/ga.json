@@ -250,6 +250,7 @@
   "friend.title": "Cara",
   "group.create": "Cruthaigh grúpa",
   "group.archived": "Cartlannaithe",
+  "group.archivedReadOnly": "Tá an grúpa seo curtha sa chartlann. Díchartlannaigh é sula n-athraíonn tú speansais, socruithe nó baill.",
   "group.createdAt": "Cruthaithe",
   "group.defaultSplit": "Roinnt réamhshocraithe",
   "group.delete": "Scrios an grúpa",

@@ -49,6 +49,7 @@ import {
   getSuggestedFriends,
   shouldDeleteGroupOnLeave,
 } from "./groupSettingsHelpers";
+import { groupMutationDisabled, isGroupArchived } from "./groupArchivePolicy";
 import { GroupMembersSection } from "./GroupMembersSection";
 import { RemoveParticipantDialog } from "./RemoveParticipantDialog";
 
@@ -133,6 +134,8 @@ export function GroupSettingsScreen({
     ),
   });
   const group = settingsQuery.data?.group ?? null;
+  const groupArchived = isGroupArchived(group);
+  const editActionsDisabled = groupMutationDisabled(group, hasPending);
   const friends = settingsQuery.data?.friends ?? [];
   const balances = settingsQuery.data?.balances ?? [];
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
@@ -190,6 +193,7 @@ export function GroupSettingsScreen({
   }, [archiveDirty, detailsDirty, group]);
 
   async function save() {
+    if (groupArchived) return;
     await runPendingAction("save", async () => {
       try {
         await api.patch(`/api/groups/${groupId}/`, {
@@ -228,6 +232,7 @@ export function GroupSettingsScreen({
   }
 
   async function deleteCurrentGroup() {
+    if (groupArchived) return;
     if (!deleteGroupEnabled) return;
     await runPendingAction("delete", async () => {
       try {
@@ -244,6 +249,7 @@ export function GroupSettingsScreen({
   }
 
   async function leaveCurrentGroup() {
+    if (groupArchived) return;
     await runPendingAction("leave", async () => {
       try {
         await api.post(`/api/groups/${groupId}/leave/`, {});
@@ -258,6 +264,7 @@ export function GroupSettingsScreen({
   }
 
   async function removeParticipant() {
+    if (groupArchived) return;
     if (!removeTarget) return;
     await runPendingAction("remove-participant", async () => {
       try {
@@ -273,6 +280,7 @@ export function GroupSettingsScreen({
   }
 
   async function addParticipant(friend?: Friend) {
+    if (groupArchived) return;
     const payload = friend
       ? { friend_participant_id: friend.participant_id }
       : buildAddParticipantPayload(
@@ -298,6 +306,7 @@ export function GroupSettingsScreen({
   }
 
   async function renameParticipant() {
+    if (groupArchived) return;
     if (!renameTarget || !renameValue.trim()) return;
     await runPendingAction("rename-participant", async () => {
       try {
@@ -319,6 +328,7 @@ export function GroupSettingsScreen({
   }
 
   async function createInvite(targetParticipantId?: number) {
+    if (groupArchived) return;
     const body = targetParticipantId
       ? { target_participant_id: targetParticipantId }
       : {};
@@ -361,10 +371,14 @@ export function GroupSettingsScreen({
         </View>
         <Card mode="elevated">
           <Card.Content style={styles.gap}>
+            {groupArchived ? (
+              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
+            ) : null}
             <TextInput
               mode="outlined"
               label={t("group.name")}
               value={name}
+              disabled={groupArchived}
               onChangeText={(value) => {
                 setName(value);
                 setDetailsDirty(true);
@@ -375,6 +389,7 @@ export function GroupSettingsScreen({
               name={name}
               imageUrl={iconUrl}
               searchQuery={name}
+              disabled={groupArchived}
               onChange={(image) => {
                 setIconImage(image.dataUrl);
                 setIconUrl(image.previewUrl);
@@ -384,6 +399,7 @@ export function GroupSettingsScreen({
             />
             <Button
               mode="elevated"
+              disabled={groupArchived}
               onPress={() => {
                 setCurrencySheetOpen(true);
                 setDetailsDirty(true);
@@ -401,6 +417,7 @@ export function GroupSettingsScreen({
               buttons={DEFAULT_SPLIT_OPTIONS.map((option) => ({
                 value: option.value,
                 label: t(option.key),
+                disabled: groupArchived,
               }))}
             />
             {group ? (
@@ -416,7 +433,7 @@ export function GroupSettingsScreen({
             <Button
               mode="contained"
               loading={isPending("save")}
-              disabled={hasPending || !name}
+              disabled={editActionsDisabled || !name}
               onPress={save}
             >
               {t("common.save")}
@@ -436,7 +453,7 @@ export function GroupSettingsScreen({
           onRename={openRename}
           onRemove={setRemoveTarget}
           onCreateInvite={createInvite}
-          actionsDisabled={hasPending}
+          actionsDisabled={editActionsDisabled}
           addingFriendId={addingFriendId}
           addNewLoading={isPending("add-participant")}
           inviteLoading={isPending("invite")}
@@ -451,12 +468,12 @@ export function GroupSettingsScreen({
               right={renderArchiveSwitch(archived, (value) => {
                 setArchived(value);
                 setArchiveDirty(true);
-              })}
+              }, hasPending || !group)}
             />
             <Button
               mode="elevated"
               loading={isPending("archive")}
-              disabled={hasPending}
+              disabled={hasPending || !group}
               onPress={saveArchive}
             >
               {t("group.saveArchive")}
@@ -464,7 +481,7 @@ export function GroupSettingsScreen({
             <Button
               mode="contained-tonal"
               icon="logout"
-              disabled={hasPending}
+              disabled={editActionsDisabled}
               onPress={() => setLeaveConfirmVisible(true)}
             >
               {t("group.leave")}
@@ -476,7 +493,7 @@ export function GroupSettingsScreen({
               mode="contained-tonal"
               icon="delete-outline"
               textColor={dangerColor}
-              disabled={hasPending || !isSettled}
+              disabled={editActionsDisabled || !isSettled}
               onPress={() => {
                 setDeleteConfirmName("");
                 setDeleteConfirmVisible(true);
@@ -524,6 +541,7 @@ export function GroupSettingsScreen({
               mode="outlined"
               label={t("participant.name")}
               value={renameValue}
+              disabled={groupArchived}
               onChangeText={setRenameValue}
             />
           </Dialog.Content>
@@ -533,7 +551,7 @@ export function GroupSettingsScreen({
             </Button>
             <Button
               loading={isPending("rename-participant")}
-              disabled={hasPending || !renameValue.trim()}
+              disabled={editActionsDisabled || !renameValue.trim()}
               onPress={renameParticipant}
             >
               {t("common.save")}
@@ -581,7 +599,7 @@ export function GroupSettingsScreen({
               textColor={dangerColor}
               loading={isPending("delete")}
               onPress={deleteCurrentGroup}
-              disabled={hasPending || !deleteGroupEnabled}
+              disabled={editActionsDisabled || !deleteGroupEnabled}
             >
               {t("common.delete")}
             </Button>
@@ -614,18 +632,33 @@ export function GroupSettingsScreen({
 function ArchiveSwitch({
   value,
   onValueChange,
+  disabled = false,
 }: Readonly<{
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }>) {
-  return <Switch value={value} onValueChange={onValueChange} />;
+  return (
+    <Switch
+      value={value}
+      disabled={disabled}
+      onValueChange={onValueChange}
+    />
+  );
 }
 
 function renderArchiveSwitch(
   value: boolean,
   onValueChange: (value: boolean) => void,
+  disabled = false,
 ) {
   return function ArchiveSwitchRenderer() {
-    return <ArchiveSwitch value={value} onValueChange={onValueChange} />;
+    return (
+      <ArchiveSwitch
+        value={value}
+        disabled={disabled}
+        onValueChange={onValueChange}
+      />
+    );
   };
 }

@@ -250,6 +250,7 @@
   "friend.title": "Znajomy",
   "group.create": "Utwórz grupę",
   "group.archived": "Zarchiwizowano",
+  "group.archivedReadOnly": "Ta grupa jest zarchiwizowana. Cofnij archiwizację, zanim zmienisz wydatki, rozliczenia lub członków.",
   "group.createdAt": "Utworzono",
   "group.defaultSplit": "Domyślny podział",
   "group.delete": "Usuń grupę",

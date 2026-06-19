@@ -250,6 +250,7 @@
   "friend.title": "Друг",
   "group.create": "Создать группу",
   "group.archived": "В архиве",
+  "group.archivedReadOnly": "Эта группа находится в архиве. Разархивируйте её, прежде чем менять расходы, расчёты или участников.",
   "group.createdAt": "Создано",
   "group.defaultSplit": "Разделение по умолчанию",
   "group.delete": "Удалить группу",

@@ -250,6 +250,7 @@
   "friend.title": "Amigo",
   "group.create": "Criar grupo",
   "group.archived": "Arquivado",
+  "group.archivedReadOnly": "Este grupo está arquivado. Desarquive-o antes de alterar despesas, acertos ou membros.",
   "group.createdAt": "Criado",
   "group.defaultSplit": "Divisão predefinida",
   "group.delete": "Eliminar grupo",

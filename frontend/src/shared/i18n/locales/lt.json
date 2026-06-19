@@ -250,6 +250,7 @@
   "friend.title": "Draugas",
   "group.create": "Sukurti grupę",
   "group.archived": "Archyvuota",
+  "group.archivedReadOnly": "Ši grupė archyvuota. Prieš keisdami išlaidas, atsiskaitymus ar narius, išarchyvuokite ją.",
   "group.createdAt": "Sukurta",
   "group.defaultSplit": "Numatytasis padalijimas",
   "group.delete": "Ištrinti grupę",

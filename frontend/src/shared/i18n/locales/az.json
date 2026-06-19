@@ -250,6 +250,7 @@
   "friend.title": "Dost",
   "group.create": "Qrup yarat",
   "group.archived": "Arxivləşdirilib",
+  "group.archivedReadOnly": "Bu qrup arxivləşdirilib. Xərcləri, hesablaşmaları və ya üzvləri dəyişməzdən əvvəl arxivdən çıxarın.",
   "group.createdAt": "Yaradılıb",
   "group.defaultSplit": "Standart bölüşdürmə",
   "group.delete": "Qrupu sil",

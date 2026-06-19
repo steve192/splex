@@ -250,6 +250,7 @@
   "friend.title": "Prijatelj",
   "group.create": "Ustvari skupino",
   "group.archived": "Arhivirano",
+  "group.archivedReadOnly": "Ta skupina je arhivirana. Pred spreminjanjem stroškov, poravnav ali članov jo odarhivirajte.",
   "group.createdAt": "Ustvarjeno",
   "group.defaultSplit": "Privzeta delitev",
   "group.delete": "Izbriši skupino",

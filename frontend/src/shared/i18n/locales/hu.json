@@ -250,6 +250,7 @@
   "friend.title": "Ismerős",
   "group.create": "Csoport létrehozása",
   "group.archived": "Archiválva",
+  "group.archivedReadOnly": "Ez a csoport archiválva van. A kiadások, rendezések vagy tagok módosítása előtt szüntesd meg az archiválást.",
   "group.createdAt": "Létrehozva",
   "group.defaultSplit": "Alapértelmezett felosztás",
   "group.delete": "Csoport törlése",

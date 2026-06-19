@@ -35,6 +35,7 @@ import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { expenseDetailViewState } from "./expenseLoading";
+import { isGroupArchived } from "../groups/groupArchivePolicy";
 
 type ExpenseDetailNavigation = NativeStackNavigationProp<
   OverviewStackParamList & ActivityStackParamList
@@ -63,6 +64,7 @@ export function ExpenseDetailScreen({
   const [currentParticipantId, setCurrentParticipantId] = useState<
     number | null
   >(null);
+  const [groupArchived, setGroupArchived] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const converted = expense
     ? expense.original_currency !== expense.converted_currency ||
@@ -85,10 +87,12 @@ export function ExpenseDetailScreen({
     try {
       const loaded = await api.get<Expense>(`/api/expenses/${expenseId}/`);
       setExpense(loaded);
+      setGroupArchived(false);
       try {
         if (loaded.group_id) {
           const group = await api.get<Group>(`/api/groups/${loaded.group_id}/`);
           setCurrentParticipantId(group.current_participant_id ?? null);
+          setGroupArchived(isGroupArchived(group));
         } else if (loaded.friendship_id) {
           const friend = await api.get<Friend>(
             `/api/friends/${loaded.friendship_id}/`,
@@ -115,13 +119,14 @@ export function ExpenseDetailScreen({
     navigation.setOptions({
       title: expense?.description ?? t("expense.details"),
       headerRight: () =>
-        expense && !expense.deleted_at ? (
+        expense && !expense.deleted_at && !groupArchived ? (
           <IconButton icon="pencil" onPress={editExpense} />
         ) : null,
     });
-  }, [expense, navigation, t]);
+  }, [expense, groupArchived, navigation, t]);
 
   async function deleteExpense() {
+    if (groupArchived) return;
     await runPendingAction("delete", async () => {
       try {
         await api.delete(`/api/expenses/${expenseId}/`);
@@ -137,6 +142,7 @@ export function ExpenseDetailScreen({
 
   function editExpense() {
     if (!expense) return;
+    if (groupArchived) return;
     navigation.navigate("AddExpense", {
       expenseId: expense.id,
       contextType: expense.group_id ? "group" : "friendship",
@@ -262,6 +268,8 @@ export function ExpenseDetailScreen({
 
             {expense.deleted_at ? (
               <Text variant="bodyMedium">{t("expense.deleted")}</Text>
+            ) : groupArchived ? (
+              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
             ) : (
               <Button
                 mode="elevated"

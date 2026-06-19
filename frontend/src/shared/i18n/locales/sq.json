@@ -250,6 +250,7 @@
   "friend.title": "Mik",
   "group.create": "Krijo grup",
   "group.archived": "I arkivuar",
+  "group.archivedReadOnly": "Ky grup është i arkivuar. Hiqe nga arkivi para se të ndryshosh shpenzimet, shlyerjet ose anëtarët.",
   "group.createdAt": "Krijuar më",
   "group.defaultSplit": "Ndarja e paracaktuar",
   "group.delete": "Fshi grupin",

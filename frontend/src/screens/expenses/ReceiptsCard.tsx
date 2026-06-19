@@ -12,11 +12,19 @@ type ReceiptsCardProps = {
   uploading: boolean;
   onAdd: () => void;
   onRemove: (id: number) => void;
+  disabled?: boolean;
 };
 
 /** Receipt attachments section of the expense form. Hidden when there is
  * nothing to show and nothing can be uploaded (e.g. offline). */
-export function ReceiptsCard({ receipts, canUpload, uploading, onAdd, onRemove }: Readonly<ReceiptsCardProps>) {
+export function ReceiptsCard({
+  receipts,
+  canUpload,
+  uploading,
+  onAdd,
+  onRemove,
+  disabled = false,
+}: Readonly<ReceiptsCardProps>) {
   const { t } = useI18n();
   if (!canUpload && receipts.length === 0) return null;
   return (
@@ -25,12 +33,20 @@ export function ReceiptsCard({ receipts, canUpload, uploading, onAdd, onRemove }
         <View style={styles.rowBetween}>
           <Text variant="titleMedium">{t("receipts.section")}</Text>
           {canUpload && uploading && <ActivityIndicator />}
-          {canUpload && !uploading && (
-            <IconButton icon="paperclip" onPress={onAdd} accessibilityLabel={t("receipts.addAction")} />
+          {canUpload && !uploading && !disabled && (
+            <IconButton
+              icon="paperclip"
+              onPress={onAdd}
+              accessibilityLabel={t("receipts.addAction")}
+            />
           )}
         </View>
         {!canUpload && <HelperText type="info">{t("receipts.offlineHint")}</HelperText>}
-        <ReceiptList receipts={receipts} allowRemove={canUpload} onRemoved={onRemove} />
+        <ReceiptList
+          receipts={receipts}
+          allowRemove={canUpload && !disabled}
+          onRemoved={onRemove}
+        />
       </Card.Content>
     </Card>
   );

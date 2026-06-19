@@ -250,6 +250,7 @@
   "friend.title": "Amic",
   "group.create": "Crea un grup",
   "group.archived": "Arxivat",
+  "group.archivedReadOnly": "Aquest grup està arxivat. Desarxiva'l abans de canviar despeses, liquidacions o membres.",
   "group.createdAt": "Creat",
   "group.defaultSplit": "Repartiment predeterminat",
   "group.delete": "Suprimeix el grup",

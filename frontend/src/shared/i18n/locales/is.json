@@ -250,6 +250,7 @@
   "friend.title": "Vinur",
   "group.create": "Stofna hóp",
   "group.archived": "Vistað",
+  "group.archivedReadOnly": "Þessi hópur er í safni. Taktu hann úr safni áður en þú breytir útgjöldum, uppgjörum eða meðlimum.",
   "group.createdAt": "Stofnað",
   "group.defaultSplit": "Sjálfgefin skipting",
   "group.delete": "Eyða hópi",

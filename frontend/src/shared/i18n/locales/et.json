@@ -250,6 +250,7 @@
   "friend.title": "Sõber",
   "group.create": "Loo grupp",
   "group.archived": "Arhiveeritud",
+  "group.archivedReadOnly": "See grupp on arhiveeritud. Enne kulude, arvelduste või liikmete muutmist eemalda see arhiivist.",
   "group.createdAt": "Loodud",
   "group.defaultSplit": "Vaikimisi jaotus",
   "group.delete": "Kustuta grupp",

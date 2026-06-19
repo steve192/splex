@@ -250,6 +250,7 @@
   "friend.title": "Приятел",
   "group.create": "Създай група",
   "group.archived": "Архивирано",
+  "group.archivedReadOnly": "Тази група е архивирана. Разархивирайте я, преди да променяте разходи, плащания или членове.",
   "group.createdAt": "Създадена",
   "group.defaultSplit": "Разделяне по подразбиране",
   "group.delete": "Изтрий група",

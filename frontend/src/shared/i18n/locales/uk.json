@@ -250,6 +250,7 @@
   "friend.title": "Друг",
   "group.create": "Створити групу",
   "group.archived": "В архіві",
+  "group.archivedReadOnly": "Цю групу заархівовано. Розархівуйте її, перш ніж змінювати витрати, розрахунки або учасників.",
   "group.createdAt": "Створено",
   "group.defaultSplit": "Поділ за замовчуванням",
   "group.delete": "Видалити групу",

@@ -250,6 +250,7 @@
   "friend.title": "მეგობარი",
   "group.create": "ჯგუფის შექმნა",
   "group.archived": "დაარქივებულია",
+  "group.archivedReadOnly": "ეს ჯგუფი დაარქივებულია. ხარჯების, გასწორებების ან წევრების შეცვლამდე ამოიღეთ არქივიდან.",
   "group.createdAt": "შექმნილია",
   "group.defaultSplit": "ნაგულისხმევი გაყოფა",
   "group.delete": "ჯგუფის წაშლა",

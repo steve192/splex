@@ -74,6 +74,7 @@ import { activeExpenseContexts } from "./expenseContexts";
 import { expenseEditViewState } from "./expenseLoading";
 import { ReceiptsCard } from "./ReceiptsCard";
 import { useReceiptUpload } from "./useReceiptUpload";
+import { isGroupArchived } from "../groups/groupArchivePolicy";
 
 type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
 
@@ -124,6 +125,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [contextArchived, setContextArchived] = useState(false);
+  const [archivedContextOption, setArchivedContextOption] =
+    useState<ContextOption | null>(null);
   const [loadedExpense, setLoadedExpense] = useState<Expense | null>(null);
   const [loadingEditExpense, setLoadingEditExpense] = useState(editing);
   const [editLoadFailed, setEditLoadFailed] = useState(false);
@@ -173,6 +177,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setPaymentValues({});
     setActiveSheet(null);
     setMessage("");
+    setContextArchived(false);
+    setArchivedContextOption(null);
     setLoadedExpense(null);
     setLoadingEditExpense(
       Boolean(params.expenseId || params.pendingMutationId),
@@ -213,9 +219,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     });
   }, [groups, friends]);
 
-  const selectedContext = contextOptions.find(
-    (option) => option.type === contextType && option.id === contextId,
-  );
+  const selectedContext =
+    contextOptions.find(
+      (option) => option.type === contextType && option.id === contextId,
+    ) ??
+    (archivedContextOption?.type === contextType &&
+    archivedContextOption.id === contextId
+      ? archivedContextOption
+      : undefined);
   const canRevealOptions =
     description.trim().length > 0 && amount.trim().length > 0;
   const selectedAllParticipants =
@@ -398,6 +409,20 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           api,
           `/api/groups/${activeContextId}/`,
         );
+        const archived = isGroupArchived(group);
+        setContextArchived(archived);
+        setArchivedContextOption(
+          archived
+            ? {
+                type: "group",
+                id: group.id,
+                name: group.name,
+                currency: group.default_currency,
+                image_url: group.icon_url,
+                last_expense_date: group.last_expense_date,
+              }
+            : null,
+        );
         const rows = group.participants ?? [];
         setParticipants(rows);
         setCurrentParticipantId(group.current_participant_id ?? null);
@@ -412,6 +437,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         if (!loadedExpense && !pendingMutationId)
           setSelectedParticipantIds(rows.map((participant) => participant.id));
       } else {
+        setContextArchived(false);
+        setArchivedContextOption(null);
         const friend = await cachedGet<Friend>(
           api,
           `/api/friends/${activeContextId}/`,
@@ -495,6 +522,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setContextType(option.type);
     setContextId(option.id);
     setCurrency(option.currency);
+    setContextArchived(false);
+    setArchivedContextOption(null);
     // Only contexts chosen here (i.e. when opened from navigation) are remembered.
     if (calledFromNavigation && rememberContext) {
       saveRememberContextPreference({
@@ -535,6 +564,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   async function save() {
     if (saving) return;
     if (!contextId) return;
+    if (contextArchived) {
+      setMessage(t("group.archivedReadOnly"));
+      return;
+    }
     if (splitConfigInvalid || paymentConfigInvalid) return;
     setSaving(true);
     const expense = {
@@ -676,6 +709,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     !!amount &&
     hasPayment &&
     selectedParticipantIds.length > 0 &&
+    !contextArchived &&
     !splitConfigInvalid &&
     !paymentConfigInvalid;
 
@@ -744,6 +778,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             <Button
               mode="text"
               icon="swap-horizontal"
+              disabled={contextArchived}
               onPress={() => setActiveSheet("context")}
             >
               {t("expense.changeContext")}
@@ -760,6 +795,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 label={t("expense.amount")}
                 keyboardType="decimal-pad"
                 value={amount}
+                disabled={contextArchived}
                 onChangeText={(text) =>
                   setAmount(normalizeExpenseAmountInput(text))
                 }
@@ -767,6 +803,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               />
               <Button
                 mode="elevated"
+                disabled={contextArchived}
                 onPress={() => setActiveSheet("currency")}
                 style={styles.selfCenter}
               >
@@ -780,6 +817,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               loading={locationForm.loadingSuggestions}
               label={t("expense.description")}
               maxLength={240}
+              disabled={contextArchived}
             />
           </Card.Content>
         </Card>
@@ -793,6 +831,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               payerLabel={paymentSummary()}
               splitLabel={splitSummary()}
               onOpen={setActiveSheet}
+              disabled={contextArchived}
             />
 
             {selectedContext ? (
@@ -802,6 +841,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 uploading={uploadingReceipt}
                 onAdd={handleAddReceipt}
                 onRemove={handleReceiptRemoved}
+                disabled={contextArchived}
               />
             ) : null}
 
@@ -809,7 +849,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               mode="contained"
               icon="check"
               loading={saving}
-              disabled={!valid || saving}
+              disabled={!valid || saving || contextArchived}
               onPress={save}
             >
               {t("expense.save")}
@@ -830,13 +870,16 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         ) : (
           <HelperText type="info">{t("expense.fastEntryHint")}</HelperText>
         )}
+        {contextArchived ? (
+          <HelperText type="info">{t("group.archivedReadOnly")}</HelperText>
+        ) : null}
         {message ? (
           <Text style={{ color: theme.colors.secondary }}>{message}</Text>
         ) : null}
       </Screen>
 
       <SelectionSheet
-        visible={activeSheet === "currency"}
+        visible={activeSheet === "currency" && !contextArchived}
         title={t("expense.currency")}
         options={currencyOptions}
         value={currency}
@@ -845,14 +888,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         onDismiss={() => setActiveSheet(null)}
       />
       <DatePickerSheet
-        visible={activeSheet === "date"}
+        visible={activeSheet === "date" && !contextArchived}
         value={date}
         title={t("expense.date")}
         onSelect={setDate}
         onDismiss={() => setActiveSheet(null)}
       />
       <PayerSheet
-        visible={activeSheet === "payer"}
+        visible={activeSheet === "payer" && !contextArchived}
         participants={participants}
         currentParticipantId={currentParticipantId}
         multiPayer={multiPayer}
@@ -868,7 +911,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         onPaymentValueChange={setPaymentValue}
       />
       <SplitSheet
-        visible={activeSheet === "split"}
+        visible={activeSheet === "split" && !contextArchived}
         participants={participants}
         currentParticipantId={currentParticipantId}
         selectedParticipantIds={selectedParticipantIds}
@@ -905,7 +948,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         onSplitValueChange={setSplitValue}
       />
       <ContextPickerSheet
-        visible={activeSheet === "context"}
+        visible={activeSheet === "context" && !contextArchived}
         groups={groups}
         friends={friends}
         onSelect={selectContext}

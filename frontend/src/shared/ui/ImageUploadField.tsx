@@ -24,6 +24,7 @@ type ImageUploadFieldProps = {
   /** Prefilled into the Openverse search box. Pass a group name here when
    *  editing a group, or leave empty for the account screen. */
   searchQuery?: string;
+  disabled?: boolean;
   onChange: (image: SelectedImage) => void;
 };
 
@@ -40,7 +41,14 @@ type ImageUploadFieldProps = {
  * So `ImageCropDialog` is the single non-OS cropper in the app - used for
  * everything except the one case where the OS picker gives us crop for free.
  */
-export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange }: Readonly<ImageUploadFieldProps>) {
+export function ImageUploadField({
+  label,
+  name,
+  imageUrl,
+  searchQuery,
+  disabled = false,
+  onChange,
+}: Readonly<ImageUploadFieldProps>) {
   const { t } = useI18n();
   const [previewUrl, setPreviewUrl] = useState(imageUrl ?? "");
   const [error, setError] = useState("");
@@ -124,10 +132,20 @@ export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange 
         <View style={styles.inline}>
           <PersonAvatar name={name} imageUrl={previewUrl} size={72} />
           <View style={styles.gap}>
-            <Button mode="elevated" icon="image-edit-outline" onPress={pickLocalImage}>
+            <Button
+              mode="elevated"
+              icon="image-edit-outline"
+              disabled={disabled}
+              onPress={pickLocalImage}
+            >
               {t("image.uploadCrop")}
             </Button>
-            <Button mode="elevated" icon="magnify" onPress={() => setSearchOpen(true)}>
+            <Button
+              mode="elevated"
+              icon="magnify"
+              disabled={disabled}
+              onPress={() => setSearchOpen(true)}
+            >
               {t("imageSearch.action")}
             </Button>
           </View>
@@ -136,7 +154,7 @@ export function ImageUploadField({ label, name, imageUrl, searchQuery, onChange 
         {error ? <HelperText type="error">{error}</HelperText> : null}
       </View>
       <ImageSearchSheet
-        visible={searchOpen}
+        visible={searchOpen && !disabled}
         initialQuery={searchQuery ?? ""}
         onDismiss={() => setSearchOpen(false)}
         onPick={handleOpenverseSelection}

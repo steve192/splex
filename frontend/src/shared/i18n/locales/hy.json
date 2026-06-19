@@ -250,6 +250,7 @@
   "friend.title": "Ընկեր",
   "group.create": "Ստեղծել խումբ",
   "group.archived": "Արխիվացված",
+  "group.archivedReadOnly": "Այս խումբը արխիվացված է։ Ապաարխիվացրեք այն՝ ծախսերը, հաշվարկները կամ անդամներին փոխելուց առաջ։",
   "group.createdAt": "Ստեղծվել է",
   "group.defaultSplit": "Լռելյայն բաժանում",
   "group.delete": "Ջնջել խումբը",
