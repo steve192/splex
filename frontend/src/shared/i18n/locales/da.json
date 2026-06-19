@@ -157,6 +157,8 @@
   "common.preview": "Forhåndsvisning",
   "common.save": "Gem",
   "common.search": "Søg",
+  "search.offline": "Søgning er kun tilgængelig, når du er online.",
+  "write.offline": "Ændringerne kunne ikke gemmes. Er du forbundet til internettet?",
   "common.today": "I dag",
   "common.you": "Dig",
   "balance.empty": "Ingen saldi endnu.",

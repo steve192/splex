@@ -4,36 +4,73 @@ import { ApiClient, ApiError } from "../api/client";
 
 const HTTP_CACHE_PREFIX = "splex.cache.http.";
 
+export type CachedGetOptions<T> = {
+  onBackgroundRefreshEnd?: () => void;
+  onBackgroundRefreshStart?: () => void;
+  onFreshData?: (data: T) => void | Promise<void>;
+};
+
 function cacheKey(path: string): string {
   return `${HTTP_CACHE_PREFIX}${path}`;
 }
 
+async function getAndCache<T>(api: ApiClient, path: string): Promise<T> {
+  const data = await api.get<T>(path);
+  return writeCachedResponse(path, data);
+}
+
+export async function writeCachedResponse<T>(path: string, data: T): Promise<T> {
+  await AsyncStorage.setItem(cacheKey(path), JSON.stringify(data));
+  return data;
+}
+
 /**
  * Wraps `api.get(path)` with a URL-keyed cache. On a successful response the
- * payload is persisted; on network/offline failure the most recent cached
- * payload is returned. Any non-offline error (HTTP 4xx/5xx, parse errors, etc.)
- * is rethrown so authentication issues and server errors are not masked by
- * stale data.
+ * payload is persisted. If a cached payload exists, it is returned immediately
+ * and the network refresh continues in the background. Callers that need the
+ * eventual fresh payload can pass `onFreshData`.
  *
  * Use one shared cache across screens so visiting any screen that loads a
  * resource (e.g. `/api/groups/{id}/`) makes that resource available offline to
  * every other screen that needs it.
  */
-export async function cachedGet<T>(api: ApiClient, path: string): Promise<T> {
+export async function cachedGet<T>(
+  api: ApiClient,
+  path: string,
+  options: CachedGetOptions<T> = {}
+): Promise<T> {
+  const raw = await AsyncStorage.getItem(cacheKey(path));
+  if (raw !== null) {
+    const cached = JSON.parse(raw) as T;
+    options.onBackgroundRefreshStart?.();
+    getAndCache<T>(api, path)
+      .then((data) => {
+        void options.onFreshData?.(data);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        options.onBackgroundRefreshEnd?.();
+      });
+    return cached;
+  }
+
   try {
-    const data = await api.get<T>(path);
-    await AsyncStorage.setItem(cacheKey(path), JSON.stringify(data));
-    return data;
+    return await getAndCache<T>(api, path);
   } catch (error) {
     if (!(error instanceof ApiError) || !error.offline) {
       throw error;
     }
-    const raw = await AsyncStorage.getItem(cacheKey(path));
-    if (raw !== null) {
-      return JSON.parse(raw) as T;
-    }
     throw error;
   }
+}
+
+/**
+ * Forces a network read and updates the shared cache with the fresh payload.
+ * Use this after successful mutations, where showing a stale cached response
+ * would make the write look like it was lost.
+ */
+export async function refreshCachedGet<T>(api: ApiClient, path: string): Promise<T> {
+  return getAndCache<T>(api, path);
 }
 
 /**

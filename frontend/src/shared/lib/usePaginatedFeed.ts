@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { cachedQueryRefreshCountAfterDelta } from "./cachedQueryState";
+
 export type FeedPage<T> = { items: T[]; nextOffset: number | null };
 
 export type FetchFeedPage<T> = (params: {
@@ -8,6 +10,13 @@ export type FetchFeedPage<T> = (params: {
   search: string;
   /** True only for the unfiltered first page, where the offline cache may serve. */
   cacheable: boolean;
+  /**
+   * Called when a cacheable request returned stale data first and fresh data
+   * arrived later. The hook applies the page without another full reload.
+   */
+  onFreshPage?: (page: FeedPage<T>) => void;
+  onBackgroundRefreshEnd?: () => void;
+  onBackgroundRefreshStart?: () => void;
 }) => Promise<FeedPage<T>>;
 
 type Options<T> = {
@@ -40,9 +49,27 @@ export function refreshOffsets(loadedCount: number, pageSize: number): number[] 
   return Array.from({ length: pageCount }, (_unused, index) => index * pageSize);
 }
 
+export function itemsAfterPage<T>({
+  currentItems,
+  pageItems,
+  offset,
+  replaceOffset
+}: {
+  currentItems: T[];
+  pageItems: T[];
+  offset: number;
+  replaceOffset: boolean;
+}): T[] {
+  if (!offset) return pageItems;
+  return replaceOffset
+    ? [...currentItems.slice(0, offset), ...pageItems, ...currentItems.slice(offset + pageItems.length)]
+    : [...currentItems, ...pageItems];
+}
+
 export type PaginatedFeed<T> = {
   items: T[];
   nextOffset: number | null;
+  loadingInitial: boolean;
   loadingMore: boolean;
   /** Loads a page: offset 0 replaces the list, a positive offset appends. */
   load: (offset?: number) => Promise<void>;
@@ -67,6 +94,8 @@ export function usePaginatedFeed<T>({
 }: Options<T>): PaginatedFeed<T> {
   const [items, setItems] = useState<T[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(0);
+  const [backgroundRefreshes, setBackgroundRefreshes] = useState(0);
+  const [loadingInitial, setLoadingInitial] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   // Number of fetched items currently shown (excluding any prepended drafts) so
   // a refresh can refetch the same amount in deterministic page-sized chunks.
@@ -86,20 +115,16 @@ export function usePaginatedFeed<T>({
     return mapInitialRef.current && !term ? mapInitialRef.current(results) : results;
   }, []);
 
-  const load = useCallback(async (offset = 0) => {
-    if (offset && loadingMoreRef.current) return;
-    if (offset) {
-      loadingMoreRef.current = true;
-      setLoadingMore(true);
-    }
-    try {
-      const term = termRef.current;
-      const page = await fetchPageRef.current({
-        offset,
-        limit: pageSizeRef.current,
-        search: term,
-        cacheable: !offset && !term
-      });
+  const beginBackgroundRefresh = useCallback(() => {
+    setBackgroundRefreshes((current) => cachedQueryRefreshCountAfterDelta(current, 1));
+  }, []);
+
+  const endBackgroundRefresh = useCallback(() => {
+    setBackgroundRefreshes((current) => cachedQueryRefreshCountAfterDelta(current, -1));
+  }, []);
+
+  const applyPage = useCallback(
+    async (page: FeedPage<T>, offset: number, term: string, replaceOffset = false) => {
       if (offset) {
         setItems((current) => {
           loadedCount.current = loadedCountAfterPage({
@@ -107,7 +132,12 @@ export function usePaginatedFeed<T>({
             currentLoadedCount: loadedCount.current,
             pageItemCount: page.items.length
           });
-          return [...current, ...page.items];
+          return itemsAfterPage({
+            currentItems: current,
+            pageItems: page.items,
+            offset,
+            replaceOffset
+          });
         });
       } else {
         setItems(await withDrafts(page.items, term));
@@ -118,31 +148,73 @@ export function usePaginatedFeed<T>({
         });
       }
       setNextOffset(page.nextOffset);
+    },
+    [withDrafts]
+  );
+
+  const load = useCallback(async (offset = 0) => {
+    if (offset && loadingMoreRef.current) return;
+    if (offset) {
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    } else {
+      setLoadingInitial(true);
+    }
+    try {
+      const term = termRef.current;
+      const page = await fetchPageRef.current({
+        offset,
+        limit: pageSizeRef.current,
+        search: term,
+        cacheable: !offset && !term,
+        onFreshPage: (freshPage) => {
+          if (termRef.current === term) {
+            void applyPage(freshPage, offset, term, true);
+          }
+        },
+        onBackgroundRefreshEnd: endBackgroundRefresh,
+        onBackgroundRefreshStart: beginBackgroundRefresh
+      });
+      await applyPage(page, offset, term);
     } finally {
       if (offset) {
         loadingMoreRef.current = false;
         setLoadingMore(false);
+      } else {
+        setLoadingInitial(false);
       }
     }
-  }, [withDrafts]);
+  }, [applyPage, beginBackgroundRefresh, endBackgroundRefresh]);
 
   const refresh = useCallback(async () => {
+    setLoadingInitial(true);
     const term = termRef.current;
-    const pages = await Promise.all(
-      refreshOffsets(loadedCount.current, pageSizeRef.current).map((offset) =>
-        fetchPageRef.current({
-          offset,
-          limit: pageSizeRef.current,
-          search: term,
-          cacheable: offset === 0 && !term
-        })
-      )
-    );
-    const results = pages.flatMap((page) => page.items);
-    setItems(await withDrafts(results, term));
-    loadedCount.current = results.length;
-    setNextOffset(pages.at(-1)?.nextOffset ?? null);
-  }, [withDrafts]);
+    try {
+      const pages = await Promise.all(
+        refreshOffsets(loadedCount.current, pageSizeRef.current).map((offset) =>
+          fetchPageRef.current({
+            offset,
+            limit: pageSizeRef.current,
+            search: term,
+            cacheable: offset === 0 && !term,
+            onFreshPage: (freshPage) => {
+              if (termRef.current === term) {
+                void applyPage(freshPage, offset, term, true);
+              }
+            },
+            onBackgroundRefreshEnd: endBackgroundRefresh,
+            onBackgroundRefreshStart: beginBackgroundRefresh
+          })
+        )
+      );
+      const results = pages.flatMap((page) => page.items);
+      setItems(await withDrafts(results, term));
+      loadedCount.current = results.length;
+      setNextOffset(pages.at(-1)?.nextOffset ?? null);
+    } finally {
+      setLoadingInitial(false);
+    }
+  }, [applyPage, beginBackgroundRefresh, endBackgroundRefresh, withDrafts]);
 
   // Reload the first page whenever the committed term changes, skipping the
   // initial value so it does not race the screen's focus-effect first load.
@@ -155,7 +227,7 @@ export function usePaginatedFeed<T>({
   }, [load, searchTerm]);
 
   return useMemo(
-    () => ({ items, nextOffset, loadingMore, load, refresh }),
-    [items, nextOffset, loadingMore, load, refresh]
+    () => ({ items, nextOffset, loadingInitial: loadingInitial || backgroundRefreshes > 0, loadingMore, load, refresh }),
+    [items, nextOffset, loadingInitial, backgroundRefreshes, loadingMore, load, refresh]
   );
 }

@@ -24,6 +24,7 @@ export type Group = {
   current_participant_id?: number;
   participants?: Participant[];
   last_expense_date?: string | null;
+  balance?: string;
 };
 
 export type Friend = {

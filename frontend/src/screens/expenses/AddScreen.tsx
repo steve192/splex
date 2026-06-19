@@ -2,25 +2,56 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, HelperText, Text, TextInput, useTheme } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Card,
+  HelperText,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { ActivityStackParamList, AddStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
+import {
+  ActivityStackParamList,
+  AddStackParamList,
+  OverviewStackParamList,
+} from "../../application/navigationTypes";
 import { ApiError } from "../../shared/api/client";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { useLocationForm } from "../../shared/location/useLocationForm";
 import { cachedGet } from "../../shared/lib/offlineCache";
-import { loadRememberContextPreference, saveRememberContextPreference } from "../../shared/lib/lastContextPreference";
-import { buildParticipantsForFriend, createClientId, moneyValue } from "../../shared/lib/money";
+import {
+  loadRememberContextPreference,
+  saveRememberContextPreference,
+} from "../../shared/lib/lastContextPreference";
+import {
+  buildParticipantsForFriend,
+  createClientId,
+  moneyValue,
+} from "../../shared/lib/money";
 import { syncPendingMutations } from "../../shared/sync/queue";
-import { ContextOption, ContextType, Expense, Friend, Group, Participant, SplitMethod } from "../../shared/types/models";
+import {
+  ContextOption,
+  ContextType,
+  Expense,
+  Friend,
+  Group,
+  Participant,
+  SplitMethod,
+} from "../../shared/types/models";
 import { DatePickerSheet } from "../../shared/ui/DatePickerSheet";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
-import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
+import {
+  SelectionOption,
+  SelectionSheet,
+} from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
@@ -32,13 +63,15 @@ import {
   hydrateSplit,
   normalizeExpenseAmountInput,
   perMemberShare,
-  splitTabValue
+  splitTabValue,
 } from "./expenseFormLogic";
 import { useExpenseValidation } from "./useExpenseValidation";
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
 import { ExpenseOptionsCard } from "./ExpenseOptionsCard";
+import { activeExpenseContexts } from "./expenseContexts";
+import { expenseEditViewState } from "./expenseLoading";
 import { ReceiptsCard } from "./ReceiptsCard";
 import { useReceiptUpload } from "./useReceiptUpload";
 
@@ -64,24 +97,37 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
   const [groups, setGroups] = useState<Group[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [contextType, setContextType] = useState<ContextType>(route?.params?.contextType ?? "group");
-  const [contextId, setContextId] = useState<number | null>(route?.params?.contextId ?? null);
+  const [contextType, setContextType] = useState<ContextType>(
+    route?.params?.contextType ?? "group",
+  );
+  const [contextId, setContextId] = useState<number | null>(
+    route?.params?.contextId ?? null,
+  );
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [currentParticipantId, setCurrentParticipantId] = useState<number | null>(null);
+  const [currentParticipantId, setCurrentParticipantId] = useState<
+    number | null
+  >(null);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [date, setDate] = useState("");
   const [splitMethod, setSplitMethod] = useState<SplitMethod>("equal_all");
-  const [selectedParticipantIds, setSelectedParticipantIds] = useState<number[]>([]);
+  const [selectedParticipantIds, setSelectedParticipantIds] = useState<
+    number[]
+  >([]);
   const [payerId, setPayerId] = useState<number | null>(null);
   const [multiPayer, setMultiPayer] = useState(false);
   const [splitValues, setSplitValues] = useState<Record<number, string>>({});
-  const [paymentValues, setPaymentValues] = useState<Record<number, string>>({});
+  const [paymentValues, setPaymentValues] = useState<Record<number, string>>(
+    {},
+  );
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadedExpense, setLoadedExpense] = useState<Expense | null>(null);
+  const [loadingEditExpense, setLoadingEditExpense] = useState(editing);
+  const [editLoadFailed, setEditLoadFailed] = useState(false);
+  const [deletingPendingExpense, setDeletingPendingExpense] = useState(false);
   // client_id is generated once and stays stable for the lifetime of the form.
   // It links any draft receipts the user uploads before save to the eventual
   // expense (see uploadReceipt + backend attach_drafts_to_expense).
@@ -94,17 +140,19 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     uploading: uploadingReceipt,
     canUpload: canUploadReceipts,
     add: handleAddReceipt,
-    remove: handleReceiptRemoved
+    remove: handleReceiptRemoved,
   } = useReceiptUpload({
     expenseId,
     pendingMutationId,
     contextType,
     contextId,
     draftClientId,
-    onMissingContext: () => setMessage(t("expense.contextChoose"))
+    onMissingContext: () => setMessage(t("expense.contextChoose")),
   });
 
-  const locationForm = useLocationForm(user?.location_tracking_enabled ?? false);
+  const locationForm = useLocationForm(
+    user?.location_tracking_enabled ?? false,
+  );
 
   function resetForm(params = route?.params ?? {}) {
     const nextContextType = params.contextType ?? "group";
@@ -126,48 +174,56 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setActiveSheet(null);
     setMessage("");
     setLoadedExpense(null);
+    setLoadingEditExpense(
+      Boolean(params.expenseId || params.pendingMutationId),
+    );
+    setEditLoadFailed(false);
   }
 
-  const contextOptions = useMemo<ContextOption[]>(
-    () => {
-      const options = [
-        ...groups.map((group) => ({
-          type: "group" as const,
-          id: group.id,
-          name: group.name,
-          currency: group.default_currency,
-          image_url: group.icon_url,
-          last_expense_date: group.last_expense_date
-        })),
-        ...friends.map((friend) => ({
-          type: "friendship" as const,
-          id: friend.id,
-          name: friend.display_name,
-          currency: friend.default_currency,
-          image_url: friend.avatar_url,
-          last_expense_date: friend.last_expense_date
-        }))
-      ];
+  const contextOptions = useMemo<ContextOption[]>(() => {
+    const options = [
+      ...groups.map((group) => ({
+        type: "group" as const,
+        id: group.id,
+        name: group.name,
+        currency: group.default_currency,
+        image_url: group.icon_url,
+        last_expense_date: group.last_expense_date,
+      })),
+      ...friends.map((friend) => ({
+        type: "friendship" as const,
+        id: friend.id,
+        name: friend.display_name,
+        currency: friend.default_currency,
+        image_url: friend.avatar_url,
+        last_expense_date: friend.last_expense_date,
+      })),
+    ];
 
-      // Sort by recently used (most recent expense first), then by name for those without expenses
-      return options.sort((a, b) => {
-        const aDate = a.last_expense_date ? new Date(a.last_expense_date).getTime() : 0;
-        const bDate = b.last_expense_date ? new Date(b.last_expense_date).getTime() : 0;
-        if (aDate !== bDate) return bDate - aDate;
-        return a.name.localeCompare(b.name);
-      });
-    },
-    [groups, friends]
-  );
+    // Sort by recently used (most recent expense first), then by name for those without expenses
+    return options.sort((a, b) => {
+      const aDate = a.last_expense_date
+        ? new Date(a.last_expense_date).getTime()
+        : 0;
+      const bDate = b.last_expense_date
+        ? new Date(b.last_expense_date).getTime()
+        : 0;
+      if (aDate !== bDate) return bDate - aDate;
+      return a.name.localeCompare(b.name);
+    });
+  }, [groups, friends]);
 
   const selectedContext = contextOptions.find(
-    (option) => option.type === contextType && option.id === contextId
+    (option) => option.type === contextType && option.id === contextId,
   );
-  const canRevealOptions = description.trim().length > 0 && amount.trim().length > 0;
+  const canRevealOptions =
+    description.trim().length > 0 && amount.trim().length > 0;
   const selectedAllParticipants =
     participants.length > 0 &&
     selectedParticipantIds.length === participants.length &&
-    participants.every((participant) => selectedParticipantIds.includes(participant.id));
+    participants.every((participant) =>
+      selectedParticipantIds.includes(participant.id),
+    );
   const {
     totalAmount,
     tabValue,
@@ -177,7 +233,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     adjustedHasNegativeShare,
     splitConfigInvalid,
     paymentLeft,
-    paymentConfigInvalid
+    paymentConfigInvalid,
   } = useExpenseValidation({
     amount,
     splitMethod,
@@ -185,7 +241,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     splitValues,
     multiPayer,
     participants,
-    paymentValues
+    paymentValues,
   });
 
   useEffect(() => {
@@ -217,10 +273,11 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     try {
       const [groupRows, friendRows] = await Promise.all([
         cachedGet<Group[]>(api, "/api/groups/"),
-        cachedGet<Friend[]>(api, "/api/friends/")
+        cachedGet<Friend[]>(api, "/api/friends/"),
       ]);
-      setGroups(groupRows);
-      setFriends(friendRows);
+      const activeContexts = activeExpenseContexts(groupRows, friendRows);
+      setGroups(activeContexts.groups);
+      setFriends(activeContexts.friends);
       setMessage("");
     } catch {
       setMessage(t("common.error"));
@@ -230,13 +287,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   useFocusEffect(
     useCallback(() => {
       loadContexts().catch(() => undefined);
-    }, [loadContexts])
+    }, [loadContexts]),
   );
 
   useEffect(() => {
     if (!expenseId) return;
-    api.get<Expense>(`/api/expenses/${expenseId}/`)
+    let cancelled = false;
+    setLoadingEditExpense(true);
+    setEditLoadFailed(false);
+    api
+      .get<Expense>(`/api/expenses/${expenseId}/`)
       .then((expense) => {
+        if (cancelled) return;
         setLoadedExpense(expense);
         setDescription(expense.description);
         setAmount(expense.original_amount);
@@ -245,17 +307,36 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
         setContextId(expense.group_id ?? expense.friendship_id ?? null);
-        applyPaymentsToForm(expense.payments, { setMultiPayer, setPaymentValues, setPayerId });
+        applyPaymentsToForm(expense.payments, {
+          setMultiPayer,
+          setPaymentValues,
+          setPayerId,
+        });
         setReceipts(expense.receipts ?? []);
       })
-      .catch(() => setMessage(t("common.error")));
-  }, [api, expenseId, t]);
+      .catch(() => {
+        if (cancelled) return;
+        setEditLoadFailed(true);
+        setLoadingEditExpense(false);
+        setMessage(t("common.error"));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, expenseId, setReceipts, t]);
 
   useEffect(() => {
     if (!pendingMutationId) return;
-    syncPendingMutations.get(pendingMutationId)
+    let cancelled = false;
+    setLoadingEditExpense(true);
+    setEditLoadFailed(false);
+    syncPendingMutations
+      .get(pendingMutationId)
       .then((mutation) => {
+        if (cancelled) return;
         if (!mutation) {
+          setEditLoadFailed(true);
+          setLoadingEditExpense(false);
           setMessage(t("common.error"));
           return;
         }
@@ -282,12 +363,28 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setDate(expense.date ?? "");
         const splitMethodFromPayload = expense.split_method ?? "equal_all";
         setSplitMethod(splitMethodFromPayload);
-        const hydrated = hydrateSplit(splitMethodFromPayload, expense.split_payload);
-        if (hydrated.selectedParticipantIds) setSelectedParticipantIds(hydrated.selectedParticipantIds);
+        const hydrated = hydrateSplit(
+          splitMethodFromPayload,
+          expense.split_payload,
+        );
+        if (hydrated.selectedParticipantIds)
+          setSelectedParticipantIds(hydrated.selectedParticipantIds);
         if (hydrated.splitValues) setSplitValues(hydrated.splitValues);
-        applyPaymentsToForm(expense.payments, { setMultiPayer, setPaymentValues, setPayerId });
+        applyPaymentsToForm(expense.payments, {
+          setMultiPayer,
+          setPaymentValues,
+          setPayerId,
+        });
       })
-      .catch(() => setMessage(t("common.error")));
+      .catch(() => {
+        if (cancelled) return;
+        setEditLoadFailed(true);
+        setLoadingEditExpense(false);
+        setMessage(t("common.error"));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pendingMutationId, t]);
 
   useEffect(() => {
@@ -297,50 +394,101 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       if (activeContextId == null) return;
 
       if (contextType === "group") {
-        const group = await cachedGet<Group>(api, `/api/groups/${activeContextId}/`);
+        const group = await cachedGet<Group>(
+          api,
+          `/api/groups/${activeContextId}/`,
+        );
         const rows = group.participants ?? [];
         setParticipants(rows);
         setCurrentParticipantId(group.current_participant_id ?? null);
-        setPayerId((current) => current ?? group.current_participant_id ?? rows[0]?.id ?? null);
-        if (!loadedExpense && !pendingMutationId) setCurrency(group.default_currency);
-        if (!loadedExpense && !pendingMutationId && group.default_split_method) setSplitMethod(group.default_split_method);
-        if (!loadedExpense && !pendingMutationId) setSelectedParticipantIds(rows.map((participant) => participant.id));
+        setPayerId(
+          (current) =>
+            current ?? group.current_participant_id ?? rows[0]?.id ?? null,
+        );
+        if (!loadedExpense && !pendingMutationId)
+          setCurrency(group.default_currency);
+        if (!loadedExpense && !pendingMutationId && group.default_split_method)
+          setSplitMethod(group.default_split_method);
+        if (!loadedExpense && !pendingMutationId)
+          setSelectedParticipantIds(rows.map((participant) => participant.id));
       } else {
-        const friend = await cachedGet<Friend>(api, `/api/friends/${activeContextId}/`);
+        const friend = await cachedGet<Friend>(
+          api,
+          `/api/friends/${activeContextId}/`,
+        );
         const rows = buildParticipantsForFriend(friend);
         setParticipants(rows);
         setCurrentParticipantId(friend.current_participant_id ?? null);
-        setPayerId((current) => current ?? friend.current_participant_id ?? rows[0]?.id ?? null);
-        if (!loadedExpense && !pendingMutationId) setCurrency(friend.default_currency);
-        if (!loadedExpense && !pendingMutationId) setSelectedParticipantIds(rows.map((participant) => participant.id));
+        setPayerId(
+          (current) =>
+            current ?? friend.current_participant_id ?? rows[0]?.id ?? null,
+        );
+        if (!loadedExpense && !pendingMutationId)
+          setCurrency(friend.default_currency);
+        if (!loadedExpense && !pendingMutationId)
+          setSelectedParticipantIds(rows.map((participant) => participant.id));
       }
       if (!loadedExpense && !pendingMutationId) {
         setSplitValues({});
         setPaymentValues({});
       }
+      if (pendingMutationId) {
+        setLoadingEditExpense(false);
+        setEditLoadFailed(false);
+      }
     }
-    loadContext().catch(() => setMessage(t("common.error")));
-  }, [api, contextId, contextType, loadedExpense, pendingMutationId, t]);
+    loadContext().catch(() => {
+      if (editing) {
+        setEditLoadFailed(true);
+        setLoadingEditExpense(false);
+      }
+      setMessage(t("common.error"));
+    });
+  }, [
+    api,
+    contextId,
+    contextType,
+    editing,
+    loadedExpense,
+    pendingMutationId,
+    t,
+  ]);
 
   useEffect(() => {
     if (!loadedExpense || !participants.length) return;
-    setSelectedParticipantIds(loadedExpense.owed.map((share) => share.participant_id));
+    setSelectedParticipantIds(
+      loadedExpense.owed.map((share) => share.participant_id),
+    );
     // For "exact", the rendered amounts live on owed shares, not in split_payload.
     const payloadForHydrate =
       loadedExpense.split_method === "exact"
         ? { shares: loadedExpense.owed }
         : loadedExpense.split_payload;
-    const hydrated = hydrateSplit(loadedExpense.split_method, payloadForHydrate);
+    const hydrated = hydrateSplit(
+      loadedExpense.split_method,
+      payloadForHydrate,
+    );
     setSplitValues(hydrated.splitValues ?? {});
+    setLoadingEditExpense(false);
+    setEditLoadFailed(false);
   }, [loadedExpense, participants]);
 
   useEffect(() => {
-    if (!pendingMutationId || !participants.length || selectedParticipantIds.length) return;
-    setSelectedParticipantIds(participants.map((participant) => participant.id));
+    if (
+      !pendingMutationId ||
+      !participants.length ||
+      selectedParticipantIds.length
+    )
+      return;
+    setSelectedParticipantIds(
+      participants.map((participant) => participant.id),
+    );
   }, [participants, pendingMutationId, selectedParticipantIds.length]);
 
   function participantName(participant: Participant): string {
-    return participant.id === currentParticipantId ? t("common.you") : participant.display_name;
+    return participant.id === currentParticipantId
+      ? t("common.you")
+      : participant.display_name;
   }
 
   function selectContext(option: ContextOption) {
@@ -351,7 +499,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     if (calledFromNavigation && rememberContext) {
       saveRememberContextPreference({
         remember: true,
-        context: { type: option.type, id: option.id }
+        context: { type: option.type, id: option.id },
       }).catch(() => undefined);
     }
   }
@@ -363,7 +511,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     // unchecking clears any remembered target so there is no pre-population.
     saveRememberContextPreference({
       remember: next,
-      context: next && contextId != null ? { type: contextType, id: contextId } : null
+      context:
+        next && contextId != null ? { type: contextType, id: contextId } : null,
     }).catch(() => undefined);
   }
 
@@ -371,7 +520,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setSelectedParticipantIds((current) =>
       current.includes(participantId)
         ? current.filter((id) => id !== participantId)
-        : [...current, participantId]
+        : [...current, participantId],
     );
   }
 
@@ -384,6 +533,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   }
 
   async function save() {
+    if (saving) return;
     if (!contextId) return;
     if (splitConfigInvalid || paymentConfigInvalid) return;
     setSaving(true);
@@ -397,17 +547,27 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       split_payload: buildSplitPayload({
         method: effectiveSplitMethod(splitMethod, selectedAllParticipants),
         selectedParticipantIds,
-        splitValues
+        splitValues,
       }),
-      payments: buildPayments({ multiPayer, participants, paymentValues, payerId, amount }),
+      payments: buildPayments({
+        multiPayer,
+        participants,
+        paymentValues,
+        payerId,
+        amount,
+      }),
       ...buildExpenseLocationPayload({
         latitude: locationForm.latitude,
         longitude: locationForm.longitude,
         date,
-        editing
-      })
+        editing,
+      }),
     };
-    const payload = { context_type: contextType, context_id: contextId, expense };
+    const payload = {
+      context_type: contextType,
+      context_id: contextId,
+      expense,
+    };
     try {
       const path =
         contextType === "group"
@@ -421,14 +581,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           type: "create_expense",
           payload,
           createdAt: new Date().toISOString(),
-          status: "pending"
+          status: "pending",
         });
       } else {
         await api.post(path, expense);
       }
       setMessage(t("expense.saved"));
       showSuccess({ icon: "check" });
-      navigation.setParams?.({ expenseId: undefined, contextType: undefined, contextId: undefined });
+      navigation.setParams?.({
+        expenseId: undefined,
+        contextType: undefined,
+        contextId: undefined,
+      });
       navigateAfterSave();
       if (!expenseId) {
         setDescription("");
@@ -438,13 +602,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setPaymentValues({});
       }
     } catch (error) {
-      if (error instanceof ApiError && error.offline) {
+      if (error instanceof ApiError && error.offline && !expenseId) {
         await syncPendingMutations.enqueue({
           id: expense.client_id,
           type: "create_expense",
           payload,
           createdAt: new Date().toISOString(),
-          status: "pending"
+          status: "pending",
         });
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
@@ -453,9 +617,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         // Extract field-specific validation errors
         const fieldErrors = Object.entries(error.data)
           .filter(([, value]) => Array.isArray(value))
-          .map(([field, messages]) => `${field}: ${(messages as string[]).join(", ")}`)
+          .map(
+            ([field, messages]) =>
+              `${field}: ${(messages as string[]).join(", ")}`,
+          )
           .join(" | ");
         setMessage(fieldErrors || t("expense.saveFailed"));
+      } else if (error instanceof ApiError && error.offline) {
+        setMessage(apiWriteErrorMessage(error, t));
       } else {
         setMessage(t("expense.saveFailed"));
       }
@@ -465,9 +634,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   }
 
   async function deletePendingExpense() {
-    if (!pendingMutationId) return;
-    await syncPendingMutations.remove(pendingMutationId);
-    navigateAfterSave();
+    if (!pendingMutationId || deletingPendingExpense) return;
+    setDeletingPendingExpense(true);
+    try {
+      await syncPendingMutations.remove(pendingMutationId);
+      navigateAfterSave();
+    } finally {
+      setDeletingPendingExpense(false);
+    }
   }
 
   function navigateAfterSave() {
@@ -478,14 +652,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     if (contextType === "group" && contextId) {
       navigation.getParent?.()?.navigate("Overview", {
         screen: "GroupDetail",
-        params: { id: contextId }
+        params: { id: contextId },
       });
       return;
     }
     if (contextType === "friendship" && contextId) {
       navigation.getParent?.()?.navigate("Overview", {
         screen: "FriendDetail",
-        params: { id: contextId }
+        params: { id: contextId },
       });
       return;
     }
@@ -505,7 +679,41 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     !splitConfigInvalid &&
     !paymentConfigInvalid;
 
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
+  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
+    value: code,
+    label: code,
+  }));
+  const editViewState = expenseEditViewState({
+    editing,
+    loading: loadingEditExpense,
+    loadFailed: editLoadFailed,
+  });
+
+  if (editViewState !== "content") {
+    return (
+      <View style={styles.flex}>
+        <Screen>
+          <View style={styles.rowBetween}>
+            <Text variant="headlineSmall">
+              {editing ? t("expense.edit") : t("expense.add")}
+            </Text>
+            {editing && (
+              <Button mode="text" onPress={navigateAfterSave}>
+                {t("common.cancel")}
+              </Button>
+            )}
+          </View>
+          <View style={styles.emptyStateContent}>
+            {editViewState === "loading" ? (
+              <ActivityIndicator />
+            ) : (
+              <Text variant="bodyMedium">{t("common.error")}</Text>
+            )}
+          </View>
+        </Screen>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.flex}>
@@ -513,11 +721,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         <View style={styles.rowBetween}>
           <View style={[styles.flex, styles.inline]}>
             {selectedContext ? (
-              <PersonAvatar name={selectedContext.name} imageUrl={selectedContext.image_url} />
+              <PersonAvatar
+                name={selectedContext.name}
+                imageUrl={selectedContext.image_url}
+              />
             ) : null}
             <View>
-              <Text variant="headlineSmall">{editing ? t("expense.edit") : t("expense.add")}</Text>
-              {selectedContext ? <Text variant="bodyMedium">{selectedContext.name}</Text> : null}
+              <Text variant="headlineSmall">
+                {editing ? t("expense.edit") : t("expense.add")}
+              </Text>
+              {selectedContext ? (
+                <Text variant="bodyMedium">{selectedContext.name}</Text>
+              ) : null}
             </View>
           </View>
           {editing && (
@@ -526,7 +741,11 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             </Button>
           )}
           {!editing && selectedContext && (
-            <Button mode="text" icon="swap-horizontal" onPress={() => setActiveSheet("context")}>
+            <Button
+              mode="text"
+              icon="swap-horizontal"
+              onPress={() => setActiveSheet("context")}
+            >
               {t("expense.changeContext")}
             </Button>
           )}
@@ -541,10 +760,16 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 label={t("expense.amount")}
                 keyboardType="decimal-pad"
                 value={amount}
-                onChangeText={(text) => setAmount(normalizeExpenseAmountInput(text))}
+                onChangeText={(text) =>
+                  setAmount(normalizeExpenseAmountInput(text))
+                }
                 autoFocus={!amount && activeSheet === null}
               />
-              <Button mode="elevated" onPress={() => setActiveSheet("currency")} style={styles.selfCenter}>
+              <Button
+                mode="elevated"
+                onPress={() => setActiveSheet("currency")}
+                style={styles.selfCenter}
+              >
                 {currency}
               </Button>
             </View>
@@ -580,11 +805,24 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               />
             ) : null}
 
-            <Button mode="contained" icon="check" loading={saving} disabled={!valid || saving} onPress={save}>
+            <Button
+              mode="contained"
+              icon="check"
+              loading={saving}
+              disabled={!valid || saving}
+              onPress={save}
+            >
               {t("expense.save")}
             </Button>
             {pendingMutationId ? (
-              <Button mode="text" icon="delete-outline" textColor={dangerColor} onPress={deletePendingExpense}>
+              <Button
+                mode="text"
+                icon="delete-outline"
+                textColor={dangerColor}
+                loading={deletingPendingExpense}
+                disabled={saving || deletingPendingExpense}
+                onPress={deletePendingExpense}
+              >
                 {t("expense.deletePending")}
               </Button>
             ) : null}
@@ -592,7 +830,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         ) : (
           <HelperText type="info">{t("expense.fastEntryHint")}</HelperText>
         )}
-        {message ? <Text style={{ color: theme.colors.secondary }}>{message}</Text> : null}
+        {message ? (
+          <Text style={{ color: theme.colors.secondary }}>{message}</Text>
+        ) : null}
       </Screen>
 
       <SelectionSheet
@@ -646,7 +886,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             selectedParticipantIds,
             selectedEqualShares,
             splitValues,
-            totalAmount
+            totalAmount,
           })
         }
         onDismiss={() => setActiveSheet(null)}
@@ -656,7 +896,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         }}
         onEnsureParticipants={() => {
           if (!selectedParticipantIds.length) {
-            setSelectedParticipantIds(participants.map((participant) => participant.id));
+            setSelectedParticipantIds(
+              participants.map((participant) => participant.id),
+            );
           }
         }}
         onToggleParticipant={toggleParticipant}
@@ -683,16 +925,19 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       return names.length ? names.join(", ") : t("expense.multiplePayers");
     }
     if (!payerId) return t("expense.paidBy");
-    const payer = participants.find((participant) => participant.id === payerId);
+    const payer = participants.find(
+      (participant) => participant.id === payerId,
+    );
     return payer ? participantName(payer) : t("expense.paidBy");
   }
 
   function splitSummary(): string {
     if (tabValue === "equal") {
-      return t("split.selectedCountEqual", { count: selectedParticipantIds.length });
+      return t("split.selectedCountEqual", {
+        count: selectedParticipantIds.length,
+      });
     }
     const methodLabel = t(`split.${splitMethod}`);
     return `${methodLabel} (${selectedParticipantIds.length})`;
   }
-
 }

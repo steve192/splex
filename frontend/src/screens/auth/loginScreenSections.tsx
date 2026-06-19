@@ -69,7 +69,12 @@ export function LoginFormSection({
         value={email}
         onChangeText={onEmailChange}
       />
-      <Button mode="contained" loading={loading} disabled={!email || loading} onPress={onRequestLink}>
+      <Button
+        mode="contained"
+        loading={loading}
+        disabled={!email || loading}
+        onPress={onRequestLink}
+      >
         {t("auth.request")}
       </Button>
       {loginRequested ? (
@@ -85,7 +90,12 @@ export function LoginFormSection({
             autoComplete="one-time-code"
             textContentType="oneTimeCode"
           />
-          <Button mode="elevated" disabled={!email || !code || loading} onPress={onVerifyCode}>
+          <Button
+            mode="elevated"
+            loading={loading}
+            disabled={!email || !code || loading}
+            onPress={onVerifyCode}
+          >
             {t("auth.verify")}
           </Button>
         </>
@@ -101,7 +111,10 @@ export function LoginFormSection({
         <>
           <Divider />
           <View style={styles.rowBetween}>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+            <Text
+              variant="bodySmall"
+              style={{ color: theme.colors.onSurfaceVariant }}
+            >
               {t("auth.backendUrl")}
             </Text>
             <IconButton icon="cog-outline" onPress={onBackendSettingsToggle} />
@@ -118,21 +131,35 @@ export function LoginFormSection({
           ) : null}
         </>
       ) : null}
-      {message ? <HelperText type={message.tone}>{message.text}</HelperText> : null}
+      {message ? (
+        <HelperText type={message.tone}>{message.text}</HelperText>
+      ) : null}
     </>
   );
 }
 
-export function DemoModeSection({ loading, onStartDemo }: DemoModeSectionProps) {
+export function DemoModeSection({
+  loading,
+  onStartDemo,
+}: DemoModeSectionProps) {
   const { t } = useI18n();
   const theme = useTheme();
   return (
     <View style={styles.loginDemoSection}>
       <Divider />
-      <Text variant="bodySmall" style={[styles.loginDemoHint, { color: theme.colors.onSurfaceVariant }]}>
+      <Text
+        variant="bodySmall"
+        style={[styles.loginDemoHint, { color: theme.colors.onSurfaceVariant }]}
+      >
         {t("auth.demoHint")}
       </Text>
-      <Button mode="outlined" icon="play-circle-outline" loading={loading} disabled={loading} onPress={onStartDemo}>
+      <Button
+        mode="outlined"
+        icon="play-circle-outline"
+        loading={loading}
+        disabled={loading}
+        onPress={onStartDemo}
+      >
         {t("auth.startDemo")}
       </Button>
     </View>

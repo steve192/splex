@@ -1,10 +1,21 @@
 import { ReactNode, useState } from "react";
 import { Linking, View } from "react-native";
-import { Button, Card, HelperText, List, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  HelperText,
+  List,
+  Switch,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
 import { ApiError } from "../../shared/api/client";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -24,12 +35,15 @@ type Step = {
 };
 
 const STEPS: Step[] = [
-  { key: "splitwiseImport.step1", link: "https://secure.splitwise.com/apps/new" },
+  {
+    key: "splitwiseImport.step1",
+    link: "https://secure.splitwise.com/apps/new",
+  },
   { key: "splitwiseImport.step2" },
   { key: "splitwiseImport.step3", link: "https://splitwise.com/" },
   { key: "splitwiseImport.step4" },
   { key: "splitwiseImport.step5" },
-  { key: "splitwiseImport.step6" }
+  { key: "splitwiseImport.step6" },
 ];
 
 const LINK_PLACEHOLDER = "{link}";
@@ -39,7 +53,7 @@ const LINK_PLACEHOLDER = "{link}";
 function renderStepText(
   t: TranslateFn,
   step: Step,
-  linkColor: string
+  linkColor: string,
 ): ReactNode {
   if (!step.link) {
     return t(step.key);
@@ -66,12 +80,12 @@ function renderStepText(
 export function SplitwiseImportScreen() {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const theme = useTheme();
   const [apiKey, setApiKey] = useState("");
   const [importFriends, setImportFriends] = useState(false);
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleImport() {
     if (!apiKey.trim() || running) return;
@@ -80,7 +94,7 @@ export function SplitwiseImportScreen() {
     try {
       const result = await api.post<ImportResponse>("/api/imports/splitwise/", {
         api_key: apiKey.trim(),
-        import_friends_as_groups: importFriends
+        import_friends_as_groups: importFriends,
       });
       setSummary(result.summary);
       setApiKey("");
@@ -88,12 +102,14 @@ export function SplitwiseImportScreen() {
       let message: string;
       if (error instanceof ApiError && error.status === 401) {
         message = t("splitwiseImport.invalidKey");
+      } else if (error instanceof ApiError && error.offline) {
+        message = apiWriteErrorMessage(error, t);
       } else if (error instanceof Error && error.message) {
         message = error.message;
       } else {
         message = t("common.error");
       }
-      setErrorMessage(message);
+      showSnackbar(message);
     } finally {
       setRunning(false);
     }
@@ -112,7 +128,14 @@ export function SplitwiseImportScreen() {
           <Text variant="bodyMedium">{t("splitwiseImport.intro")}</Text>
           <View style={{ gap: 12, marginTop: 4 }}>
             {STEPS.map((step, index) => (
-              <View key={step.key} style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+              <View
+                key={step.key}
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  alignItems: "flex-start",
+                }}
+              >
                 <View
                   style={{
                     alignItems: "center",
@@ -120,12 +143,15 @@ export function SplitwiseImportScreen() {
                     borderRadius: 14,
                     height: 28,
                     justifyContent: "center",
-                    width: 28
+                    width: 28,
                   }}
                 >
                   <Text
                     variant="labelLarge"
-                    style={{ color: theme.colors.onPrimaryContainer, fontWeight: "700" }}
+                    style={{
+                      color: theme.colors.onPrimaryContainer,
+                      fontWeight: "700",
+                    }}
                   >
                     {index + 1}
                   </Text>
@@ -143,7 +169,9 @@ export function SplitwiseImportScreen() {
       </Card>
       <Card mode="elevated">
         <Card.Content style={styles.gap}>
-          <Text variant="titleMedium">{t("splitwiseImport.friendsAsGroups.title")}</Text>
+          <Text variant="titleMedium">
+            {t("splitwiseImport.friendsAsGroups.title")}
+          </Text>
           <Text variant="bodyMedium">
             {t("splitwiseImport.friendsAsGroups.explanation")}
           </Text>
@@ -190,28 +218,34 @@ export function SplitwiseImportScreen() {
       {summary ? (
         <Card mode="elevated">
           <Card.Content style={styles.gap}>
-            <Text variant="titleMedium">{t("splitwiseImport.successTitle")}</Text>
-            <Text>{t("splitwiseImport.summaryGroups", { count: summary.groups_created })}</Text>
-            <Text>{t("splitwiseImport.summaryExpenses", { count: summary.expenses_imported })}</Text>
+            <Text variant="titleMedium">
+              {t("splitwiseImport.successTitle")}
+            </Text>
             <Text>
-              {t("splitwiseImport.summarySettlements", { count: summary.settlements_imported })}
+              {t("splitwiseImport.summaryGroups", {
+                count: summary.groups_created,
+              })}
+            </Text>
+            <Text>
+              {t("splitwiseImport.summaryExpenses", {
+                count: summary.expenses_imported,
+              })}
+            </Text>
+            <Text>
+              {t("splitwiseImport.summarySettlements", {
+                count: summary.settlements_imported,
+              })}
             </Text>
             {summary.skipped_expenses > 0 ? (
               <Text>
-                {t("splitwiseImport.summarySkipped", { count: summary.skipped_expenses })}
+                {t("splitwiseImport.summarySkipped", {
+                  count: summary.skipped_expenses,
+                })}
               </Text>
             ) : null}
           </Card.Content>
         </Card>
       ) : null}
-      <Snackbar
-        visible={!!errorMessage}
-        onDismiss={() => setErrorMessage("")}
-        duration={6000}
-        action={{ label: t("common.dismiss"), onPress: () => setErrorMessage("") }}
-      >
-        {errorMessage}
-      </Snackbar>
     </Screen>
   );
 }

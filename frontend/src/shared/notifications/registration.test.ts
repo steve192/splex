@@ -21,7 +21,7 @@ vi.mock("react-native", () => ({
 vi.mock("../lib/serviceWorker", () => ({ ensureServiceWorkerRegistration: vi.fn() }));
 vi.mock("../lib/webPush", () => ({ urlBase64ToArrayBuffer: vi.fn() }));
 
-import { getLocalPushPreference } from "./registration";
+import { getLocalPushPreference, resetPushPreferenceOnLogin } from "./registration";
 
 const LOCAL_PREF_KEY = "splex.push.devicePreference";
 
@@ -46,6 +46,12 @@ describe("getLocalPushPreference", () => {
 
   it("returns 'unset' for any unexpected stored value", async () => {
     storage.set(LOCAL_PREF_KEY, "true");
+    expect(await getLocalPushPreference()).toBe("unset");
+  });
+
+  it("clears an explicit local off preference on login", async () => {
+    storage.set(LOCAL_PREF_KEY, "off");
+    await resetPushPreferenceOnLogin();
     expect(await getLocalPushPreference()).toBe("unset");
   });
 });

@@ -31,9 +31,36 @@ describe("fetchLedgerPage", () => {
       cacheable: true
     });
 
-    expect(mocks.cachedGet).toHaveBeenCalledWith(api, "/api/groups/7/ledger/?offset=0&limit=30");
+    expect(mocks.cachedGet).toHaveBeenCalledWith(
+      api,
+      "/api/groups/7/ledger/?offset=0&limit=30",
+      expect.objectContaining({ onFreshData: expect.any(Function) })
+    );
     expect(api.get).not.toHaveBeenCalled();
     expect(result).toEqual({ items: [{ type: "expense" }], nextOffset: 30 });
+  });
+
+  it("maps delayed fresh cache data back to a ledger page", async () => {
+    mocks.cachedGet.mockImplementationOnce(async (
+      _api: ApiClient,
+      _path: string,
+      options: { onFreshData: (data: { results: unknown[]; next_offset: number | null }) => void }
+    ) => {
+      options.onFreshData({ results: [{ type: "settlement" }], next_offset: null });
+      return { results: [{ type: "expense" }], next_offset: 30 };
+    });
+    const api = fakeApi({ get: vi.fn() });
+    const onFreshPage = vi.fn();
+
+    await fetchLedgerPage(api, "groups", 7, {
+      offset: 0,
+      limit: 30,
+      search: "",
+      cacheable: true,
+      onFreshPage
+    });
+
+    expect(onFreshPage).toHaveBeenCalledWith({ items: [{ type: "settlement" }], nextOffset: null });
   });
 
   it("bypasses the offline cache for searched pages", async () => {

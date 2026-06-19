@@ -15,11 +15,9 @@ from splex.groups.api.views import (
     GroupSettleReminderView,
     GroupStatisticsView,
     GroupTrackExpenseReminderView,
-    OverviewView,
 )
 
 urlpatterns = [
-    path("overview/", OverviewView.as_view()),
     path("groups/", GroupListCreateView.as_view()),
     path("groups/<int:group_id>/", GroupDetailView.as_view()),
     path("groups/<int:group_id>/leave/", GroupLeaveView.as_view()),

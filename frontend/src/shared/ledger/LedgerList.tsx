@@ -17,6 +17,7 @@ type LedgerListProps = {
   /** Whether pending drafts are shown above; suppresses the empty state if so. */
   hasPending: boolean;
   nextOffset: number | null;
+  loadingInitial: boolean;
   loadingMore: boolean;
   onLoadMore: (offset: number) => void;
 };
@@ -30,6 +31,7 @@ export function LedgerList({
   searching,
   hasPending,
   nextOffset,
+  loadingInitial,
   loadingMore,
   onLoadMore
 }: Readonly<LedgerListProps>) {
@@ -53,12 +55,13 @@ export function LedgerList({
         )
       )}
       {items.length === 0 &&
+        !loadingInitial &&
         (searching ? (
           <EmptyState image={appImages.emptyExpenses} text={t("common.noResults")} />
         ) : hasPending ? null : (
           <EmptyState image={appImages.emptyExpenses} text={t("expense.empty")} />
         ))}
-      {nextOffset !== null && (
+      {nextOffset !== null && items.length > 0 && (
         <Button mode="text" loading={loadingMore} onPress={() => onLoadMore(nextOffset)}>
           {t("activity.loadMore")}
         </Button>

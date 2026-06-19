@@ -157,6 +157,8 @@
   "common.preview": "Parashikim",
   "common.save": "Ruaj",
   "common.search": "Kërko",
+  "search.offline": "Kërkimi është i disponueshëm vetëm kur je online.",
+  "write.offline": "Nuk mund të ruheshin ndryshimet. A je i lidhur me internetin?",
   "common.today": "Sot",
   "common.you": "Ju",
   "balance.empty": "Nuk ka ende bilance.",

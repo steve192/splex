@@ -8,7 +8,14 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { RootStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../../shared/lib/inviteLinks";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
+import {
+  clearUrlQuery,
+  inviteDebug,
+  inviteTokenFromCurrentUrl,
+  PENDING_INVITE_STORAGE_KEY,
+} from "../../shared/lib/inviteLinks";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -23,29 +30,42 @@ type InvitationPreview = {
   target_participant?: string;
 };
 
-type InvitationAcceptScreenProps = NativeStackScreenProps<RootStackParamList, "InvitationAccept">;
+type InvitationAcceptScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "InvitationAccept"
+>;
 
-export function InvitationAcceptScreen({ navigation, route }: Readonly<InvitationAcceptScreenProps>) {
+export function InvitationAcceptScreen({
+  navigation,
+  route,
+}: Readonly<InvitationAcceptScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { hasPending, isPending, runPendingAction } = usePendingAction<
+    "accept" | "dismiss"
+  >();
   const [token] = useState(route?.params?.token ?? inviteTokenFromCurrentUrl());
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [message, setMessage] = useState("");
 
   async function dismissInvitation() {
-    inviteDebug("invitation dismissed by user");
-    await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
-    clearUrlQuery();
-    navigation.navigate("Main");
+    await runPendingAction("dismiss", async () => {
+      inviteDebug("invitation dismissed by user");
+      await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
+      clearUrlQuery();
+      navigation.navigate("Main");
+    });
   }
 
   async function loadPreview() {
     inviteDebug("invitation preview request started", {
       hasToken: Boolean(token),
-      tokenPreview: token ? `${token.slice(0, 6)}...` : ""
+      tokenPreview: token ? `${token.slice(0, 6)}...` : "",
     });
     try {
-      const response = await api.get<InvitationPreview>(`/api/invitations/${token}/`);
+      const response = await api.get<InvitationPreview>(
+        `/api/invitations/${token}/`,
+      );
       inviteDebug("invitation preview request succeeded", response);
       setPreview(response);
       setMessage("");
@@ -57,27 +77,31 @@ export function InvitationAcceptScreen({ navigation, route }: Readonly<Invitatio
   }
 
   async function accept() {
-    inviteDebug("invitation accept request started", {
-      hasToken: Boolean(token),
-      tokenPreview: token ? `${token.slice(0, 6)}...` : ""
+    await runPendingAction("accept", async () => {
+      inviteDebug("invitation accept request started", {
+        hasToken: Boolean(token),
+        tokenPreview: token ? `${token.slice(0, 6)}...` : "",
+      });
+      try {
+        const response = await api.post(`/api/invitations/${token}/accept/`);
+        inviteDebug("invitation accept request succeeded", response);
+        await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
+        setMessage(t("invite.accepted"));
+        clearUrlQuery();
+        navigation.navigate("Main");
+      } catch (error) {
+        inviteDebug("invitation accept request failed", error);
+        setMessage(apiWriteErrorMessage(error, t));
+      }
     });
-    try {
-      const response = await api.post(`/api/invitations/${token}/accept/`);
-      inviteDebug("invitation accept request succeeded", response);
-      await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
-      setMessage(t("invite.accepted"));
-      clearUrlQuery();
-      navigation.navigate("Main");
-    } catch (error) {
-      inviteDebug("invitation accept request failed", error);
-      setMessage(t("invite.acceptFailed"));
-    }
   }
 
   useEffect(() => {
     inviteDebug("invitation accept screen mounted or token changed", {
-      routeToken: route?.params?.token ? `${route.params.token.slice(0, 6)}...` : "",
-      stateToken: token ? `${token.slice(0, 6)}...` : ""
+      routeToken: route?.params?.token
+        ? `${route.params.token.slice(0, 6)}...`
+        : "",
+      stateToken: token ? `${token.slice(0, 6)}...` : "",
     });
     if (token) {
       loadPreview().catch(() => undefined);
@@ -108,28 +132,53 @@ export function InvitationAcceptScreen({ navigation, route }: Readonly<Invitatio
                 <List.Item
                   title={preview.group}
                   description={t("invite.group")}
-                  left={() => <ClickableAvatar name={preview.group ?? ""} imageUrl={preview.group_image_url} />}
+                  left={() => (
+                    <ClickableAvatar
+                      name={preview.group ?? ""}
+                      imageUrl={preview.group_image_url}
+                    />
+                  )}
                 />
               ) : null}
               {preview.target_participant ? (
                 <List.Item
                   title={preview.target_participant}
                   description={t(`invite.type.${preview.type}`)}
-                  left={(props) => <List.Icon {...props} icon="account-outline" />}
+                  left={(props) => (
+                    <List.Icon {...props} icon="account-outline" />
+                  )}
                 />
               ) : null}
               {!preview.valid && (
                 <View style={styles.emptyStateContent}>
-                  <Image source={appImages.invitationExpired} style={styles.emptyStateImage} resizeMode="contain" />
+                  <Image
+                    source={appImages.invitationExpired}
+                    style={styles.emptyStateImage}
+                    resizeMode="contain"
+                  />
                   <Text variant="bodyMedium">{t("invite.expired")}</Text>
                 </View>
               )}
             </>
           ) : null}
-          <Button mode="contained" disabled={!token || (preview ? !preview.valid : false)} onPress={accept}>
+          <Button
+            mode="contained"
+            loading={isPending("accept")}
+            disabled={
+              hasPending || !token || (preview ? !preview.valid : false)
+            }
+            onPress={accept}
+          >
             {t("invite.accept")}
           </Button>
-          <Button mode="text" onPress={dismissInvitation}>{t("invite.dismiss")}</Button>
+          <Button
+            mode="text"
+            loading={isPending("dismiss")}
+            disabled={hasPending}
+            onPress={dismissInvitation}
+          >
+            {t("invite.dismiss")}
+          </Button>
           {message ? <Text>{message}</Text> : null}
         </Card.Content>
       </Card>

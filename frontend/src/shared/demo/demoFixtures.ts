@@ -743,42 +743,11 @@ const FRIENDSHIP_BY_ID: Record<number, typeof FRIENDSHIP> = {
 
 const FRIENDS_LIST = [FRIENDSHIP, FRIENDSHIP_DANA];
 
-const OVERVIEW = {
-  // The real overview endpoint returns only the user's groups (friends are
-  // listed separately via /api/friends/). Each group's balance is the user's
-  // own net position, which is exactly their row in the computed balances.
-  items: [
-    {
-      type: "group",
-      id: TRIP_GROUP.id,
-      name: TRIP_GROUP.name,
-      icon_url: "",
-      currency: "EUR",
-      balance: meBalance(TRIP_BALANCES),
-      archived_at: null
-    },
-    {
-      type: "group",
-      id: FLAT_GROUP.id,
-      name: FLAT_GROUP.name,
-      icon_url: "",
-      currency: "EUR",
-      balance: meBalance(FLAT_BALANCES),
-      archived_at: null
-    },
-    {
-      type: "group",
-      id: ARCHIVED_GROUP.id,
-      name: ARCHIVED_GROUP.name,
-      icon_url: "",
-      currency: "USD",
-      balance: "0.00",
-      archived_at: "2026-01-01T00:00:00Z"
-    }
-  ]
-};
-
-const GROUPS_LIST = [TRIP_GROUP, FLAT_GROUP];
+const GROUPS_LIST = [
+  { ...TRIP_GROUP, balance: meBalance(TRIP_BALANCES) },
+  { ...FLAT_GROUP, balance: meBalance(FLAT_BALANCES) },
+  { ...ARCHIVED_GROUP, balance: "0.00" }
+];
 
 const BALANCES_BY_GROUP: Record<number, typeof TRIP_BALANCES> = {
   [TRIP_GROUP.id]: TRIP_BALANCES,
@@ -1293,7 +1262,6 @@ const PREFERRED_PAYMENT_METHOD_BY_PARTICIPANT: Record<number, DemoPaymentMethod>
 export const demoFixtures = {
   user: DEMO_USER,
   tokens: DEMO_TOKENS,
-  overview: OVERVIEW,
   groupsList: GROUPS_LIST,
   groupsById: GROUPS_BY_ID,
   groupParticipants: GROUP_PARTICIPANTS,

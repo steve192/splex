@@ -2,29 +2,59 @@ import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, List, Portal, Text, TextInput, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  Dialog,
+  List,
+  Portal,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
+import {
+  ActivityStackParamList,
+  OverviewStackParamList,
+} from "../../application/navigationTypes";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { buildParticipantsForFriend } from "../../shared/lib/money";
-import { Friend, Group, Participant, Settlement } from "../../shared/types/models";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
+import {
+  Friend,
+  Group,
+  Participant,
+  Settlement,
+} from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { Screen } from "../../shared/ui/Screen";
-import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
+import {
+  SelectionOption,
+  SelectionSheet,
+} from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 
 type SettlementDetailScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "SettlementDetail">
   | NativeStackScreenProps<ActivityStackParamList, "SettlementDetail">;
 
-export function SettlementDetailScreen({ route, navigation }: SettlementDetailScreenProps) {
+export function SettlementDetailScreen({
+  route,
+  navigation,
+}: SettlementDetailScreenProps) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const { showSnackbar } = useSnackbar();
+  const { hasPending, isPending, runPendingAction } = usePendingAction<
+    "delete" | "save"
+  >();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
   const settlementId = route.params.id;
@@ -35,7 +65,9 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
   const [payerId, setPayerId] = useState<number | null>(null);
   const [receiverId, setReceiverId] = useState<number | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [activeSheet, setActiveSheet] = useState<"payer" | "receiver" | null>(null);
+  const [activeSheet, setActiveSheet] = useState<"payer" | "receiver" | null>(
+    null,
+  );
 
   async function load() {
     const row = await api.get<Settlement>(`/api/settlements/${settlementId}/`);
@@ -47,7 +79,9 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
       const group = await api.get<Group>(`/api/groups/${row.group_id}/`);
       setParticipants(group.participants ?? []);
     } else if (row.friendship_id) {
-      const friend = await api.get<Friend>(`/api/friends/${row.friendship_id}/`);
+      const friend = await api.get<Friend>(
+        `/api/friends/${row.friendship_id}/`,
+      );
       setParticipants(buildParticipantsForFriend(friend));
     }
   }
@@ -55,42 +89,63 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
   useFocusEffect(
     useCallback(() => {
       load().catch(() => undefined);
-    }, [settlementId])
+    }, [settlementId]),
   );
 
   useEffect(() => {
     navigation.setOptions({
       title: settlement
         ? `${settlement.amount} ${settlement.currency}`
-        : t("settlement.title")
+        : t("settlement.title"),
     });
   }, [navigation, settlement, t]);
 
   async function deleteSettlement() {
-    await api.delete(`/api/settlements/${settlementId}/`);
-    setConfirmDelete(false);
-    navigation.goBack();
+    await runPendingAction("delete", async () => {
+      try {
+        await api.delete(`/api/settlements/${settlementId}/`);
+      } catch (error) {
+        setConfirmDelete(false);
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      setConfirmDelete(false);
+      navigation.goBack();
+    });
   }
 
   async function saveEdit() {
-    await api.patch(`/api/settlements/${settlementId}/`, {
-      amount,
-      payer_participant_id: payerId,
-      receiver_participant_id: receiverId
+    await runPendingAction("save", async () => {
+      try {
+        await api.patch(`/api/settlements/${settlementId}/`, {
+          amount,
+          payer_participant_id: payerId,
+          receiver_participant_id: receiverId,
+        });
+        setEditing(false);
+        await load();
+      } catch (error) {
+        setEditing(false);
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      showSuccess({ icon: "cash-check" });
     });
-    setEditing(false);
-    showSuccess({ icon: "cash-check" });
-    await load();
   }
 
   function participantName(participantId: number | null): string {
-    return participants.find((participant) => participant.id === participantId)?.display_name ?? "";
+    return (
+      participants.find((participant) => participant.id === participantId)
+        ?.display_name ?? ""
+    );
   }
 
-  const participantOptions: SelectionOption<number>[] = participants.map((participant) => ({
-    value: participant.id,
-    label: participant.display_name
-  }));
+  const participantOptions: SelectionOption<number>[] = participants.map(
+    (participant) => ({
+      value: participant.id,
+      label: participant.display_name,
+    }),
+  );
 
   return (
     <View style={styles.flex}>
@@ -102,7 +157,9 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
                 <Text variant="headlineMedium">
                   {settlement.amount} {settlement.currency}
                 </Text>
-                <Text variant="bodyMedium">{formatDeviceDate(settlement.created_at)}</Text>
+                <Text variant="bodyMedium">
+                  {formatDeviceDate(settlement.created_at)}
+                </Text>
               </Card.Content>
             </Card>
 
@@ -119,7 +176,9 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
                   )}
                 />
                 <List.Item
-                  title={settlement.receiver_display_name ?? t("settlement.receiver")}
+                  title={
+                    settlement.receiver_display_name ?? t("settlement.receiver")
+                  }
                   description={t("settlement.received")}
                   left={() => (
                     <ClickableAvatar
@@ -135,10 +194,20 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
               <Text variant="bodyMedium">{t("settlement.deleted")}</Text>
             ) : (
               <View style={styles.rowActions}>
-                <Button mode="contained-tonal" icon="pencil-outline" onPress={() => setEditing(true)}>
+                <Button
+                  mode="contained-tonal"
+                  icon="pencil-outline"
+                  onPress={() => setEditing(true)}
+                >
                   {t("common.edit")}
                 </Button>
-                <Button mode="elevated" icon="delete-outline" textColor={dangerColor} onPress={() => setConfirmDelete(true)}>
+                <Button
+                  mode="elevated"
+                  icon="delete-outline"
+                  textColor={dangerColor}
+                  disabled={hasPending}
+                  onPress={() => setConfirmDelete(true)}
+                >
                   {t("settlement.delete")}
                 </Button>
               </View>
@@ -148,17 +217,36 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
       </Screen>
 
       <Portal>
-        <Dialog visible={confirmDelete} onDismiss={() => setConfirmDelete(false)}>
+        <Dialog
+          visible={confirmDelete}
+          onDismiss={
+            hasPending ? () => undefined : () => setConfirmDelete(false)
+          }
+        >
           <Dialog.Title>{t("settlement.delete")}</Dialog.Title>
           <Dialog.Content>
             <Text>{t("settlement.deleteConfirm")}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setConfirmDelete(false)}>{t("common.cancel")}</Button>
-            <Button onPress={deleteSettlement}>{t("common.delete")}</Button>
+            <Button
+              disabled={hasPending}
+              onPress={() => setConfirmDelete(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              loading={isPending("delete")}
+              disabled={hasPending}
+              onPress={deleteSettlement}
+            >
+              {t("common.delete")}
+            </Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog visible={editing} onDismiss={() => setEditing(false)}>
+        <Dialog
+          visible={editing}
+          onDismiss={hasPending ? () => undefined : () => setEditing(false)}
+        >
           <Dialog.Title>{t("common.edit")}</Dialog.Title>
           <Dialog.Content>
             <View style={styles.gap}>
@@ -182,9 +270,18 @@ export function SettlementDetailScreen({ route, navigation }: SettlementDetailSc
             </View>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setEditing(false)}>{t("common.cancel")}</Button>
+            <Button disabled={hasPending} onPress={() => setEditing(false)}>
+              {t("common.cancel")}
+            </Button>
             <Button
-              disabled={!amount || !payerId || !receiverId || payerId === receiverId}
+              loading={isPending("save")}
+              disabled={
+                hasPending ||
+                !amount ||
+                !payerId ||
+                !receiverId ||
+                payerId === receiverId
+              }
               onPress={saveEdit}
             >
               {t("common.save")}

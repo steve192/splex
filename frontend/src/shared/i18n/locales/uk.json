@@ -157,6 +157,8 @@
   "common.preview": "Попередній перегляд",
   "common.save": "Зберегти",
   "common.search": "Пошук",
+  "search.offline": "Пошук доступний лише онлайн.",
+  "write.offline": "Не вдалося зберегти зміни. Ви підключені до інтернету?",
   "common.today": "Сьогодні",
   "common.you": "Ви",
   "balance.empty": "Балансу ще немає.",

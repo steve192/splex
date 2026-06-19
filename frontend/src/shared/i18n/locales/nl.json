@@ -157,6 +157,8 @@
   "common.preview": "Voorbeeld",
   "common.save": "Opslaan",
   "common.search": "Zoeken",
+  "search.offline": "Zoeken is alleen beschikbaar wanneer je online bent.",
+  "write.offline": "Je wijzigingen konden niet worden opgeslagen. Ben je verbonden met internet?",
   "common.today": "Vandaag",
   "common.you": "Jij",
   "balance.empty": "Nog geen saldi.",

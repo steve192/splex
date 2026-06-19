@@ -157,6 +157,8 @@
   "common.preview": "Pregled",
   "common.save": "Spremi",
   "common.search": "Pretraži",
+  "search.offline": "Pretraživanje je dostupno samo kada ste na mreži.",
+  "write.offline": "Promjene nije moguće spremiti. Jeste li povezani s internetom?",
   "common.today": "Danas",
   "common.you": "Vi",
   "balance.empty": "Još nema stanja.",

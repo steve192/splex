@@ -157,6 +157,8 @@
   "common.preview": "Náhled",
   "common.save": "Uložit",
   "common.search": "Hledat",
+  "search.offline": "Vyhledávání je dostupné jen online.",
+  "write.offline": "Změny se nepodařilo uložit. Jste připojeni k internetu?",
   "common.today": "Dnes",
   "common.you": "Vy",
   "balance.empty": "Zatím žádné zůstatky.",

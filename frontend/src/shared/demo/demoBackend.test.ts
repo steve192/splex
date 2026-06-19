@@ -28,14 +28,11 @@ describe("demoBackend GET", () => {
     expect(user.email).toBe("demo@splex.sterul.com");
   });
 
-  it("returns overview items", async () => {
-    const overview = await handleDemoRequest<{ items: Array<{ id: number }> }>("GET", "/api/overview/");
-    expect(overview.items.length).toBeGreaterThan(0);
-  });
-
   it("returns groups list, then a specific group detail", async () => {
-    const groups = await handleDemoRequest<Array<{ id: number; name: string }>>("GET", "/api/groups/");
+    const groups = await handleDemoRequest<Array<{ id: number; name: string; balance: string; archived_at: string | null }>>("GET", "/api/groups/");
     expect(groups.length).toBeGreaterThan(0);
+    expect(groups.some((group) => group.archived_at)).toBe(true);
+    expect(groups[0].balance).toMatch(/^-?\d+\.\d{2}$/);
     const first = groups[0];
     const detail = await handleDemoRequest<{ id: number; participants: unknown[] }>(
       "GET",

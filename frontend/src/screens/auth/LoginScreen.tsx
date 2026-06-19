@@ -1,7 +1,13 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  View,
+} from "react-native";
 import { Surface, Text, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,7 +34,14 @@ export function LoginScreen({ route }: Readonly<Props>) {
   const { t } = useI18n();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { api, loginAsDemo, loginWithCode, loginWithGoogle, loginWithToken, requestMagicLink } = useAuth();
+  const {
+    api,
+    loginAsDemo,
+    loginWithCode,
+    loginWithGoogle,
+    loginWithToken,
+    requestMagicLink,
+  } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<LoginMessage | null>(null);
@@ -50,7 +63,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
     demoModeEnabled,
     providersResolved,
     backendUrl,
-    setBackendUrl
+    setBackendUrl,
   } = useLoginBootstrap({
     api,
     loginWithGoogle,
@@ -59,7 +72,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
     setLoading,
     notifyError,
     notifyInfo,
-    t
+    t,
   });
 
   function onEmailChange(value: string) {
@@ -74,13 +87,17 @@ export function LoginScreen({ route }: Readonly<Props>) {
   }
 
   async function requestLink() {
+    if (loading) return;
     inviteDebug("magic link request started");
     setLoading(true);
     try {
       const requestLocale = detectDeviceLocale();
       const inviteToken =
-        inviteTokenFromCurrentUrl() || (await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY));
-      inviteDebug("magic link request using invite token", { hasInviteToken: Boolean(inviteToken) });
+        inviteTokenFromCurrentUrl() ||
+        (await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY));
+      inviteDebug("magic link request using invite token", {
+        hasInviteToken: Boolean(inviteToken),
+      });
       await requestMagicLink(email, inviteToken || undefined, requestLocale);
       setLoginRequested(true);
       setCode("");
@@ -100,6 +117,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
   }
 
   async function startDemo() {
+    if (loading) return;
     setLoading(true);
     try {
       await loginAsDemo();
@@ -111,6 +129,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
   }
 
   async function verifyCode() {
+    if (loading) return;
     inviteDebug("magic code verification started");
     setLoading(true);
     try {
@@ -138,30 +157,39 @@ export function LoginScreen({ route }: Readonly<Props>) {
           {
             backgroundColor: theme.colors.background,
             paddingTop: 20 + insets.top,
-            paddingBottom: 20 + insets.bottom
-          }
+            paddingBottom: 20 + insets.bottom,
+          },
         ]}
       >
         <View style={styles.loginContent}>
           <View
             style={[
               styles.loginShell,
-              Platform.OS === "web" ? styles.loginShellWeb : undefined
+              Platform.OS === "web" ? styles.loginShellWeb : undefined,
             ]}
           >
             <View
               style={[
                 styles.loginHero,
-                Platform.OS === "web" ? styles.loginHeroWeb : undefined
+                Platform.OS === "web" ? styles.loginHeroWeb : undefined,
               ]}
             >
               <View style={styles.loginBrandMark}>
-                <Image source={appImages.pwaMaskableIcon} style={styles.loginBrandImage} />
+                <Image
+                  source={appImages.pwaMaskableIcon}
+                  style={styles.loginBrandImage}
+                />
               </View>
               <Text variant="displaySmall" style={styles.loginTitle}>
                 {t("auth.title")}
               </Text>
-              <Text variant="bodyLarge" style={[styles.loginSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+              <Text
+                variant="bodyLarge"
+                style={[
+                  styles.loginSubtitle,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
                 {t("auth.subtitle")}
               </Text>
             </View>
@@ -170,7 +198,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
               style={[
                 styles.loginPanel,
                 Platform.OS === "web" ? styles.loginPanelWeb : undefined,
-                { backgroundColor: theme.colors.surface }
+                { backgroundColor: theme.colors.surface },
               ]}
             >
               <LoginFormSection
@@ -183,7 +211,9 @@ export function LoginScreen({ route }: Readonly<Props>) {
                 loading={loading}
                 loginRequested={loginRequested}
                 message={message}
-                onBackendSettingsToggle={() => setBackendSettingsOpen((current) => !current)}
+                onBackendSettingsToggle={() =>
+                  setBackendSettingsOpen((current) => !current)
+                }
                 onBackendUrlChange={onBackendUrlChange}
                 onCodeChange={setCode}
                 onEmailChange={onEmailChange}

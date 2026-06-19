@@ -1,5 +1,12 @@
 import { View } from "react-native";
-import { Button, Card, List, Text, TextInput } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Card,
+  List,
+  Text,
+  TextInput,
+} from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { Friend, Participant } from "../../shared/types/models";
@@ -20,6 +27,11 @@ type GroupMembersSectionProps = {
   onRename: (participant: Participant) => void;
   onRemove: (participant: Participant) => void;
   onCreateInvite: (participantId?: number) => void;
+  actionsDisabled?: boolean;
+  addingFriendId?: number | null;
+  addNewLoading?: boolean;
+  inviteLoading?: boolean;
+  targetedInviteParticipantId?: number | null;
 };
 
 /** Members management: invite, add by name/suggestion, and the participant list. */
@@ -34,14 +46,25 @@ export function GroupMembersSection({
   onAddNew,
   onRename,
   onRemove,
-  onCreateInvite
+  onCreateInvite,
+  actionsDisabled = false,
+  addingFriendId = null,
+  addNewLoading = false,
+  inviteLoading = false,
+  targetedInviteParticipantId = null,
 }: Readonly<GroupMembersSectionProps>) {
   const { t } = useI18n();
   return (
     <>
       <View style={styles.rowBetween}>
         <Text variant="titleLarge">{t("group.members")}</Text>
-        <Button mode="elevated" icon="link-variant" onPress={() => onCreateInvite()}>
+        <Button
+          mode="elevated"
+          icon="link-variant"
+          loading={inviteLoading}
+          disabled={actionsDisabled}
+          onPress={() => onCreateInvite()}
+        >
           {t("invite.create")}
         </Button>
       </View>
@@ -62,11 +85,18 @@ export function GroupMembersSection({
                   friend={friend}
                   description={t("participant.registered")}
                   onPress={() => onAddFriend(friend)}
+                  disabled={actionsDisabled}
+                  loading={addingFriendId === friend.id}
                 />
               ))}
             </View>
           ) : null}
-          <Button mode="contained" disabled={!newParticipantName.trim()} onPress={onAddNew}>
+          <Button
+            mode="contained"
+            loading={addNewLoading}
+            disabled={actionsDisabled || !newParticipantName.trim()}
+            onPress={onAddNew}
+          >
             {t("common.save")}
           </Button>
         </Card.Content>
@@ -76,19 +106,38 @@ export function GroupMembersSection({
           <Card.Content>
             {participant.kind === "unregistered" ? (
               <View style={styles.memberCardRow}>
-                <ClickableAvatar name={participant.display_name} imageUrl={participant.avatar_url} />
+                <ClickableAvatar
+                  name={participant.display_name}
+                  imageUrl={participant.avatar_url}
+                />
                 <View style={styles.memberContent}>
                   <Text variant="titleMedium">{participant.display_name}</Text>
-                  <Text variant="bodyMedium">{t("participant.unregistered")}</Text>
+                  <Text variant="bodyMedium">
+                    {t("participant.unregistered")}
+                  </Text>
                   <View style={[styles.rowActions, styles.memberActionRow]}>
-                    <Button mode="text" onPress={() => onRename(participant)}>
+                    <Button
+                      mode="text"
+                      disabled={actionsDisabled}
+                      onPress={() => onRename(participant)}
+                    >
                       {t("common.edit")}
                     </Button>
-                    <Button mode="text" onPress={() => onCreateInvite(participant.id)}>
+                    <Button
+                      mode="text"
+                      loading={targetedInviteParticipantId === participant.id}
+                      disabled={actionsDisabled}
+                      onPress={() => onCreateInvite(participant.id)}
+                    >
                       {t("invite.targeted")}
                     </Button>
                     {canRemoveParticipant(participant, currentParticipantId) ? (
-                      <Button mode="text" textColor={dangerColor} onPress={() => onRemove(participant)}>
+                      <Button
+                        mode="text"
+                        textColor={dangerColor}
+                        disabled={actionsDisabled}
+                        onPress={() => onRemove(participant)}
+                      >
                         {t("common.delete")}
                       </Button>
                     ) : null}
@@ -101,7 +150,11 @@ export function GroupMembersSection({
                 description={t("participant.registered")}
                 dangerColor={dangerColor}
                 deleteLabel={t("common.delete")}
-                removable={canRemoveParticipant(participant, currentParticipantId)}
+                removable={canRemoveParticipant(
+                  participant,
+                  currentParticipantId,
+                )}
+                disabled={actionsDisabled}
                 onRemove={() => onRemove(participant)}
               />
             )}
@@ -115,11 +168,15 @@ export function GroupMembersSection({
 function FriendSuggestionItem({
   friend,
   description,
-  onPress
+  onPress,
+  disabled,
+  loading,
 }: Readonly<{
   friend: Friend;
   description: string;
   onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 }>) {
   return (
     <List.Item
@@ -127,8 +184,9 @@ function FriendSuggestionItem({
       title={friend.display_name}
       description={description}
       left={renderPersonAvatar(friend.display_name, friend.avatar_url)}
-      right={renderListIcon("account-plus")}
-      onPress={onPress}
+      right={loading ? renderListSpinner() : renderListIcon("account-plus")}
+      disabled={disabled}
+      onPress={disabled ? undefined : onPress}
     />
   );
 }
@@ -139,21 +197,32 @@ function RegisteredParticipantItem({
   dangerColor,
   deleteLabel,
   removable,
-  onRemove
+  disabled,
+  onRemove,
 }: Readonly<{
   participant: Participant;
   description: string;
   dangerColor: string;
   deleteLabel: string;
   removable: boolean;
+  disabled?: boolean;
   onRemove: () => void;
 }>) {
   return (
     <List.Item
       title={participant.display_name}
       description={description}
-      left={renderClickableAvatar(participant.display_name, participant.avatar_url)}
-      right={renderDeleteAction(removable, dangerColor, deleteLabel, onRemove)}
+      left={renderClickableAvatar(
+        participant.display_name,
+        participant.avatar_url,
+      )}
+      right={renderDeleteAction(
+        removable,
+        dangerColor,
+        deleteLabel,
+        onRemove,
+        disabled,
+      )}
     />
   );
 }
@@ -176,16 +245,28 @@ function renderListIcon(icon: string) {
   };
 }
 
+function renderListSpinner() {
+  return function ListSpinnerRenderer() {
+    return <ActivityIndicator size={18} />;
+  };
+}
+
 function renderDeleteAction(
   removable: boolean,
   dangerColor: string,
   deleteLabel: string,
-  onRemove: () => void
+  onRemove: () => void,
+  disabled = false,
 ) {
   return function DeleteActionRenderer() {
     if (!removable) return null;
     return (
-      <Button mode="text" textColor={dangerColor} onPress={onRemove}>
+      <Button
+        mode="text"
+        textColor={dangerColor}
+        disabled={disabled}
+        onPress={onRemove}
+      >
         {deleteLabel}
       </Button>
     );

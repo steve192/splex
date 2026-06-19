@@ -157,6 +157,8 @@
   "common.preview": "Previsualisaziun",
   "common.save": "Memorisar",
   "common.search": "Tschertgar",
+  "search.offline": "La tschertga è disponibla mo online.",
+  "write.offline": "Las midadas na pon vegnir memorisadas. Es ti connectà cun l’internet?",
   "common.today": "Oz",
   "common.you": "Ti",
   "balance.empty": "Anc nagins bilantschs.",

@@ -19,13 +19,13 @@ import { ApiClient, NATIVE_DEFAULT_BASE_URL } from "../shared/api/client";
 import { addBasePath, restoreBasePathInState, stripBasePath } from "../shared/config/basePath";
 import { DemoWriteBlockedSnackbar } from "../shared/demo/DemoWriteBlockedSnackbar";
 import { FeedbackProvider } from "../shared/feedback/FeedbackContext";
+import { SnackbarProvider } from "../shared/feedback/SnackbarContext";
 import { I18nProvider } from "../shared/i18n/I18nContext";
 import { ensureServiceWorkerRegistration } from "../shared/lib/serviceWorker";
 import { PwaInstallPrompt } from "../shared/pwa/PwaInstallPrompt";
 import { ThemeMode } from "../shared/types/models";
 import { styles } from "../shared/ui/styles";
 import { AppNavigator } from "./AppNavigator";
-import { PostLoginBootstrap } from "./PostLoginBootstrap";
 import { PreferencesContext } from "./PreferencesContext";
 import { RootStackParamList } from "./navigationTypes";
 import { createAppTheme, createNavigationTheme } from "./theme";
@@ -144,23 +144,24 @@ export function AppShell() {
           >
             <SafeAreaProvider>
               <FeedbackProvider>
-                <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
-                  <NavigationContainer
-                    theme={navigationTheme}
-                    linking={linking}
-                    documentTitle={{
-                      formatter(options) {
-                        return options?.title ? `Splex | ${options.title}` : "Splex";
-                      }
-                    }}
-                  >
-                    <AppNavigator />
-                  </NavigationContainer>
-                  <PostLoginBootstrap />
-                  <UpdateSnackbar />
-                  <DemoWriteBlockedSnackbar />
-                  <PwaInstallPrompt />
-                </View>
+                <SnackbarProvider>
+                  <View style={[styles.flex, { backgroundColor: paperTheme.colors.background }]}>
+                    <NavigationContainer
+                      theme={navigationTheme}
+                      linking={linking}
+                      documentTitle={{
+                        formatter(options) {
+                          return options?.title ? `Splex | ${options.title}` : "Splex";
+                        }
+                      }}
+                    >
+                      <AppNavigator />
+                    </NavigationContainer>
+                    <UpdateSnackbar />
+                    <DemoWriteBlockedSnackbar />
+                    <PwaInstallPrompt />
+                  </View>
+                </SnackbarProvider>
               </FeedbackProvider>
               <StatusBar style={resolvedThemeMode === "dark" ? "light" : "dark"} />
             </SafeAreaProvider>

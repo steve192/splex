@@ -157,6 +157,8 @@
   "common.preview": "Förhandsvisa",
   "common.save": "Spara",
   "common.search": "Sök",
+  "search.offline": "Sökning är bara tillgänglig när du är online.",
+  "write.offline": "Det gick inte att spara ändringarna. Är du ansluten till internet?",
   "common.today": "I dag",
   "common.you": "Du",
   "balance.empty": "Inga saldon ännu.",

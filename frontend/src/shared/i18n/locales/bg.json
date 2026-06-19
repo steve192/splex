@@ -157,6 +157,8 @@
   "common.preview": "Преглед",
   "common.save": "Запази",
   "common.search": "Търсене",
+  "search.offline": "Търсенето е достъпно само когато сте онлайн.",
+  "write.offline": "Не можахме да запазим промените. Свързани ли сте с интернет?",
   "common.today": "Днес",
   "common.you": "Вие",
   "balance.empty": "Все още няма баланси.",

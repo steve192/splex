@@ -2,13 +2,30 @@ import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, Divider, IconButton, List, Portal, Text, useTheme } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Card,
+  Dialog,
+  Divider,
+  IconButton,
+  List,
+  Portal,
+  Text,
+  useTheme,
+} from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { ActivityStackParamList, OverviewStackParamList } from "../../application/navigationTypes";
+import {
+  ActivityStackParamList,
+  OverviewStackParamList,
+} from "../../application/navigationTypes";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { asNumber } from "../../shared/lib/money";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
 import { Expense, Friend, Group } from "../../shared/types/models";
 import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
@@ -17,22 +34,35 @@ import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
+import { expenseDetailViewState } from "./expenseLoading";
 
-type ExpenseDetailNavigation = NativeStackNavigationProp<OverviewStackParamList & ActivityStackParamList>;
+type ExpenseDetailNavigation = NativeStackNavigationProp<
+  OverviewStackParamList & ActivityStackParamList
+>;
 
 type ExpenseDetailScreenProps = {
   route: RouteProp<OverviewStackParamList, "ExpenseDetail">;
   navigation: ExpenseDetailNavigation;
 };
 
-export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetailScreenProps>) {
+export function ExpenseDetailScreen({
+  route,
+  navigation,
+}: Readonly<ExpenseDetailScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSnackbar } = useSnackbar();
+  const { hasPending, isPending, runPendingAction } =
+    usePendingAction<"delete">();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
   const expenseId = route.params.id;
   const [expense, setExpense] = useState<Expense | null>(null);
-  const [currentParticipantId, setCurrentParticipantId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [currentParticipantId, setCurrentParticipantId] = useState<
+    number | null
+  >(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const converted = expense
     ? expense.original_currency !== expense.converted_currency ||
@@ -50,25 +80,35 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
   }, [expense, currentParticipantId]);
 
   async function load() {
-    const loaded = await api.get<Expense>(`/api/expenses/${expenseId}/`);
-    setExpense(loaded);
+    setLoading(true);
+    setLoadFailed(false);
     try {
-      if (loaded.group_id) {
-        const group = await api.get<Group>(`/api/groups/${loaded.group_id}/`);
-        setCurrentParticipantId(group.current_participant_id ?? null);
-      } else if (loaded.friendship_id) {
-        const friend = await api.get<Friend>(`/api/friends/${loaded.friendship_id}/`);
-        setCurrentParticipantId(friend.current_participant_id ?? null);
+      const loaded = await api.get<Expense>(`/api/expenses/${expenseId}/`);
+      setExpense(loaded);
+      try {
+        if (loaded.group_id) {
+          const group = await api.get<Group>(`/api/groups/${loaded.group_id}/`);
+          setCurrentParticipantId(group.current_participant_id ?? null);
+        } else if (loaded.friendship_id) {
+          const friend = await api.get<Friend>(
+            `/api/friends/${loaded.friendship_id}/`,
+          );
+          setCurrentParticipantId(friend.current_participant_id ?? null);
+        }
+      } catch {
+        // best-effort: personal balance card just won't render
       }
     } catch {
-      // best-effort: personal balance card just won't render
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
     }
   }
 
   useFocusEffect(
     useCallback(() => {
       load().catch(() => undefined);
-    }, [expenseId])
+    }, [expenseId]),
   );
 
   useEffect(() => {
@@ -77,14 +117,22 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
       headerRight: () =>
         expense && !expense.deleted_at ? (
           <IconButton icon="pencil" onPress={editExpense} />
-        ) : null
+        ) : null,
     });
   }, [expense, navigation, t]);
 
   async function deleteExpense() {
-    await api.delete(`/api/expenses/${expenseId}/`);
-    setConfirmDelete(false);
-    navigation.goBack();
+    await runPendingAction("delete", async () => {
+      try {
+        await api.delete(`/api/expenses/${expenseId}/`);
+      } catch (error) {
+        setConfirmDelete(false);
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      setConfirmDelete(false);
+      navigation.goBack();
+    });
   }
 
   function editExpense() {
@@ -94,20 +142,40 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
       contextType: expense.group_id ? "group" : "friendship",
       contextId: expense.group_id ?? expense.friendship_id ?? undefined,
       resetKey: Date.now(),
-      returnToPrevious: true
+      returnToPrevious: true,
     });
   }
+
+  const viewState = expenseDetailViewState({
+    loading,
+    hasExpense: Boolean(expense),
+    loadFailed,
+  });
 
   return (
     <View style={styles.flex}>
       <Screen>
-        {expense ? (
+        {viewState === "loading" ? (
+          <View style={styles.emptyStateContent}>
+            <ActivityIndicator />
+          </View>
+        ) : null}
+        {viewState === "error" ? (
+          <View style={styles.emptyStateContent}>
+            <Text variant="bodyMedium">{t("common.error")}</Text>
+          </View>
+        ) : null}
+        {viewState === "content" && expense ? (
           <>
             <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
             {expense.latitude && expense.longitude ? (
               <Card mode="elevated" style={styles.gap}>
                 <Card.Content>
-                  <LocationMap latitude={expense.latitude} longitude={expense.longitude} height={200} />
+                  <LocationMap
+                    latitude={expense.latitude}
+                    longitude={expense.longitude}
+                    height={200}
+                  />
                 </Card.Content>
               </Card>
             ) : null}
@@ -138,7 +206,9 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
               {converted ? (
                 <Card mode="elevated" style={styles.metricTile}>
                   <Card.Content>
-                    <Text variant="labelLarge">{t("expense.originalAmount")}</Text>
+                    <Text variant="labelLarge">
+                      {t("expense.originalAmount")}
+                    </Text>
                     <Text variant="headlineSmall">
                       {expense.original_amount} {expense.original_currency}
                     </Text>
@@ -193,7 +263,13 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
             {expense.deleted_at ? (
               <Text variant="bodyMedium">{t("expense.deleted")}</Text>
             ) : (
-              <Button mode="elevated" icon="delete-outline" textColor={dangerColor} onPress={() => setConfirmDelete(true)}>
+              <Button
+                mode="elevated"
+                icon="delete-outline"
+                textColor={dangerColor}
+                disabled={hasPending}
+                onPress={() => setConfirmDelete(true)}
+              >
                 {t("expense.delete")}
               </Button>
             )}
@@ -202,14 +278,30 @@ export function ExpenseDetailScreen({ route, navigation }: Readonly<ExpenseDetai
       </Screen>
 
       <Portal>
-        <Dialog visible={confirmDelete} onDismiss={() => setConfirmDelete(false)}>
+        <Dialog
+          visible={confirmDelete}
+          onDismiss={
+            hasPending ? () => undefined : () => setConfirmDelete(false)
+          }
+        >
           <Dialog.Title>{t("expense.delete")}</Dialog.Title>
           <Dialog.Content>
             <Text>{t("expense.deleteConfirm")}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setConfirmDelete(false)}>{t("common.cancel")}</Button>
-            <Button onPress={deleteExpense}>{t("common.delete")}</Button>
+            <Button
+              disabled={hasPending}
+              onPress={() => setConfirmDelete(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              loading={isPending("delete")}
+              disabled={hasPending}
+              onPress={deleteExpense}
+            >
+              {t("common.delete")}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

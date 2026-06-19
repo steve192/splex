@@ -4,10 +4,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiClient, ApiError, tokenStorage, Tokens } from "../../shared/api/client";
 import { DEMO_TOKENS, DEMO_USER } from "../../shared/demo/demoFixtures";
 import { loadPersistedDemoMode } from "../../shared/demo/demoMode";
+import { useI18n } from "../../shared/i18n/I18nContext";
 import {
   deregisterPushOnLogout,
   resetPushPreferenceOnLogin
 } from "../../shared/notifications/registration";
+import { runPostLoginBootstrap } from "./postLoginBootstrap";
 
 type User = {
   id: number;
@@ -51,6 +53,7 @@ async function setStoredUser(user: User | null): Promise<void> {
 }
 
 export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; children: ReactNode }>) {
+  const { locale } = useI18n();
   const [tokens, setTokens] = useState<Tokens | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [initialized, setInitialized] = useState(false);
@@ -83,6 +86,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
       if (cachedUser) {
         setUser(cachedUser);
       }
+      setInitialized(true);
       try {
         const freshUser = await api.get<User>("/api/me/");
         setUser(freshUser);
@@ -104,6 +108,16 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
   }, [api]);
 
   const value = useMemo<AuthContextValue>(() => {
+    async function refreshUser() {
+      const freshUser = await api.get<User>("/api/me/");
+      setUser(freshUser);
+      await setStoredUser(freshUser);
+    }
+
+    function runAfterLogin(loggedInUser: User) {
+      runPostLoginBootstrap({ api, user: loggedInUser, locale, refreshUser }).catch(() => undefined);
+    }
+
     // Shared tail of every fresh-login flow. Clearing the device push
     // preference first means the post-login bootstrap re-enables
     // notifications even if they were explicitly turned off before.
@@ -114,6 +128,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
       api.setTokens(response.tokens);
       setTokens(response.tokens);
       setUser(response.user);
+      runAfterLogin(response.user);
     }
 
     return {
@@ -121,11 +136,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
       user,
       tokens,
       initialized,
-      async refreshUser() {
-        const freshUser = await api.get<User>("/api/me/");
-        setUser(freshUser);
-        await setStoredUser(freshUser);
-      },
+      refreshUser,
       async requestMagicLink(email: string, inviteToken?: string, locale?: string) {
         await api.post("/api/auth/magic-link/", {
           email,
@@ -159,6 +170,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
         api.setTokens(DEMO_TOKENS);
         setTokens(DEMO_TOKENS);
         setUser(DEMO_USER);
+        runAfterLogin(DEMO_USER);
       },
       async logout() {
         const refresh = tokens?.refresh;
@@ -180,7 +192,7 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
         setUser(null);
       }
     };
-  }, [api, initialized, tokens, user]);
+  }, [api, initialized, locale, tokens, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

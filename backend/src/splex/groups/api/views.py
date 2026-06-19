@@ -5,7 +5,6 @@ from rest_framework.views import APIView
 
 from splex.balances.selectors import (
     group_member_balance_rows,
-    group_pair_balances_for_user,
     participant_outstanding_in_group,
 )
 from splex.expenses.models import Expense
@@ -43,53 +42,41 @@ from splex.notifications.reminders import (
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.services import create_settlement
-from splex.shared.media import signed_media_url
 
 
 def get_active_group(group_id):
     return get_object_or_404(Group, id=group_id, deleted_at__isnull=True)
 
 
-class OverviewView(APIView):
-    def get(self, request):
-        groups = Group.objects.filter(
-            memberships__participant__user=request.user,
+def user_groups_queryset(user):
+    return (
+        Group.objects.filter(
+            memberships__participant__user=user,
             memberships__removed_at__isnull=True,
             deleted_at__isnull=True,
-        ).distinct()
-        items = []
-        for group in groups:
-            balances = group_pair_balances_for_user(group, request.user)
-            total = sum(balances.values())
-            items.append(
-                {
-                    "type": "group",
-                    "id": group.id,
-                    "name": group.name,
-                    "icon_url": signed_media_url(group.icon_url),
-                    "currency": group.default_currency,
-                    "balance": str(total),
-                    "archived_at": group.archived_at,
-                }
-            )
-        return Response({"items": items})
+        )
+        .distinct()
+    )
 
 
 class GroupListCreateView(APIView):
     def get(self, request):
-        groups = Group.objects.filter(
-            memberships__participant__user=request.user,
-            memberships__removed_at__isnull=True,
-            archived_at__isnull=True,
-            deleted_at__isnull=True,
-        ).distinct()
-        return Response(GroupSerializer(groups, many=True).data)
+        return Response(
+            GroupSerializer(
+                user_groups_queryset(request.user),
+                many=True,
+                context={"user": request.user},
+            ).data
+        )
 
     def post(self, request):
         serializer = GroupCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         group = create_group(actor=request.user, **serializer.validated_data)
-        return Response(GroupSerializer(group).data, status=status.HTTP_201_CREATED)
+        return Response(
+            GroupSerializer(group, context={"user": request.user}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class GroupDetailView(APIView):
@@ -102,7 +89,7 @@ class GroupDetailView(APIView):
         ).select_related("user")
         return Response(
             {
-                **GroupSerializer(group).data,
+                **GroupSerializer(group, context={"user": request.user}).data,
                 "current_participant_id": get_or_create_user_participant(request.user).id,
                 "participants": ParticipantSerializer(participants, many=True).data,
             }
@@ -116,7 +103,7 @@ class GroupDetailView(APIView):
             group = update_group(actor=request.user, group=group, data=serializer.validated_data)
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(GroupSerializer(group).data)
+        return Response(GroupSerializer(group, context={"user": request.user}).data)
 
     def delete(self, request, group_id):
         group = get_active_group(group_id)

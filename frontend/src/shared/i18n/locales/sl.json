@@ -157,6 +157,8 @@
   "common.preview": "Predogled",
   "common.save": "Shrani",
   "common.search": "Išči",
+  "search.offline": "Iskanje je na voljo samo, ko ste povezani.",
+  "write.offline": "Sprememb ni bilo mogoče shraniti. Ali ste povezani z internetom?",
   "common.today": "Danes",
   "common.you": "Vi",
   "balance.empty": "Ni še nobenih stanj.",

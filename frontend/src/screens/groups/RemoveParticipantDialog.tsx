@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { ActivityIndicator, Button, Dialog, HelperText, List, Text } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Dialog,
+  HelperText,
+  List,
+  Text,
+} from "react-native-paper";
 
 import { ApiClient } from "../../shared/api/client";
 import { useI18n } from "../../shared/i18n/I18nContext";
@@ -37,6 +44,7 @@ type RemoveParticipantDialogProps = {
    * rely on `extraMessage` to explain the deletion.
    */
   groupWillBeDeleted?: boolean;
+  confirming?: boolean;
   onDismiss(): void;
   onConfirm(): Promise<void> | void;
 };
@@ -50,11 +58,14 @@ export function RemoveParticipantDialog({
   confirmLabel,
   extraMessage,
   groupWillBeDeleted,
+  confirming = false,
   onDismiss,
-  onConfirm
+  onConfirm,
 }: Readonly<RemoveParticipantDialogProps>) {
   const { t } = useI18n();
-  const [outstanding, setOutstanding] = useState<OutstandingResponse | null>(null);
+  const [outstanding, setOutstanding] = useState<OutstandingResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -66,7 +77,9 @@ export function RemoveParticipantDialog({
     setLoading(true);
     setOutstanding(null);
     api
-      .get<OutstandingResponse>(`/api/groups/${groupId}/participants/${target.id}/outstanding/`)
+      .get<OutstandingResponse>(
+        `/api/groups/${groupId}/participants/${target.id}/outstanding/`,
+      )
       .then((data) => {
         if (!cancelled) setOutstanding(data);
       })
@@ -81,7 +94,9 @@ export function RemoveParticipantDialog({
 
   const hasOutstanding =
     !groupWillBeDeleted &&
-    Boolean(outstanding && (outstanding.owes.length || outstanding.owed_by.length));
+    Boolean(
+      outstanding && (outstanding.owes.length || outstanding.owed_by.length),
+    );
   // Registered users get converted into an unregistered placeholder that keeps their
   // history in the group; unregistered users have their balance auto-settled then
   // get removed outright, so the warning copy differs between the two.
@@ -91,7 +106,10 @@ export function RemoveParticipantDialog({
       : "group.removeMember.convertWarning";
 
   return (
-    <Dialog visible={visible ?? !!target} onDismiss={onDismiss}>
+    <Dialog
+      visible={visible ?? !!target}
+      onDismiss={confirming ? () => undefined : onDismiss}
+    >
       <Dialog.Title>{title ?? t("group.removeMember")}</Dialog.Title>
       <Dialog.Content style={styles.gap}>
         <Text variant="titleMedium">{target?.display_name ?? ""}</Text>
@@ -110,20 +128,32 @@ export function RemoveParticipantDialog({
             {outstanding.owes.length ? (
               <View style={styles.gap}>
                 <Text variant="titleSmall">
-                  {t("group.removeMember.owesHeader", { name: target?.display_name ?? "" })}
+                  {t("group.removeMember.owesHeader", {
+                    name: target?.display_name ?? "",
+                  })}
                 </Text>
                 {outstanding.owes.map((row) => (
-                  <OutstandingLine key={`owes-${row.participant_id}`} row={row} currency={outstanding.currency} />
+                  <OutstandingLine
+                    key={`owes-${row.participant_id}`}
+                    row={row}
+                    currency={outstanding.currency}
+                  />
                 ))}
               </View>
             ) : null}
             {outstanding.owed_by.length ? (
               <View style={styles.gap}>
                 <Text variant="titleSmall">
-                  {t("group.removeMember.owedByHeader", { name: target?.display_name ?? "" })}
+                  {t("group.removeMember.owedByHeader", {
+                    name: target?.display_name ?? "",
+                  })}
                 </Text>
                 {outstanding.owed_by.map((row) => (
-                  <OutstandingLine key={`owed-${row.participant_id}`} row={row} currency={outstanding.currency} />
+                  <OutstandingLine
+                    key={`owed-${row.participant_id}`}
+                    row={row}
+                    currency={outstanding.currency}
+                  />
                 ))}
               </View>
             ) : null}
@@ -131,14 +161,21 @@ export function RemoveParticipantDialog({
         ) : null}
       </Dialog.Content>
       <Dialog.Actions>
-        <Button onPress={onDismiss}>{t("common.cancel")}</Button>
-        <Button onPress={onConfirm}>{confirmLabel ?? t("common.delete")}</Button>
+        <Button disabled={confirming} onPress={onDismiss}>
+          {t("common.cancel")}
+        </Button>
+        <Button loading={confirming} disabled={confirming} onPress={onConfirm}>
+          {confirmLabel ?? t("common.delete")}
+        </Button>
       </Dialog.Actions>
     </Dialog>
   );
 }
 
-function OutstandingLine({ row, currency }: Readonly<{ row: OutstandingRow; currency: string }>) {
+function OutstandingLine({
+  row,
+  currency,
+}: Readonly<{ row: OutstandingRow; currency: string }>) {
   return (
     <List.Item
       title={row.display_name}

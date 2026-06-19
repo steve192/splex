@@ -157,6 +157,8 @@
   "common.preview": "Forhåndsvisning",
   "common.save": "Lagre",
   "common.search": "Søk",
+  "search.offline": "Søk er bare tilgjengelig når du er på nett.",
+  "write.offline": "Kunne ikke lagre endringene. Er du koblet til internett?",
   "common.today": "I dag",
   "common.you": "Du",
   "balance.empty": "Ingen saldoer ennå.",

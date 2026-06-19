@@ -157,6 +157,8 @@
   "common.preview": "Előnézet",
   "common.save": "Mentés",
   "common.search": "Keresés",
+  "search.offline": "A keresés csak online állapotban érhető el.",
+  "write.offline": "Nem sikerült menteni a módosításokat. Van internetkapcsolatod?",
   "common.today": "Ma",
   "common.you": "Te",
   "balance.empty": "Még nincsenek egyenlegek.",

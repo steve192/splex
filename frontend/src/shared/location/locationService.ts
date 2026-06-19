@@ -163,11 +163,11 @@ function getWebLocation(): Promise<{ latitude: number; longitude: number } | nul
 }
 
 /**
- * Bootstrap location permission on app startup.
+ * Bootstrap location permission after login.
  * If the user has location tracking enabled, request permission (like push notifications).
  * If permission is not granted, disable the server-side setting so UI and reality match.
  */
-export async function bootstrapLocationOnStartup(
+export async function bootstrapLocationAfterLogin(
   locationTrackingEnabled: boolean,
   api: ApiClient
 ): Promise<void> {

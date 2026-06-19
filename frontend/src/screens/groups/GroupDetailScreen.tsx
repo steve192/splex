@@ -1,92 +1,169 @@
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Button, Dialog, IconButton, Portal, SegmentedButtons, Snackbar, Switch, Text, TouchableRipple, useTheme } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Button,
+  Dialog,
+  IconButton,
+  Portal,
+  SegmentedButtons,
+  Switch,
+  Text,
+  TouchableRipple,
+  useTheme,
+} from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { appImages } from "../../shared/assets/images";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { LedgerList } from "../../shared/ledger/LedgerList";
-import { LEDGER_PAGE_SIZE, fetchLedgerPage } from "../../shared/ledger/ledgerApi";
+import {
+  LEDGER_PAGE_SIZE,
+  fetchLedgerPage,
+} from "../../shared/ledger/ledgerApi";
 import { PendingExpenseList } from "../../shared/ledger/PendingExpenseList";
 import { usePendingExpenses } from "../../shared/ledger/usePendingExpenses";
-import { SettlementDialog, SettlementDialogTarget } from "../../shared/ledger/SettlementDialog";
+import {
+  SettlementDialog,
+  SettlementDialogTarget,
+} from "../../shared/ledger/SettlementDialog";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
 import { shareLink } from "../../shared/lib/shareLink";
-import { cachedGet } from "../../shared/lib/offlineCache";
+import { useCachedQuery } from "../../shared/lib/useCachedQuery";
 import { asNumber } from "../../shared/lib/money";
-import { apiErrorMessage } from "../../shared/lib/apiErrors";
-import { loadSimplifyBalancesPreference, saveSimplifyBalancesPreference } from "../../shared/lib/groupPreferences";
-import { useListSearch } from "../../shared/lib/useListSearch";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
+import {
+  loadSimplifyBalancesPreference,
+  saveSimplifyBalancesPreference,
+} from "../../shared/lib/groupPreferences";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
+import {
+  canUseOnlineSearch,
+  useListSearch,
+} from "../../shared/lib/useListSearch";
 import { usePaginatedFeed } from "../../shared/lib/usePaginatedFeed";
-import { BalanceDetail, Group, GroupBalance, LedgerItem } from "../../shared/types/models";
+import {
+  BalanceDetail,
+  Group,
+  GroupBalance,
+  LedgerItem,
+} from "../../shared/types/models";
 import { OverviewStackParamList } from "../../application/navigationTypes";
 import { BalanceGraph } from "../../shared/ui/BalanceGraph";
 import { BalanceMemberCard } from "../../shared/ui/BalanceMemberCard";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { ImageViewerModal } from "../../shared/ui/ImageViewerModal";
-import { ListSearchbar, headerSearchLayout } from "../../shared/ui/ListSearchbar";
+import {
+  ListSearchbar,
+  headerSearchLayout,
+} from "../../shared/ui/ListSearchbar";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { GroupBalanceSummaryCard } from "./GroupBalanceSummaryCard";
 import { buildBalanceSummary } from "./groupBalanceSummary";
 
-type GroupDetailScreenProps = NativeStackScreenProps<OverviewStackParamList, "GroupDetail">;
+type GroupDetailScreenProps = NativeStackScreenProps<
+  OverviewStackParamList,
+  "GroupDetail"
+>;
+type GroupDetailAction =
+  | "invite"
+  | "settle"
+  | "track-reminder"
+  | `settle-reminder:${number}`;
 
-export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScreenProps>) {
+export function GroupDetailScreen({
+  route,
+  navigation,
+}: Readonly<GroupDetailScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const { showSuccess } = useFeedback();
+  const { showSnackbar } = useSnackbar();
+  const {
+    hasPending,
+    isPending,
+    pending: pendingAction,
+    runPendingAction,
+  } = usePendingAction<GroupDetailAction>();
   const theme = useTheme();
   const groupId = route.params.id;
-  const [group, setGroup] = useState<Group | null>(null);
-  const [balances, setBalances] = useState<GroupBalance[]>([]);
   const [selectedTab, setSelectedTab] = useState("expenses");
-  const search = useListSearch();
-  const [expandedParticipantIds, setExpandedParticipantIds] = useState<number[]>([]);
-  const [settleTarget, setSettleTarget] = useState<SettlementDialogTarget | null>(null);
+  const [expandedParticipantIds, setExpandedParticipantIds] = useState<
+    number[]
+  >([]);
+  const [settleTarget, setSettleTarget] =
+    useState<SettlementDialogTarget | null>(null);
   const [settleAmount, setSettleAmount] = useState("");
   const [settleCurrency, setSettleCurrency] = useState("EUR");
-  const [snackbar, setSnackbar] = useState("");
+  const netInfo = useNetInfo();
+  const showOfflineSearchMessage = useCallback(
+    () => showSnackbar(t("search.offline")),
+    [showSnackbar, t],
+  );
+  const search = useListSearch({
+    canOpen: canUseOnlineSearch(netInfo),
+    onBlockedOpen: showOfflineSearchMessage,
+  });
   const [manualCopyLink, setManualCopyLink] = useState("");
   const [groupImageVisible, setGroupImageVisible] = useState(false);
   const [simplifyBalances, setSimplifyBalances] = useState(false);
+  const simplifyBalancesRef = useRef(simplifyBalances);
   const [simplifyInfoVisible, setSimplifyInfoVisible] = useState(false);
-  const [trackReminderConfirmVisible, setTrackReminderConfirmVisible] = useState(false);
-  const balanceSummary = useMemo(
-    () => buildBalanceSummary(balances, group?.current_participant_id, group?.default_currency),
-    [balances, group?.current_participant_id, group?.default_currency]
+  const [trackReminderConfirmVisible, setTrackReminderConfirmVisible] =
+    useState(false);
+  const groupQuery = useCachedQuery<{ group: Group; balances: GroupBalance[] }>(
+    {
+      load: useCallback(
+        async ({ cachedGet }) => {
+          const simplified = simplifyBalancesRef.current;
+          const balancesPath = `/api/groups/${groupId}/balances/${simplified ? "?simplified=true" : ""}`;
+          const [group, balances] = await Promise.all([
+            cachedGet<Group>(api, `/api/groups/${groupId}/`),
+            cachedGet<GroupBalance[]>(api, balancesPath),
+          ]);
+          return { group, balances };
+        },
+        [api, groupId],
+      ),
+    },
   );
+  const group = groupQuery.data?.group ?? null;
+  const balances = groupQuery.data?.balances ?? [];
+  const balanceSummary = useMemo(
+    () =>
+      buildBalanceSummary(
+        balances,
+        group?.current_participant_id,
+        group?.default_currency,
+      ),
+    [balances, group?.current_participant_id, group?.default_currency],
+  );
+  const pendingReminderParticipantId = pendingAction?.startsWith(
+    "settle-reminder:",
+  )
+    ? Number(pendingAction.split(":")[1])
+    : null;
 
   const ledger = usePaginatedFeed<LedgerItem>({
     pageSize: LEDGER_PAGE_SIZE,
     searchTerm: search.term,
-    fetchPage: (params) => fetchLedgerPage(api, "groups", groupId, params)
+    fetchPage: (params) => fetchLedgerPage(api, "groups", groupId, params),
   });
-
-  const refreshGroup = useCallback(
-    async (simplified: boolean) => {
-      const balancesPath = `/api/groups/${groupId}/balances/${simplified ? "?simplified=true" : ""}`;
-      const [detail, balanceRows] = await Promise.all([
-        cachedGet<Group>(api, `/api/groups/${groupId}/`),
-        cachedGet<GroupBalance[]>(api, balancesPath)
-      ]);
-      setGroup(detail);
-      setBalances(balanceRows);
-    },
-    [api, groupId]
-  );
 
   // Reload the ledger and balances after a mutation (settle, or a pending draft
   // removed/synced) that can change either.
   const reload = useCallback(async () => {
-    await Promise.all([ledger.load(0), refreshGroup(simplifyBalances)]);
-  }, [ledger.load, refreshGroup, simplifyBalances]);
+    await Promise.all([ledger.load(0), groupQuery.reload()]);
+  }, [ledger.load, groupQuery.reload]);
 
   const pending = usePendingExpenses("group", groupId, reload);
 
@@ -94,24 +171,30 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     useCallback(() => {
       loadSimplifyBalancesPreference(groupId)
         .then((preference) => {
+          simplifyBalancesRef.current = preference;
           setSimplifyBalances(preference);
-          return Promise.all([ledger.refresh(), pending.refresh(), refreshGroup(preference)]);
+          return Promise.all([
+            ledger.refresh(),
+            pending.refresh(),
+            groupQuery.reload(),
+          ]);
         })
         .catch(() => undefined);
-    }, [groupId, ledger.refresh, pending.refresh, refreshGroup])
+    }, [groupId, ledger.refresh, pending.refresh, groupQuery.reload]),
   );
 
   // Searching only applies to the expenses list, so reveal it alongside the
   // searchbar.
-  function openSearch() {
+  const openSearch = useCallback(() => {
     setSelectedTab("expenses");
     search.open();
-  }
+  }, [search.open]);
 
   async function handleSimplifyToggle(next: boolean) {
+    simplifyBalancesRef.current = next;
     setSimplifyBalances(next);
     await saveSimplifyBalancesPreference(groupId, next);
-    await refreshGroup(next);
+    await groupQuery.reload();
   }
 
   useEffect(() => {
@@ -119,7 +202,12 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
       ...headerSearchLayout(search.active),
       headerTitle: () =>
         search.active ? (
-          <ListSearchbar value={search.input} onChangeText={search.setInput} onClose={search.close} compact />
+          <ListSearchbar
+            value={search.input}
+            onChangeText={search.setInput}
+            onClose={search.close}
+            compact
+          />
         ) : (
           <TouchableRipple
             borderless
@@ -131,7 +219,9 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                 imageUrl={group?.icon_url}
                 size={30}
               />
-              <Text variant="titleMedium">{group?.name ?? t("group.title")}</Text>
+              <Text variant="titleMedium">
+                {group?.name ?? t("group.title")}
+              </Text>
             </View>
           </TouchableRipple>
         ),
@@ -139,47 +229,89 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
         search.active ? null : (
           <View style={{ flexDirection: "row" }}>
             <IconButton icon="magnify" onPress={openSearch} />
-            <IconButton icon="chart-bar" onPress={() => navigation.navigate("GroupStatistics", { id: groupId })} />
-            <IconButton icon="cog-outline" onPress={() => navigation.navigate("GroupSettings", { id: groupId })} />
+            <IconButton
+              icon="chart-bar"
+              onPress={() =>
+                navigation.navigate("GroupStatistics", { id: groupId })
+              }
+            />
+            <IconButton
+              icon="cog-outline"
+              onPress={() =>
+                navigation.navigate("GroupSettings", { id: groupId })
+              }
+            />
           </View>
-        )
+        ),
     });
-  }, [group, groupId, navigation, t, search.active, search.input]);
+  }, [
+    group,
+    groupId,
+    navigation,
+    openSearch,
+    search.active,
+    search.close,
+    search.input,
+    search.setInput,
+    t,
+  ]);
 
   async function invite() {
-    const response = await api.post<{ url: string }>(`/api/groups/${groupId}/invitations/`, {});
-    const result = await shareLink(response.url, { title: t("invite.shareTitle") });
-    if (result === "copied") {
-      setSnackbar(t("invite.copied"));
-    } else if (result === "failed") {
-      setManualCopyLink(response.url);
-    }
+    await runPendingAction("invite", async () => {
+      let response: { url: string };
+      try {
+        response = await api.post<{ url: string }>(
+          `/api/groups/${groupId}/invitations/`,
+          {},
+        );
+      } catch (error) {
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      const result = await shareLink(response.url, {
+        title: t("invite.shareTitle"),
+      });
+      if (result === "copied") {
+        showSnackbar(t("invite.copied"), { duration: 8000 });
+      } else if (result === "failed") {
+        setManualCopyLink(response.url);
+      }
+    });
   }
 
   async function settle() {
     if (!settleTarget) return;
-    await api.post(`/api/groups/${groupId}/settlements/`, {
-      payer_participant_id: settleTarget.payer_participant_id,
-      receiver_participant_id: settleTarget.receiver_participant_id,
-      amount: settleAmount,
-      currency: settleCurrency
+    await runPendingAction("settle", async () => {
+      try {
+        await api.post(`/api/groups/${groupId}/settlements/`, {
+          payer_participant_id: settleTarget.payer_participant_id,
+          receiver_participant_id: settleTarget.receiver_participant_id,
+          amount: settleAmount,
+          currency: settleCurrency,
+        });
+        setSettleTarget(null);
+        setSettleAmount("");
+        await reload();
+      } catch (error) {
+        setSettleTarget(null);
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      showSuccess({ icon: "cash-check" });
     });
-    setSettleTarget(null);
-    setSettleAmount("");
-    showSuccess({ icon: "cash-check" });
-    await reload();
   }
 
   function toggleExpanded(participantId: number) {
     setExpandedParticipantIds((current) =>
       current.includes(participantId)
         ? current.filter((id) => id !== participantId)
-        : [...current, participantId]
+        : [...current, participantId],
     );
   }
 
   function avatarForParticipant(participantId: number) {
-    return balances.find((row) => row.participant_id === participantId)?.avatar_url;
+    return balances.find((row) => row.participant_id === participantId)
+      ?.avatar_url;
   }
 
   function openSettleDialog(detail: BalanceDetail) {
@@ -191,7 +323,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
       payer_avatar_url: avatarForParticipant(detail.from_participant_id),
       receiver_participant_id: detail.to_participant_id,
       receiver_display_name: detail.to_display_name,
-      receiver_avatar_url: avatarForParticipant(detail.to_participant_id)
+      receiver_avatar_url: avatarForParticipant(detail.to_participant_id),
     });
     setSettleAmount(detail.amount);
     setSettleCurrency(detail.currency);
@@ -202,50 +334,61 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
     // they owe is stored as a negative number on the row, so we send its
     // absolute value through the API.
     const amount = Math.abs(asNumber(row.amount));
-    try {
-      const result = await api.post<{ sent: boolean }>(
-        `/api/groups/${groupId}/reminders/settle/`,
-        {
-          participant_id: row.participant_id,
-          amount: amount.toFixed(2),
-          currency: row.currency
+    await runPendingAction(
+      `settle-reminder:${row.participant_id}`,
+      async () => {
+        try {
+          const result = await api.post<{ sent: boolean }>(
+            `/api/groups/${groupId}/reminders/settle/`,
+            {
+              participant_id: row.participant_id,
+              amount: amount.toFixed(2),
+              currency: row.currency,
+            },
+          );
+          showSnackbar(
+            result.sent
+              ? t("settlement.reminderSent", { person: row.display_name })
+              : t("settlement.reminderNoPush", { person: row.display_name }),
+          );
+        } catch (error) {
+          showSnackbar(apiWriteErrorMessage(error, t));
         }
-      );
-      setSnackbar(
-        result.sent
-          ? t("settlement.reminderSent", { person: row.display_name })
-          : t("settlement.reminderNoPush", { person: row.display_name })
-      );
-    } catch (error) {
-      setSnackbar(apiErrorMessage(error, t));
-    }
+      },
+    );
   }
 
   async function remindToTrackExpenses() {
-    try {
-      const result = await api.post<{ recipients: number; sent: number }>(
-        `/api/groups/${groupId}/reminders/track-expense/`,
-        {}
-      );
-      let reminderMessage: string;
-      if (result.recipients === 0) {
-        reminderMessage = t("invite.trackReminderNobody");
-      } else if (result.sent === 0) {
-        reminderMessage = t("invite.trackReminderNoPush");
-      } else {
-        reminderMessage = t("invite.trackReminderSent", { count: result.sent });
+    await runPendingAction("track-reminder", async () => {
+      try {
+        const result = await api.post<{ recipients: number; sent: number }>(
+          `/api/groups/${groupId}/reminders/track-expense/`,
+          {},
+        );
+        let reminderMessage: string;
+        if (result.recipients === 0) {
+          reminderMessage = t("invite.trackReminderNobody");
+        } else if (result.sent === 0) {
+          reminderMessage = t("invite.trackReminderNoPush");
+        } else {
+          reminderMessage = t("invite.trackReminderSent", {
+            count: result.sent,
+          });
+        }
+        showSnackbar(reminderMessage);
+      } catch (error) {
+        showSnackbar(apiWriteErrorMessage(error, t));
+      } finally {
+        setTrackReminderConfirmVisible(false);
       }
-      setSnackbar(reminderMessage);
-    } catch (error) {
-      setSnackbar(apiErrorMessage(error, t));
-    }
+    });
   }
 
   const handleScroll = useInfiniteScroll({
     enabled: selectedTab === "expenses",
     loadingMore: ledger.loadingMore,
     nextOffset: ledger.nextOffset,
-    onLoadMore: (offset) => ledger.load(offset).catch(() => undefined)
+    onLoadMore: (offset) => ledger.load(offset).catch(() => undefined),
   });
 
   return (
@@ -260,16 +403,32 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                 contextType: "group",
                 contextId: groupId,
                 resetKey: Date.now(),
-                returnToPrevious: true
+                returnToPrevious: true,
               })
             }
           >
-            <MaterialCommunityIcons name="plus" size={18} color={theme.colors.onPrimary} />
+            <MaterialCommunityIcons
+              name="plus"
+              size={18}
+              color={theme.colors.onPrimary}
+            />
           </Button>
-          <Button mode="elevated" icon="link-variant" onPress={() => invite()}>
+          <Button
+            mode="elevated"
+            icon="link-variant"
+            loading={isPending("invite")}
+            disabled={hasPending}
+            onPress={() => invite()}
+          >
             {t("invite.create")}
           </Button>
-          <Button mode="elevated" icon="bell-outline" onPress={() => setTrackReminderConfirmVisible(true)}>
+          <Button
+            mode="elevated"
+            icon="bell-outline"
+            loading={isPending("track-reminder")}
+            disabled={hasPending}
+            onPress={() => setTrackReminderConfirmVisible(true)}
+          >
             {t("invite.remind")}
           </Button>
         </View>
@@ -281,13 +440,18 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
           onValueChange={setSelectedTab}
           buttons={[
             { value: "expenses", label: t("group.expenses") },
-            { value: "balances", label: t("balance.title") }
+            { value: "balances", label: t("balance.title") },
           ]}
         />
 
         {selectedTab === "expenses" ? (
           <>
-            <Text variant="titleLarge">{t("group.expenses")}</Text>
+            <View style={styles.inline}>
+              <Text variant="titleLarge">{t("group.expenses")}</Text>
+              {(ledger.loadingInitial || groupQuery.loading) && (
+                <ActivityIndicator size={16} />
+              )}
+            </View>
             {!search.term && (
               <PendingExpenseList
                 mutations={pending.items}
@@ -296,7 +460,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                   navigation.navigate("AddExpense", {
                     pendingMutationId: mutationId,
                     resetKey: Date.now(),
-                    returnToPrevious: true
+                    returnToPrevious: true,
                   })
                 }
                 onRetry={pending.retry}
@@ -306,18 +470,26 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
             <LedgerList
               items={ledger.items}
               currentParticipantId={group?.current_participant_id}
-              onOpenExpense={(id) => navigation.navigate("ExpenseDetail", { id })}
-              onOpenSettlement={(id) => navigation.navigate("SettlementDetail", { id })}
+              onOpenExpense={(id) =>
+                navigation.navigate("ExpenseDetail", { id })
+              }
+              onOpenSettlement={(id) =>
+                navigation.navigate("SettlementDetail", { id })
+              }
               searching={!!search.term}
               hasPending={pending.items.length > 0}
               nextOffset={ledger.nextOffset}
+              loadingInitial={ledger.loadingInitial}
               loadingMore={ledger.loadingMore}
               onLoadMore={ledger.load}
             />
           </>
         ) : (
           <>
-            <Text variant="titleLarge">{t("balance.title")}</Text>
+            <View style={styles.inline}>
+              <Text variant="titleLarge">{t("balance.title")}</Text>
+              {groupQuery.loading && <ActivityIndicator size={16} />}
+            </View>
             <View style={styles.rowBetween}>
               <View style={styles.inline}>
                 <Text variant="bodyMedium">{t("balance.simplifyToggle")}</Text>
@@ -328,7 +500,10 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                   accessibilityLabel={t("balance.simplifyInfoLabel")}
                 />
               </View>
-              <Switch value={simplifyBalances} onValueChange={handleSimplifyToggle} />
+              <Switch
+                value={simplifyBalances}
+                onValueChange={handleSimplifyToggle}
+              />
             </View>
             {balances.length ? (
               balances.map((row) => (
@@ -340,10 +515,15 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
                   onSettle={(detail) => openSettleDialog(detail)}
                   onRemindSettle={(targetRow) => remindToSettle(targetRow)}
                   currentParticipantId={group?.current_participant_id}
+                  actionsDisabled={hasPending}
+                  pendingReminderParticipantId={pendingReminderParticipantId}
                 />
               ))
             ) : (
-              <EmptyState image={appImages.emptyExpenses} text={t("balance.empty")} />
+              <EmptyState
+                image={appImages.emptyExpenses}
+                text={t("balance.empty")}
+              />
             )}
             <BalanceGraph rows={balances} />
           </>
@@ -366,6 +546,7 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
           onCurrencyChange={setSettleCurrency}
           onDismiss={() => setSettleTarget(null)}
           onSave={settle}
+          saving={isPending("settle")}
         />
         <Dialog
           visible={simplifyInfoVisible}
@@ -376,33 +557,40 @@ export function GroupDetailScreen({ route, navigation }: Readonly<GroupDetailScr
             <Text variant="bodyMedium">{t("balance.simplifyInfoBody")}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setSimplifyInfoVisible(false)}>{t("common.ok")}</Button>
+            <Button onPress={() => setSimplifyInfoVisible(false)}>
+              {t("common.ok")}
+            </Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog
           visible={trackReminderConfirmVisible}
-          onDismiss={() => setTrackReminderConfirmVisible(false)}
+          onDismiss={
+            hasPending
+              ? () => undefined
+              : () => setTrackReminderConfirmVisible(false)
+          }
         >
           <Dialog.Title>{t("invite.trackReminder")}</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">{t("invite.trackReminderConfirm")}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setTrackReminderConfirmVisible(false)}>{t("common.cancel")}</Button>
             <Button
-              onPress={() => {
-                setTrackReminderConfirmVisible(false);
-                remindToTrackExpenses();
-              }}
+              disabled={hasPending}
+              onPress={() => setTrackReminderConfirmVisible(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              loading={isPending("track-reminder")}
+              disabled={hasPending}
+              onPress={remindToTrackExpenses}
             >
               {t("invite.remind")}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
-      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar("")} duration={8000}>
-        {snackbar}
-      </Snackbar>
       <ManualCopyDialog
         visible={!!manualCopyLink}
         title={t("invite.copyManual")}

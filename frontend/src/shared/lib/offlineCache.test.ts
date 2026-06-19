@@ -19,10 +19,14 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 import { ApiClient, ApiError } from "../api/client";
-import { cachedGet, prefetchPaths, readCachedResponse } from "./offlineCache";
+import { cachedGet, prefetchPaths, readCachedResponse, refreshCachedGet } from "./offlineCache";
 
 function fakeApi(overrides: Partial<ApiClient>): ApiClient {
   return overrides as ApiClient;
+}
+
+async function flushBackgroundRefresh() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 beforeEach(() => {
@@ -45,8 +49,75 @@ describe("cachedGet", () => {
     expect(get).toHaveBeenCalledTimes(2);
   });
 
-  it("rethrows non-offline errors so auth/server failures are not masked by stale data", async () => {
+  it("returns cached data immediately when the refresh hangs", async () => {
+    storage.set("splex.cache.http./api/things/", JSON.stringify({ value: "cached" }));
+    const get = vi.fn().mockImplementation(() => new Promise(() => undefined));
+    const api = fakeApi({ get });
+
+    await expect(cachedGet<{ value: string }>(api, "/api/things/")).resolves.toEqual({ value: "cached" });
+    expect(get).toHaveBeenCalledWith("/api/things/");
+  });
+
+  it("notifies callers when fresh data arrives after cached data was returned", async () => {
+    storage.set("splex.cache.http./api/things/", JSON.stringify({ value: "cached" }));
+    let resolveFresh: (value: { value: string }) => void = () => undefined;
+    const get = vi.fn().mockImplementation(
+      () =>
+        new Promise<{ value: string }>((resolve) => {
+          resolveFresh = resolve;
+        })
+    );
+    const onFreshData = vi.fn();
+    const api = fakeApi({ get });
+
+    const request = cachedGet<{ value: string }>(api, "/api/things/", { onFreshData });
+    await expect(request).resolves.toEqual({ value: "cached" });
+
+    resolveFresh({ value: "fresh" });
+    await flushBackgroundRefresh();
+
+    expect(onFreshData).toHaveBeenCalledWith({ value: "fresh" });
+    expect(await readCachedResponse("/api/things/")).toEqual({ value: "fresh" });
+  });
+
+  it("reports background refresh start and end for cached data", async () => {
+    storage.set("splex.cache.http./api/things/", JSON.stringify({ value: "cached" }));
+    let resolveFresh: (value: { value: string }) => void = () => undefined;
+    const get = vi.fn().mockImplementation(
+      () =>
+        new Promise<{ value: string }>((resolve) => {
+          resolveFresh = resolve;
+        })
+    );
+    const onBackgroundRefreshStart = vi.fn();
+    const onBackgroundRefreshEnd = vi.fn();
+    const api = fakeApi({ get });
+
+    await expect(
+      cachedGet<{ value: string }>(api, "/api/things/", {
+        onBackgroundRefreshEnd,
+        onBackgroundRefreshStart
+      })
+    ).resolves.toEqual({ value: "cached" });
+
+    expect(onBackgroundRefreshStart).toHaveBeenCalledTimes(1);
+    expect(onBackgroundRefreshEnd).not.toHaveBeenCalled();
+
+    resolveFresh({ value: "fresh" });
+    await flushBackgroundRefresh();
+
+    expect(onBackgroundRefreshEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses cached data when a background refresh has a non-offline error", async () => {
     storage.set("splex.cache.http./api/things/", JSON.stringify({ stale: true }));
+    const get = vi.fn().mockRejectedValue(new ApiError("server", { status: 500 }));
+    const api = fakeApi({ get });
+
+    await expect(cachedGet(api, "/api/things/")).resolves.toEqual({ stale: true });
+  });
+
+  it("rethrows non-offline errors when nothing is cached yet", async () => {
     const get = vi.fn().mockRejectedValue(new ApiError("server", { status: 500 }));
     const api = fakeApi({ get });
 
@@ -78,6 +149,21 @@ describe("cachedGet", () => {
 describe("readCachedResponse", () => {
   it("returns null when no value is cached", async () => {
     expect(await readCachedResponse("/api/missing/")).toBeNull();
+  });
+});
+
+describe("refreshCachedGet", () => {
+  it("bypasses stale cached data and updates the cache", async () => {
+    storage.set("splex.cache.http./api/things/", JSON.stringify({ value: "stale" }));
+    const get = vi.fn().mockResolvedValue({ value: "fresh" });
+    const api = fakeApi({ get });
+
+    await expect(refreshCachedGet<{ value: string }>(api, "/api/things/")).resolves.toEqual({
+      value: "fresh"
+    });
+
+    expect(get).toHaveBeenCalledWith("/api/things/");
+    expect(await readCachedResponse("/api/things/")).toEqual({ value: "fresh" });
   });
 });
 

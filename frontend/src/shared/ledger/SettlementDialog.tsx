@@ -1,7 +1,14 @@
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useState } from "react";
 import { Linking, View } from "react-native";
-import { Button, Dialog, List, Text, TextInput, useTheme } from "react-native-paper";
+import {
+  Button,
+  Dialog,
+  List,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 import { KeyboardAvoidingDialog } from "../ui/KeyboardAvoidingDialog";
 
@@ -34,6 +41,7 @@ type SettlementDialogProps = {
   onCurrencyChange: (currency: string) => void;
   onDismiss: () => void;
   onSave: () => void;
+  saving?: boolean;
 };
 
 export function SettlementDialog({
@@ -44,12 +52,15 @@ export function SettlementDialog({
   onAmountChange,
   onCurrencyChange,
   onDismiss,
-  onSave
+  onSave,
+  saving = false,
 }: Readonly<SettlementDialogProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
-  const [preferredMethod, setPreferredMethod] = useState<PaymentMethod | null>(null);
+  const [preferredMethod, setPreferredMethod] = useState<PaymentMethod | null>(
+    null,
+  );
   const [copiedHint, setCopiedHint] = useState(false);
 
   useEffect(() => {
@@ -68,7 +79,7 @@ export function SettlementDialog({
     let cancelled = false;
     api
       .get<PaymentMethod | null>(
-        `/api/participants/${target.receiver_participant_id}/preferred-payment-method/`
+        `/api/participants/${target.receiver_participant_id}/preferred-payment-method/`,
       )
       .then((value) => {
         if (!cancelled) setPreferredMethod(value ?? null);
@@ -89,7 +100,7 @@ export function SettlementDialog({
 
   const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
     value: code,
-    label: code
+    label: code,
   }));
 
   async function openPaypal() {
@@ -111,7 +122,10 @@ export function SettlementDialog({
 
   return (
     <>
-      <KeyboardAvoidingDialog visible={visible} onDismiss={onDismiss}>
+      <KeyboardAvoidingDialog
+        visible={visible}
+        onDismiss={saving ? () => undefined : onDismiss}
+      >
         <Dialog.Title>{t("settlement.title")}</Dialog.Title>
         <Dialog.Content>
           {target ? (
@@ -161,8 +175,14 @@ export function SettlementDialog({
           ) : null}
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>{t("common.cancel")}</Button>
-          <Button disabled={!amount || !target} onPress={onSave}>
+          <Button disabled={saving} onPress={onDismiss}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            loading={saving}
+            disabled={saving || !amount || !target}
+            onPress={onSave}
+          >
             {t("settlement.save")}
           </Button>
         </Dialog.Actions>
@@ -201,7 +221,7 @@ function PaypalSection({
   receiverName,
   onOpen,
   onCopy,
-  copiedHint
+  copiedHint,
 }: Readonly<PaypalSectionProps>) {
   const { t } = useI18n();
   const theme = useTheme();
@@ -211,7 +231,7 @@ function PaypalSection({
     borderRadius: 12,
     gap: 10,
     marginTop: 16,
-    padding: 12
+    padding: 12,
   } as const;
   return (
     <View style={surface}>

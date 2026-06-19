@@ -157,6 +157,8 @@
   "common.preview": "Նախադիտում",
   "common.save": "Պահպանել",
   "common.search": "Որոնել",
+  "search.offline": "Որոնումը հասանելի է միայն առցանց վիճակում։",
+  "write.offline": "Չհաջողվեց պահել փոփոխությունները։ Միացա՞ծ եք ինտերնետին։",
   "common.today": "Այսօր",
   "common.you": "Դուք",
   "balance.empty": "Մնացորդներ դեռ չկան։",

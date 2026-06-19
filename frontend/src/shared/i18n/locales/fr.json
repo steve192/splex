@@ -157,6 +157,8 @@
   "common.preview": "Aperçu",
   "common.save": "Enregistrer",
   "common.search": "Rechercher",
+  "search.offline": "La recherche est disponible uniquement lorsque vous êtes en ligne.",
+  "write.offline": "Impossible d’enregistrer les modifications. Êtes-vous connecté à Internet ?",
   "common.today": "Aujourd'hui",
   "common.you": "Vous",
   "balance.empty": "Aucun solde pour le moment.",

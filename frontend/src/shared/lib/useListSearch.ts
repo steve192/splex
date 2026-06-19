@@ -16,13 +16,28 @@ export type ListSearch = {
   close: () => void;
 };
 
+type ListSearchOptions = {
+  canOpen?: boolean;
+  onBlockedOpen?: () => void;
+};
+
+export function canUseOnlineSearch({
+  isConnected,
+  isInternetReachable
+}: {
+  isConnected: boolean | null;
+  isInternetReachable: boolean | null;
+}): boolean {
+  return isConnected !== false && isInternetReachable !== false;
+}
+
 /**
  * Searchbar UI state for the searchable list screens: an "active" flag plus the
  * raw input debounced into a committed `term`. The data side (refetching when
  * `term` changes) lives in {@link usePaginatedFeed}, keeping this concerned only
  * with input.
  */
-export function useListSearch(): ListSearch {
+export function useListSearch({ canOpen = true, onBlockedOpen }: ListSearchOptions = {}): ListSearch {
   const [active, setActive] = useState(false);
   const [input, setInput] = useState("");
   const [term, setTerm] = useState("");
@@ -34,7 +49,20 @@ export function useListSearch(): ListSearch {
     return () => clearTimeout(handle);
   }, [input]);
 
-  const open = useCallback(() => setActive(true), []);
+  useEffect(() => {
+    if (canOpen || !active) return;
+    setActive(false);
+    setInput("");
+    setTerm("");
+  }, [active, canOpen]);
+
+  const open = useCallback(() => {
+    if (!canOpen) {
+      onBlockedOpen?.();
+      return;
+    }
+    setActive(true);
+  }, [canOpen, onBlockedOpen]);
   const close = useCallback(() => {
     setActive(false);
     setInput("");

@@ -157,6 +157,8 @@
   "common.preview": "Forskoðun",
   "common.save": "Vista",
   "common.search": "Leita",
+  "search.offline": "Leit er aðeins í boði þegar þú ert tengdur.",
+  "write.offline": "Ekki tókst að vista breytingarnar. Ertu tengdur við internetið?",
   "common.today": "Í dag",
   "common.you": "Þú",
   "balance.empty": "Engar stöður enn.",

@@ -157,6 +157,8 @@
   "common.preview": "Praevisio",
   "common.save": "Serva",
   "common.search": "Quaere",
+  "search.offline": "Quaestio tantum online praesto est.",
+  "write.offline": "Mutationes servari non potuerunt. Esne interreti conexus?",
   "common.today": "Hodie",
   "common.you": "Tu",
   "balance.empty": "Nondum ullae rationes sunt.",

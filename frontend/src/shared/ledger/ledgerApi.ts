@@ -10,6 +10,9 @@ type LedgerPageParams = {
   limit: number;
   search: string;
   cacheable: boolean;
+  onBackgroundRefreshEnd?: () => void;
+  onBackgroundRefreshStart?: () => void;
+  onFreshPage?: (page: FeedPage<LedgerItem>) => void;
 };
 
 /**
@@ -21,12 +24,16 @@ export async function fetchLedgerPage(
   api: ApiClient,
   resource: "groups" | "friends",
   id: number,
-  { offset, limit, search, cacheable }: LedgerPageParams
+  { offset, limit, search, cacheable, onBackgroundRefreshEnd, onBackgroundRefreshStart, onFreshPage }: LedgerPageParams
 ): Promise<FeedPage<LedgerItem>> {
   const searchQuery = search ? `&search=${encodeURIComponent(search)}` : "";
   const path = `/api/${resource}/${id}/ledger/?offset=${offset}&limit=${limit}${searchQuery}`;
   const response = cacheable
-    ? await cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path)
+    ? await cachedGet<{ results: LedgerItem[]; next_offset: number | null }>(api, path, {
+        onBackgroundRefreshEnd,
+        onBackgroundRefreshStart,
+        onFreshData: (data) => onFreshPage?.({ items: data.results, nextOffset: data.next_offset })
+      })
     : await api.get<{ results: LedgerItem[]; next_offset: number | null }>(path);
   return { items: response.results, nextOffset: response.next_offset };
 }

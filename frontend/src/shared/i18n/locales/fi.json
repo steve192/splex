@@ -157,6 +157,8 @@
   "common.preview": "Esikatselu",
   "common.save": "Tallenna",
   "common.search": "Haku",
+  "search.offline": "Haku on käytettävissä vain, kun olet verkossa.",
+  "write.offline": "Muutoksia ei voitu tallentaa. Oletko yhteydessä internetiin?",
   "common.today": "Tänään",
   "common.you": "Sinä",
   "balance.empty": "Ei vielä saldoja.",

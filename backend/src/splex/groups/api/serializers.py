@@ -27,18 +27,31 @@ class GroupSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     last_expense_date = serializers.SerializerMethodField()
+    balance = serializers.SerializerMethodField()
 
     def get_icon_url(self, group):
         return signed_media_url(group.icon_url)
 
     def get_last_expense_date(self, group):
         from splex.expenses.models import Expense
+
         latest = (
             Expense.objects.filter(group=group, deleted_at__isnull=True)
             .order_by("-date")
             .first()
         )
         return latest.date if latest else None
+
+    def get_balance(self, group):
+        user = self.context.get("user")
+        if user is None:
+            return "0.00"
+
+        from splex.balances.selectors import group_pair_balances_for_user
+        from splex.shared.money import money
+
+        total = sum(group_pair_balances_for_user(group, user).values())
+        return str(money(total))
 
 
 class GroupCreateSerializer(serializers.Serializer):

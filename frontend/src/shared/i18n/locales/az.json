@@ -157,6 +157,8 @@
   "common.preview": "Önizləmə",
   "common.save": "Saxla",
   "common.search": "Axtar",
+  "search.offline": "Axtarış yalnız onlayn olduqda mümkündür.",
+  "write.offline": "Dəyişiklikləri saxlamaq mümkün olmadı. İnternetə qoşulmusunuz?",
   "common.today": "Bu gün",
   "common.you": "Sən",
   "balance.empty": "Hələ balans yoxdur.",

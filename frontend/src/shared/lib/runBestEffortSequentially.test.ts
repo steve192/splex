@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { runPermissionBootstraps } from "./runPermissionBootstraps";
+import { runBestEffortSequentially } from "./runBestEffortSequentially";
 
-describe("runPermissionBootstraps", () => {
+describe("runBestEffortSequentially", () => {
   it("does not start a step until the previous one resolves", async () => {
     const events: string[] = [];
     let releaseFirst!: () => void;
@@ -19,9 +19,8 @@ describe("runPermissionBootstraps", () => {
         events.push("second:start");
       });
 
-    const pending = runPermissionBootstraps([first, second]);
+    const pending = runBestEffortSequentially([first, second]);
     await Promise.resolve();
-    // Second prompt must not fire while the first is still open.
     expect(events).toEqual(["first:start"]);
 
     releaseFirst();
@@ -31,7 +30,7 @@ describe("runPermissionBootstraps", () => {
 
   it("continues to later steps when an earlier one rejects", async () => {
     const ran: string[] = [];
-    await runPermissionBootstraps([
+    await runBestEffortSequentially([
       () => Promise.reject(new Error("permission unavailable")),
       () => {
         ran.push("location");

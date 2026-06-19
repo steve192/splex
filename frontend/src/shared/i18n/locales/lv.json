@@ -157,6 +157,8 @@
   "common.preview": "Priekšskatījums",
   "common.save": "Saglabāt",
   "common.search": "Meklēt",
+  "search.offline": "Meklēšana ir pieejama tikai tiešsaistē.",
+  "write.offline": "Neizdevās saglabāt izmaiņas. Vai esat pieslēdzies internetam?",
   "common.today": "Šodien",
   "common.you": "Jūs",
   "balance.empty": "Vēl nav bilanču.",

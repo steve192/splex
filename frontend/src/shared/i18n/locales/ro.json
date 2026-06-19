@@ -157,6 +157,8 @@
   "common.preview": "Previzualizare",
   "common.save": "Salvează",
   "common.search": "Caută",
+  "search.offline": "Căutarea este disponibilă doar când ești online.",
+  "write.offline": "Nu s-au putut salva modificările. Ești conectat la internet?",
   "common.today": "Astăzi",
   "common.you": "Tu",
   "balance.empty": "Nu există încă solduri.",

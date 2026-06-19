@@ -28,8 +28,9 @@ import { OpenSourceLicensesScreen } from "../screens/legal/OpenSourceLicensesScr
 import { OverviewScreen } from "../screens/overview/OverviewScreen";
 import { SettlementDetailScreen } from "../screens/settlements/SettlementDetailScreen";
 import { useI18n } from "../shared/i18n/I18nContext";
-import { clearUrlQuery, inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../shared/lib/inviteLinks";
+import { inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../shared/lib/inviteLinks";
 import { syncPendingMutations } from "../shared/sync/queue";
+import { pendingInviteTokenForAuthSession } from "./appNavigatorInvite";
 import { AccountStackParamList, AddStackParamList, ActivityStackParamList, OverviewStackParamList, RootStackParamList, TabParamList } from "./navigationTypes";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -205,33 +206,6 @@ export function AppNavigator() {
   useEffect(() => {
     let cancelled = false;
 
-    async function applyInviteTokenIfValid(token: string, source: "url" | "storage") {
-      inviteDebug("navigator validating invite token", {
-        source,
-        tokenPreview: `${token.slice(0, 6)}...`
-      });
-      try {
-        const preview = await api.get<{ valid: boolean }>(`/api/invitations/${token}/`);
-        if (cancelled) return;
-        if (preview.valid) {
-          inviteDebug("navigator invite token is valid", { source });
-          if (source === "storage") {
-            await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
-          }
-          setPendingInviteToken(token);
-          return;
-        }
-        inviteDebug("navigator invite token is not valid", { source });
-      } catch (error) {
-        inviteDebug("navigator invite token validation failed", { source, error });
-      }
-      await AsyncStorage.removeItem(PENDING_INVITE_STORAGE_KEY);
-      if (source === "url") {
-        clearUrlQuery();
-      }
-      setPendingInviteToken(null);
-    }
-
     async function checkInvite() {
       const authState = tokens ? "auth" : "guest";
       inviteDebug("navigator invite check started", { authenticated: Boolean(tokens), authState });
@@ -257,7 +231,7 @@ export function AppNavigator() {
       const urlInviteToken = inviteTokenFromCurrentUrl();
       if (urlInviteToken) {
         inviteDebug("navigator found invite token in current url");
-        await applyInviteTokenIfValid(urlInviteToken, "url");
+        setPendingInviteToken(pendingInviteTokenForAuthSession(urlInviteToken, null));
         if (!cancelled) {
           inviteCheckDoneRef.current = true;
           setCheckedAuthState("auth");
@@ -267,11 +241,7 @@ export function AppNavigator() {
 
       const stored = await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY);
       inviteDebug("navigator loaded pending invite token from storage", { hasStoredToken: Boolean(stored) });
-      if (stored) {
-        await applyInviteTokenIfValid(stored, "storage");
-      } else {
-        setPendingInviteToken(null);
-      }
+      setPendingInviteToken(pendingInviteTokenForAuthSession(null, stored));
       if (!cancelled) {
         inviteDebug("navigator invite check finished");
         inviteCheckDoneRef.current = true;
@@ -294,7 +264,7 @@ export function AppNavigator() {
     return () => {
       cancelled = true;
     };
-  }, [tokens, api]);
+  }, [tokens]);
 
   useEffect(() => {
     if (!tokens) return;

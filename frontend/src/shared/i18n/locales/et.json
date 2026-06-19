@@ -157,6 +157,8 @@
   "common.preview": "Eelvaade",
   "common.save": "Salvesta",
   "common.search": "Otsi",
+  "search.offline": "Otsing on saadaval ainult siis, kui oled võrgus.",
+  "write.offline": "Muudatusi ei saanud salvestada. Kas oled internetiga ühendatud?",
   "common.today": "Täna",
   "common.you": "Sina",
   "balance.empty": "Saldosid veel pole.",

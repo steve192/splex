@@ -4,6 +4,7 @@ import { Alert } from "react-native";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { pickReceipt, uploadReceipt } from "../../shared/receipts/receiptService";
 import { ContextType, Receipt } from "../../shared/types/models";
 
@@ -59,7 +60,7 @@ export function useReceiptUpload({
       const uploaded = await uploadReceipt(api, asset, ctx);
       setReceipts((current) => [...current, uploaded]);
     } catch (error) {
-      Alert.alert(error instanceof Error ? error.message : t("receipts.uploadFailed"));
+      Alert.alert(apiWriteErrorMessage(error, t));
     } finally {
       setUploading(false);
     }

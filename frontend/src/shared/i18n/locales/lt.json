@@ -157,6 +157,8 @@
   "common.preview": "Peržiūra",
   "common.save": "Išsaugoti",
   "common.search": "Ieškoti",
+  "search.offline": "Paieška pasiekiama tik prisijungus prie interneto.",
+  "write.offline": "Nepavyko išsaugoti pakeitimų. Ar esate prisijungę prie interneto?",
   "common.today": "Šiandien",
   "common.you": "Jūs",
   "balance.empty": "Balansų dar nėra.",

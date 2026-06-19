@@ -1,5 +1,12 @@
 import { View } from "react-native";
-import { Button, Card, List, Text, TouchableRipple, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  List,
+  Text,
+  TouchableRipple,
+  useTheme,
+} from "react-native-paper";
 
 import { useI18n } from "../i18n/I18nContext";
 import { asNumber, formatMoney } from "../lib/money";
@@ -13,7 +20,10 @@ import { styles } from "./styles";
  * Returns ``[before, after]``; if the placeholder is missing the whole
  * template ends up in ``before`` and ``after`` is empty.
  */
-function splitTemplate(template: string, placeholder: string): [string, string] {
+function splitTemplate(
+  template: string,
+  placeholder: string,
+): [string, string] {
   const index = template.indexOf(placeholder);
   if (index < 0) return [template, ""];
   return [template.slice(0, index), template.slice(index + placeholder.length)];
@@ -32,6 +42,8 @@ type BalanceMemberCardProps = {
   /** Splex participant id of the currently signed-in user.  Used to hide
    * the Remind button when the card belongs to the current user. */
   currentParticipantId?: number;
+  actionsDisabled?: boolean;
+  pendingReminderParticipantId?: number | null;
 };
 
 /** One participant's net balance for a group, expandable to show the
@@ -46,7 +58,9 @@ export function BalanceMemberCard({
   onToggle,
   onSettle,
   onRemindSettle,
-  currentParticipantId
+  currentParticipantId,
+  actionsDisabled = false,
+  pendingReminderParticipantId = null,
 }: Readonly<BalanceMemberCardProps>) {
   const { t } = useI18n();
   const theme = useTheme();
@@ -64,11 +78,13 @@ export function BalanceMemberCard({
     headerKey = "balance.owesAmount";
   }
   const headerTemplate = t(headerKey);
-  const [headerBefore, headerAfter] = total === 0
-    ? [headerTemplate, ""]
-    : splitTemplate(headerTemplate, "{amount}");
+  const [headerBefore, headerAfter] =
+    total === 0
+      ? [headerTemplate, ""]
+      : splitTemplate(headerTemplate, "{amount}");
   const ownerIsCurrentUser =
-    currentParticipantId !== undefined && row.participant_id === currentParticipantId;
+    currentParticipantId !== undefined &&
+    row.participant_id === currentParticipantId;
   const ownerUserId = row.user_id ?? null;
   // We can only push the owner of the card if they're a registered user with
   // net debt, and only when they're not the user looking at the screen.
@@ -90,11 +106,15 @@ export function BalanceMemberCard({
             ownerDisplayName={row.display_name}
             currentParticipantId={currentParticipantId}
             onSettle={() => onSettle(detail)}
+            disabled={actionsDisabled}
           />
         ))}
       </View>
     ) : (
-      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+      <Text
+        variant="bodyMedium"
+        style={{ color: theme.colors.onSurfaceVariant }}
+      >
         {t("balance.personSettled")}
       </Text>
     );
@@ -105,13 +125,23 @@ export function BalanceMemberCard({
       <TouchableRipple style={styles.clickable} onPress={onToggle} borderless>
         <Card.Content style={styles.balanceCardContent}>
           <View style={styles.balanceCardHeader}>
-            <PersonAvatar name={row.display_name} imageUrl={row.avatar_url} size={40} />
+            <PersonAvatar
+              name={row.display_name}
+              imageUrl={row.avatar_url}
+              size={40}
+            />
             <View style={styles.flex}>
               <Text variant="titleMedium">{row.display_name}</Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              <Text
+                variant="bodyMedium"
+                style={{ color: theme.colors.onSurfaceVariant }}
+              >
                 {headerBefore}
                 {total !== 0 && (
-                  <Text variant="bodyMedium" style={[{ color: totalColor }, styles.bold]}>
+                  <Text
+                    variant="bodyMedium"
+                    style={[{ color: totalColor }, styles.bold]}
+                  >
                     {formatMoney(total)} {row.currency}
                   </Text>
                 )}
@@ -132,6 +162,8 @@ export function BalanceMemberCard({
           <Button
             mode="elevated"
             icon="bell-outline"
+            loading={pendingReminderParticipantId === row.participant_id}
+            disabled={actionsDisabled}
             onPress={() => onRemindSettle?.(row)}
           >
             {t("settlement.remindPerson", { person: row.display_name })}
@@ -158,6 +190,7 @@ type BalanceDetailRowProps = {
    * owe money when they don't. */
   currentParticipantId?: number;
   onSettle: () => void;
+  disabled?: boolean;
 };
 
 function BalanceDetailRow({
@@ -165,11 +198,13 @@ function BalanceDetailRow({
   ownerParticipantId,
   ownerDisplayName,
   currentParticipantId,
-  onSettle
+  onSettle,
+  disabled = false,
 }: Readonly<BalanceDetailRowProps>) {
   const { t } = useI18n();
   const theme = useTheme();
-  const counterpartyIsCreditor = detail.from_participant_id === ownerParticipantId;
+  const counterpartyIsCreditor =
+    detail.from_participant_id === ownerParticipantId;
   const counterpartyId = counterpartyIsCreditor
     ? detail.to_participant_id
     : detail.from_participant_id;
@@ -177,9 +212,12 @@ function BalanceDetailRow({
     ? detail.to_display_name
     : detail.from_display_name;
   // Card owner pays → red.  Card owner receives → green.
-  const color = counterpartyIsCreditor ? negativeColor(theme) : positiveColor(theme);
+  const color = counterpartyIsCreditor
+    ? negativeColor(theme)
+    : positiveColor(theme);
   const ownerIsCurrentUser =
-    currentParticipantId !== undefined && ownerParticipantId === currentParticipantId;
+    currentParticipantId !== undefined &&
+    ownerParticipantId === currentParticipantId;
   // Pick the phrasing that doesn't lie to the reader:
   //   - card owner is the current user → "you" forms ("You owe X", "X owes you")
   //   - otherwise → neutral third-person ("{owner} owes {person}",
@@ -194,13 +232,13 @@ function BalanceDetailRow({
     template = t("balance.owesLine", {
       from: ownerDisplayName,
       to: counterpartyName,
-      amount: "{amount}"
+      amount: "{amount}",
     });
   } else {
     template = t("balance.owesLine", {
       from: counterpartyName,
       to: ownerDisplayName,
-      amount: "{amount}"
+      amount: "{amount}",
     });
   }
   const [before, after] = splitTemplate(template, "{amount}");
@@ -216,7 +254,13 @@ function BalanceDetailRow({
           {after}
         </Text>
       </View>
-      <Button mode="elevated" icon="cash-check" compact onPress={onSettle}>
+      <Button
+        mode="elevated"
+        icon="cash-check"
+        compact
+        disabled={disabled}
+        onPress={onSettle}
+      >
         {t("settlement.settle")}
       </Button>
     </View>

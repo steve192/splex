@@ -6,16 +6,17 @@ import {
   HelperText,
   List,
   RadioButton,
-  Snackbar,
   Switch,
   Text,
   TextInput,
-  useTheme
+  useTheme,
 } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
-import { useI18n } from "../../shared/i18n/I18nContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { ApiError } from "../../shared/api/client";
+import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
@@ -36,11 +37,16 @@ const STEP_KEYS = [
   "splitProImport.step1",
   "splitProImport.step2",
   "splitProImport.step3",
-  "splitProImport.step4"
+  "splitProImport.step4",
 ];
 
-function extractApiDetail(error: unknown, fallback: string): string {
+function extractApiDetail(
+  error: unknown,
+  fallback: string,
+  t: TranslateFn,
+): string {
   if (error instanceof ApiError) {
+    if (error.offline) return apiWriteErrorMessage(error, t);
     const detail = error.data?.detail;
     if (typeof detail === "string" && detail.length > 0) return detail;
     return fallback;
@@ -52,6 +58,7 @@ function extractApiDetail(error: unknown, fallback: string): string {
 export function SplitProImportScreen() {
   const { t } = useI18n();
   const { api, user: splexUser } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const theme = useTheme();
   const [host, setHost] = useState("");
   const [port, setPort] = useState("5432");
@@ -64,10 +71,10 @@ export function SplitProImportScreen() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const portNumber = Number(port);
-  const portValid = Number.isInteger(portNumber) && portNumber > 0 && portNumber <= 65535;
+  const portValid =
+    Number.isInteger(portNumber) && portNumber > 0 && portNumber <= 65535;
   const credentialsValid =
     host.trim().length > 0 &&
     dbname.trim().length > 0 &&
@@ -75,7 +82,8 @@ export function SplitProImportScreen() {
     password.length > 0 &&
     portValid;
   const credentialsLocked = users !== null;
-  const canConnect = !connecting && !running && credentialsValid && !credentialsLocked;
+  const canConnect =
+    !connecting && !running && credentialsValid && !credentialsLocked;
   const canImport = !running && credentialsLocked && selectedUserId !== null;
 
   function buildCredentials() {
@@ -84,7 +92,7 @@ export function SplitProImportScreen() {
       port: portNumber,
       dbname: dbname.trim(),
       user: user.trim(),
-      password
+      password,
     };
   }
 
@@ -101,7 +109,7 @@ export function SplitProImportScreen() {
     try {
       const result = await api.post<UsersResponse>(
         "/api/imports/split-pro/users/",
-        buildCredentials()
+        buildCredentials(),
       );
       const fetched = result.users ?? [];
       setUsers(fetched);
@@ -112,7 +120,9 @@ export function SplitProImportScreen() {
         : undefined;
       setSelectedUserId(match?.id ?? fetched[0]?.id ?? null);
     } catch (error) {
-      setErrorMessage(extractApiDetail(error, t("splitProImport.connectionFailed")));
+      showSnackbar(
+        extractApiDetail(error, t("splitProImport.connectionFailed"), t),
+      );
     } finally {
       setConnecting(false);
     }
@@ -126,12 +136,12 @@ export function SplitProImportScreen() {
       const result = await api.post<ImportResponse>("/api/imports/split-pro/", {
         ...buildCredentials(),
         actor_user_id: selectedUserId,
-        import_friends_as_groups: importFriends
+        import_friends_as_groups: importFriends,
       });
       setSummary(result.summary);
       setPassword("");
     } catch (error) {
-      setErrorMessage(extractApiDetail(error, t("common.error")));
+      showSnackbar(extractApiDetail(error, t("common.error"), t));
     } finally {
       setRunning(false);
     }
@@ -156,7 +166,11 @@ export function SplitProImportScreen() {
             {STEP_KEYS.map((key, index) => (
               <View
                 key={key}
-                style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  alignItems: "flex-start",
+                }}
               >
                 <View
                   style={{
@@ -165,12 +179,15 @@ export function SplitProImportScreen() {
                     borderRadius: 14,
                     height: 28,
                     justifyContent: "center",
-                    width: 28
+                    width: 28,
                   }}
                 >
                   <Text
                     variant="labelLarge"
-                    style={{ color: theme.colors.onPrimaryContainer, fontWeight: "700" }}
+                    style={{
+                      color: theme.colors.onPrimaryContainer,
+                      fontWeight: "700",
+                    }}
                   >
                     {index + 1}
                   </Text>
@@ -184,12 +201,16 @@ export function SplitProImportScreen() {
           <HelperText type="info" style={{ marginTop: 4 }}>
             {t("splitProImport.privacyNote")}
           </HelperText>
-          <HelperText type="info">{t("splitProImport.compatibilityNote")}</HelperText>
+          <HelperText type="info">
+            {t("splitProImport.compatibilityNote")}
+          </HelperText>
         </Card.Content>
       </Card>
       <Card mode="elevated">
         <Card.Content style={styles.gap}>
-          <Text variant="titleMedium">{t("splitProImport.friendsAsGroups.title")}</Text>
+          <Text variant="titleMedium">
+            {t("splitProImport.friendsAsGroups.title")}
+          </Text>
           <Text variant="bodyMedium">
             {t("splitProImport.friendsAsGroups.explanation")}
           </Text>
@@ -208,7 +229,9 @@ export function SplitProImportScreen() {
       </Card>
       <Card mode="elevated">
         <Card.Content style={styles.gap}>
-          <Text variant="titleMedium">{t("splitProImport.connectionTitle")}</Text>
+          <Text variant="titleMedium">
+            {t("splitProImport.connectionTitle")}
+          </Text>
           <TextInput
             mode="outlined"
             label={t("splitProImport.host")}
@@ -256,7 +279,12 @@ export function SplitProImportScreen() {
             disabled={connecting || running || credentialsLocked}
           />
           {credentialsLocked ? (
-            <Button mode="text" icon="pencil-outline" onPress={resetConnection} disabled={running}>
+            <Button
+              mode="text"
+              icon="pencil-outline"
+              onPress={resetConnection}
+              disabled={running}
+            >
               {t("splitProImport.changeCredentials")}
             </Button>
           ) : (
@@ -271,17 +299,25 @@ export function SplitProImportScreen() {
             </Button>
           )}
           {connecting ? (
-            <HelperText type="info">{t("splitProImport.connecting")}</HelperText>
+            <HelperText type="info">
+              {t("splitProImport.connecting")}
+            </HelperText>
           ) : null}
         </Card.Content>
       </Card>
       {users !== null && (
         <Card mode="elevated">
           <Card.Content style={styles.gap}>
-            <Text variant="titleMedium">{t("splitProImport.pickUserTitle")}</Text>
-            <Text variant="bodyMedium">{t("splitProImport.pickUserDescription")}</Text>
+            <Text variant="titleMedium">
+              {t("splitProImport.pickUserTitle")}
+            </Text>
+            <Text variant="bodyMedium">
+              {t("splitProImport.pickUserDescription")}
+            </Text>
             {users.length === 0 ? (
-              <HelperText type="error">{t("splitProImport.noUsers")}</HelperText>
+              <HelperText type="error">
+                {t("splitProImport.noUsers")}
+              </HelperText>
             ) : (
               <RadioButton.Group
                 value={selectedUserId === null ? "" : String(selectedUserId)}
@@ -315,28 +351,34 @@ export function SplitProImportScreen() {
       {summary ? (
         <Card mode="elevated">
           <Card.Content style={styles.gap}>
-            <Text variant="titleMedium">{t("splitProImport.successTitle")}</Text>
-            <Text>{t("splitProImport.summaryGroups", { count: summary.groups_created })}</Text>
-            <Text>{t("splitProImport.summaryExpenses", { count: summary.expenses_imported })}</Text>
+            <Text variant="titleMedium">
+              {t("splitProImport.successTitle")}
+            </Text>
             <Text>
-              {t("splitProImport.summarySettlements", { count: summary.settlements_imported })}
+              {t("splitProImport.summaryGroups", {
+                count: summary.groups_created,
+              })}
+            </Text>
+            <Text>
+              {t("splitProImport.summaryExpenses", {
+                count: summary.expenses_imported,
+              })}
+            </Text>
+            <Text>
+              {t("splitProImport.summarySettlements", {
+                count: summary.settlements_imported,
+              })}
             </Text>
             {summary.skipped_expenses > 0 ? (
               <Text>
-                {t("splitProImport.summarySkipped", { count: summary.skipped_expenses })}
+                {t("splitProImport.summarySkipped", {
+                  count: summary.skipped_expenses,
+                })}
               </Text>
             ) : null}
           </Card.Content>
         </Card>
       ) : null}
-      <Snackbar
-        visible={!!errorMessage}
-        onDismiss={() => setErrorMessage("")}
-        duration={6000}
-        action={{ label: t("common.dismiss"), onPress: () => setErrorMessage("") }}
-      >
-        {errorMessage}
-      </Snackbar>
     </Screen>
   );
 }

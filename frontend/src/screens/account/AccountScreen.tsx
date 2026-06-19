@@ -2,21 +2,38 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
-import { Button, Card, Dialog, HelperText, List, Portal, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
+import {
+  Button,
+  Card,
+  Dialog,
+  HelperText,
+  List,
+  Portal,
+  Switch,
+  Text,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 
 import { AccountStackParamList } from "../../application/navigationTypes";
 import { usePreferences } from "../../application/PreferencesContext";
 import { useAuth } from "../../features/auth/AuthContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { getLocaleLabel, Locale, SUPPORTED_LOCALES } from "../../shared/i18n/locale";
+import {
+  getLocaleLabel,
+  Locale,
+  SUPPORTED_LOCALES,
+} from "../../shared/i18n/locale";
 import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
-import { apiErrorMessage } from "../../shared/lib/apiErrors";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { appVersionLabel } from "../../shared/lib/appVersion";
 import { CURRENCIES } from "../../shared/lib/currencies";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
 import {
   DevicePushState,
   getLocalPushPreference,
-  setDevicePushEnabled
+  setDevicePushEnabled,
 } from "../../shared/notifications/registration";
 import { PwaIosInstructionsDialog } from "../../shared/pwa/PwaIosInstructionsDialog";
 import { usePwaInstallPrompt } from "../../shared/pwa/usePwaInstallPrompt";
@@ -25,10 +42,13 @@ import { LocationTrackingToggle } from "../../shared/ui/LocationTrackingToggle";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
-import { SelectionOption, SelectionSheet } from "../../shared/ui/SelectionSheet";
+import {
+  SelectionOption,
+  SelectionSheet,
+} from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 
-import { isDeleteConfirmationMatch } from './accountHelpers';
+import { isDeleteConfirmationMatch } from "./accountHelpers";
 
 type PushToggleProps = Readonly<{
   value: boolean;
@@ -44,9 +64,17 @@ export function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
   const { themeMode, setThemeMode } = usePreferences();
   const { api, refreshUser, user, logout } = useAuth();
+  const { showSnackbar } = useSnackbar();
+  const { hasPending, isPending, runPendingAction } =
+    usePendingAction<"delete-account">();
   const theme = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<AccountStackParamList>>();
-  const { canInstall, installMethod, install: installPwa } = usePwaInstallPrompt();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<AccountStackParamList>>();
+  const {
+    canInstall,
+    installMethod,
+    install: installPwa,
+  } = usePwaInstallPrompt();
   const [iosInstructionsVisible, setIosInstructionsVisible] = useState(false);
 
   function handleInstallPress() {
@@ -64,26 +92,38 @@ export function AccountScreen() {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
-  const [pushStatus, setPushStatus] = useState<DevicePushState["lastStatus"]>("idle");
+  const [pushStatus, setPushStatus] =
+    useState<DevicePushState["lastStatus"]>("idle");
   const [pushError, setPushError] = useState<string | undefined>(undefined);
-  const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(user?.location_tracking_enabled ?? true);
+  const [locationTrackingEnabled, setLocationTrackingEnabled] = useState(
+    user?.location_tracking_enabled ?? true,
+  );
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const deleteKeyword = t("account.deleteAccountKeyword");
-  const deleteEnabled = isDeleteConfirmationMatch(deleteConfirm, deleteKeyword, locale);
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({ value: code, label: code }));
-  const languageOptions: SelectionOption<Locale>[] = SUPPORTED_LOCALES.map((value) => ({
-    value,
-    label: getLocaleLabel(value)
+  const deleteEnabled = isDeleteConfirmationMatch(
+    deleteConfirm,
+    deleteKeyword,
+    locale,
+  );
+  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
+    value: code,
+    label: code,
   }));
+  const languageOptions: SelectionOption<Locale>[] = SUPPORTED_LOCALES.map(
+    (value) => ({
+      value,
+      label: getLocaleLabel(value),
+    }),
+  );
   const themeOptions: SelectionOption<ThemeMode>[] = [
     { value: "system", label: t("account.themeSystem") },
     { value: "light", label: t("account.themeLight") },
-    { value: "dark", label: t("account.themeDark") }
+    { value: "dark", label: t("account.themeDark") },
   ];
   const selectedThemeLabel =
-    themeOptions.find((option) => option.value === themeMode)?.label ?? t("account.themeSystem");
+    themeOptions.find((option) => option.value === themeMode)?.label ??
+    t("account.themeSystem");
   const selectedLocaleLabel = getLocaleLabel(locale);
 
   useEffect(() => {
@@ -91,18 +131,18 @@ export function AccountScreen() {
   }, []);
 
   // Single autosave entry point: patch /api/me/ then refresh local user state.
-  // Failures surface to the user via a Snackbar so they don't silently lose
-  // the change they thought they just made.
+  // Failures surface via global feedback so they don't silently lose the
+  // change they thought they just made.
   const saveFields = useCallback(
     async (patch: Record<string, unknown>) => {
       try {
         await api.patch("/api/me/", patch);
         await refreshUser();
       } catch (error) {
-        setErrorMessage(apiErrorMessage(error, t));
+        showSnackbar(apiWriteErrorMessage(error, t));
       }
     },
-    [api, refreshUser, t]
+    [api, refreshUser, showSnackbar, t],
   );
 
   async function togglePush(next: boolean) {
@@ -110,13 +150,23 @@ export function AccountScreen() {
     const result = await setDevicePushEnabled(api, next);
     setPushOn(result.preference === "on");
     setPushStatus(result.lastStatus);
-    setPushError(result.lastError);
+    setPushError(
+      result.lastErrorCode === "offline"
+        ? t("write.offline")
+        : result.lastError,
+    );
     setPushBusy(false);
   }
 
   const renderPushToggle = useCallback(
-    () => <PushToggle value={pushOn} onValueChange={togglePush} disabled={pushBusy} />,
-    [pushBusy, pushOn]
+    () => (
+      <PushToggle
+        value={pushOn}
+        onValueChange={togglePush}
+        disabled={pushBusy}
+      />
+    ),
+    [pushBusy, pushOn],
   );
 
   async function handleLocationTrackingToggle(enabled: boolean) {
@@ -140,20 +190,36 @@ export function AccountScreen() {
     saveFields({ locale: next });
   }
 
-  function handleAvatarChange(image: { dataUrl: string; previewUrl: string; attribution?: string }) {
+  function handleAvatarChange(image: {
+    dataUrl: string;
+    previewUrl: string;
+    attribution?: string;
+  }) {
     setAvatarUrl(image.previewUrl);
-    saveFields({ avatar_image: image.dataUrl, avatar_attribution: image.attribution ?? "" });
+    saveFields({
+      avatar_image: image.dataUrl,
+      avatar_attribution: image.attribution ?? "",
+    });
   }
 
   async function handleDeleteAccount() {
     if (!deleteEnabled) return;
-    await api.delete("/api/me/delete/");
-    setDeleteDialogVisible(false);
-    logout();
+    await runPendingAction("delete-account", async () => {
+      try {
+        await api.delete("/api/me/delete/");
+      } catch (error) {
+        setDeleteDialogVisible(false);
+        showSnackbar(apiWriteErrorMessage(error, t));
+        return;
+      }
+      setDeleteDialogVisible(false);
+      logout();
+    });
   }
 
   const pushHelper = (() => {
-    if (pushStatus === "permission_denied") return t("notifications.permissionDenied");
+    if (pushStatus === "permission_denied")
+      return t("notifications.permissionDenied");
     if (pushStatus === "unsupported") return t("notifications.unsupported");
     if (pushStatus === "registered") return t("notifications.registered");
     if (!pushOn) return t("notifications.disabled");
@@ -202,16 +268,27 @@ export function AccountScreen() {
             title={t("notifications.deviceToggle")}
             right={renderPushToggle}
           />
-          {pushHelper ? <HelperText type="info">{pushHelper}</HelperText> : null}
+          {pushHelper ? (
+            <HelperText type="info">{pushHelper}</HelperText>
+          ) : null}
           {pushStatus === "error" && pushError ? (
             <HelperText type="error">{pushError}</HelperText>
           ) : null}
           {pushStatus === "error" || pushStatus === "permission_denied" ? (
-            <Button mode="text" icon="refresh" onPress={() => togglePush(true)} disabled={pushBusy}>
+            <Button
+              mode="text"
+              icon="refresh"
+              onPress={() => togglePush(true)}
+              disabled={pushBusy}
+              loading={pushBusy}
+            >
               {t("notifications.retry")}
             </Button>
           ) : null}
-          <LocationTrackingToggle enabled={locationTrackingEnabled} onChange={handleLocationTrackingToggle} />
+          <LocationTrackingToggle
+            enabled={locationTrackingEnabled}
+            onChange={handleLocationTrackingToggle}
+          />
           <Button
             mode="elevated"
             icon="credit-card-outline"
@@ -227,14 +304,21 @@ export function AccountScreen() {
             {t("account.importFromService")}
           </Button>
           {canInstall ? (
-            <Button mode="elevated" icon="download" onPress={handleInstallPress}>
+            <Button
+              mode="elevated"
+              icon="download"
+              onPress={handleInstallPress}
+            >
               {t("pwa.install.installButton")}
             </Button>
           ) : null}
-          <Button mode="text" onPress={logout}>{t("account.logout")}</Button>
+          <Button mode="text" onPress={logout}>
+            {t("account.logout")}
+          </Button>
           <Button
             mode="text"
             textColor={theme.colors.error}
+            disabled={hasPending}
             onPress={() => {
               setDeleteConfirm("");
               setDeleteDialogVisible(true);
@@ -247,7 +331,9 @@ export function AccountScreen() {
       <Portal>
         <Dialog
           visible={deleteDialogVisible}
-          onDismiss={() => setDeleteDialogVisible(false)}
+          onDismiss={
+            hasPending ? () => undefined : () => setDeleteDialogVisible(false)
+          }
         >
           <Dialog.Title>{t("account.deleteAccount")}</Dialog.Title>
           <Dialog.Content style={styles.gap}>
@@ -262,10 +348,16 @@ export function AccountScreen() {
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteDialogVisible(false)}>{t("common.cancel")}</Button>
+            <Button
+              disabled={hasPending}
+              onPress={() => setDeleteDialogVisible(false)}
+            >
+              {t("common.cancel")}
+            </Button>
             <Button
               textColor={theme.colors.error}
-              disabled={!deleteEnabled}
+              loading={isPending("delete-account")}
+              disabled={!deleteEnabled || hasPending}
               onPress={handleDeleteAccount}
             >
               {t("common.delete")}
@@ -280,7 +372,10 @@ export function AccountScreen() {
       <LegalFooterLinks />
       <Text
         variant="bodySmall"
-        style={[styles.subtleFooterLink, { color: theme.colors.onSurfaceVariant }]}
+        style={[
+          styles.subtleFooterLink,
+          { color: theme.colors.onSurfaceVariant },
+        ]}
       >
         {appVersionLabel(t)}
       </Text>
@@ -309,14 +404,6 @@ export function AccountScreen() {
         onSelect={setThemeMode}
         onDismiss={() => setThemeSheetOpen(false)}
       />
-      <Snackbar
-        visible={!!errorMessage}
-        onDismiss={() => setErrorMessage("")}
-        duration={6000}
-        action={{ label: t("common.dismiss"), onPress: () => setErrorMessage("") }}
-      >
-        {errorMessage}
-      </Snackbar>
     </Screen>
   );
 }

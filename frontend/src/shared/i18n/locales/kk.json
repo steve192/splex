@@ -157,6 +157,8 @@
   "common.preview": "Алдын ала қарау",
   "common.save": "Сақтау",
   "common.search": "Іздеу",
+  "search.offline": "Іздеу тек онлайн кезде қолжетімді.",
+  "write.offline": "Өзгерістерді сақтау мүмкін болмады. Интернетке қосылдыңыз ба?",
   "common.today": "Бүгін",
   "common.you": "Сіз",
   "balance.empty": "Әзірге баланс жоқ.",

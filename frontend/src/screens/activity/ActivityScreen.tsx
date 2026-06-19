@@ -1,16 +1,18 @@
+import { useNetInfo } from "@react-native-community/netinfo";
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback } from "react";
 import { View } from "react-native";
-import { Button, IconButton, Text } from "react-native-paper";
+import { ActivityIndicator, Button, IconButton, Text } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { ActivityStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { listPendingExpenses } from "../../shared/ledger/pendingExpenses";
 import { useInfiniteScroll } from "../../shared/ledger/useInfiniteScroll";
-import { useListSearch } from "../../shared/lib/useListSearch";
+import { canUseOnlineSearch, useListSearch } from "../../shared/lib/useListSearch";
 import { usePaginatedFeed } from "../../shared/lib/usePaginatedFeed";
 import { cachedGet, readCachedResponse } from "../../shared/lib/offlineCache";
 import { ActivityFeedEvent, Friend, Group } from "../../shared/types/models";
@@ -27,7 +29,13 @@ const ACTIVITY_PAGE_SIZE = 50;
 export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
-  const search = useListSearch();
+  const { showSnackbar } = useSnackbar();
+  const netInfo = useNetInfo();
+  const showOfflineSearchMessage = useCallback(() => showSnackbar(t("search.offline")), [showSnackbar, t]);
+  const search = useListSearch({
+    canOpen: canUseOnlineSearch(netInfo),
+    onBlockedOpen: showOfflineSearchMessage
+  });
 
   // Prepend not-yet-synced drafts as activity rows so they show up immediately.
   const withPendingEvents = useCallback(
@@ -62,15 +70,27 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
     [t]
   );
 
-  const { items, nextOffset, loadingMore, load, refresh } = usePaginatedFeed<ActivityFeedEvent>({
+  const { items, nextOffset, loadingInitial, loadingMore, load, refresh } = usePaginatedFeed<ActivityFeedEvent>({
     pageSize: ACTIVITY_PAGE_SIZE,
     searchTerm: search.term,
     mapInitial: withPendingEvents,
-    fetchPage: async ({ offset, limit, search: term, cacheable }) => {
+    fetchPage: async ({
+      offset,
+      limit,
+      search: term,
+      cacheable,
+      onBackgroundRefreshEnd,
+      onBackgroundRefreshStart,
+      onFreshPage
+    }) => {
       const searchQuery = term ? `&search=${encodeURIComponent(term)}` : "";
       const path = `/api/activity/?offset=${offset}&limit=${limit}${searchQuery}`;
       const response = cacheable
-        ? await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path)
+        ? await cachedGet<{ results: ActivityFeedEvent[]; next_offset: number | null }>(api, path, {
+            onBackgroundRefreshEnd,
+            onBackgroundRefreshStart,
+            onFreshData: (data) => onFreshPage?.({ items: data.results, nextOffset: data.next_offset })
+          })
         : await api.get<{ results: ActivityFeedEvent[]; next_offset: number | null }>(path);
       return { items: response.results, nextOffset: response.next_offset };
     }
@@ -108,11 +128,14 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
         <ListSearchbar value={search.input} onChangeText={search.setInput} onClose={search.close} />
       ) : (
         <View style={styles.rowBetween}>
-          <Text variant="headlineSmall">{t("tabs.activity")}</Text>
+          <View style={styles.inline}>
+            <Text variant="headlineSmall">{t("tabs.activity")}</Text>
+            {loadingInitial && <ActivityIndicator size={16} />}
+          </View>
           <IconButton icon="magnify" onPress={search.open} accessibilityLabel={t("common.search")} />
         </View>
       )}
-      {!items.length && (
+      {!items.length && !loadingInitial && (
         <EmptyState
           image={appImages.emptyActivity}
           text={search.term ? t("common.noResults") : t("activity.empty")}
@@ -121,7 +144,7 @@ export function ActivityScreen({ navigation }: Readonly<ActivityScreenProps>) {
       {items.map((item) => (
         <ActivityListItem key={String(item.id)} item={item} onPress={() => openActivityItem(item)} />
       ))}
-      {nextOffset !== null && (
+      {nextOffset !== null && items.length > 0 && (
         <Button mode="elevated" loading={loadingMore} onPress={() => load(nextOffset)}>
           {t("activity.loadMore")}
         </Button>

@@ -4,6 +4,7 @@ import { ActivityIndicator, IconButton, List, Text, useTheme } from "react-nativ
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
+import { apiWriteErrorMessage } from "../lib/apiErrors";
 import type { Receipt } from "../types/models";
 import { negativeColor } from "../ui/colors";
 import { styles } from "../ui/styles";
@@ -54,8 +55,8 @@ export function ReceiptList({ receipts, allowRemove, onRemoved }: Readonly<Recei
     try {
       await deleteReceipt(api, receipt.id);
       onRemoved?.(receipt.id);
-    } catch {
-      Alert.alert(t("common.error"));
+    } catch (error) {
+      Alert.alert(apiWriteErrorMessage(error, t));
     } finally {
       setBusyId(null);
     }

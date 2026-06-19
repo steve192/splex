@@ -35,6 +35,8 @@ const API_DEBUG_ENABLED =
   (process.env as Record<string, string | undefined>).EXPO_PUBLIC_API_DEBUG === "1" ||
   (typeof __DEV__ !== "undefined" && __DEV__);
 
+export const API_REQUEST_TIMEOUT_MS = 8000;
+
 function apiDebug(message: string, details?: unknown) {
   if (!API_DEBUG_ENABLED) return;
   if (globalThis.window !== undefined) {
@@ -56,6 +58,34 @@ export class ApiError extends Error {
     this.status = options.status;
     this.offline = options.offline ?? false;
     this.data = options.data;
+  }
+}
+
+async function fetchWithTimeout(
+  url: RequestInfo | URL,
+  options: RequestInit = {},
+  timeoutMs = API_REQUEST_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      resolve("timeout");
+    }, timeoutMs);
+  });
+  const response = fetch(url, { ...options, signal: controller.signal });
+  response.catch(() => undefined);
+  try {
+    const result = await Promise.race([response, timeout]);
+    if (result === "timeout") {
+      throw new ApiError("Network timeout", { offline: true });
+    }
+    return result;
+  } finally {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -136,10 +166,13 @@ export class ApiClient {
     let response: Response;
     const requestUrl = `${await this.getBaseUrl()}${path}`;
     try {
-      response = await fetch(requestUrl, { ...options, headers });
+      response = await fetchWithTimeout(requestUrl, { ...options, headers });
     } catch (error) {
       if (shouldLogPath(path)) {
         apiDebug("request failed before response", { path, error });
+      }
+      if (error instanceof ApiError) {
+        throw error;
       }
       throw new ApiError("Network unavailable", { offline: true });
     }
@@ -181,12 +214,15 @@ export class ApiClient {
   private async refreshAccessToken(): Promise<void> {
     let response: Response;
     try {
-      response = await fetch(`${await this.getBaseUrl()}/api/auth/token/refresh/`, {
+      response = await fetchWithTimeout(`${await this.getBaseUrl()}/api/auth/token/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: this.tokens?.refresh })
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
       throw new ApiError("Network unavailable", { offline: true });
     }
     if (!response.ok) {
@@ -245,8 +281,11 @@ export class ApiClient {
     const url = `${await this.getBaseUrl()}${path}`;
     let response: Response;
     try {
-      response = await fetch(url, { headers });
-    } catch {
+      response = await fetchWithTimeout(url, { headers });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
       throw new ApiError("Network unavailable", { offline: true });
     }
     if (response.status === 401 && this.tokens?.refresh) {
@@ -258,7 +297,14 @@ export class ApiClient {
       if (this.tokens?.access) {
         retryHeaders.set("Authorization", `Bearer ${this.tokens.access}`);
       }
-      response = await fetch(url, { headers: retryHeaders });
+      try {
+        response = await fetchWithTimeout(url, { headers: retryHeaders });
+      } catch (error) {
+        if (error instanceof ApiError) {
+          throw error;
+        }
+        throw new ApiError("Network unavailable", { offline: true });
+      }
     }
     if (!response.ok) {
       throw new ApiError(`Failed to fetch (${response.status})`, { status: response.status });

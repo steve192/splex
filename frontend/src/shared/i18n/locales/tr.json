@@ -157,6 +157,8 @@
   "common.preview": "Önizleme",
   "common.save": "Kaydet",
   "common.search": "Ara",
+  "search.offline": "Arama yalnız çevrimiçiyken kullanılabilir.",
+  "write.offline": "Değişiklikler kaydedilemedi. İnternete bağlı mısınız?",
   "common.today": "Bugün",
   "common.you": "Siz",
   "balance.empty": "Henüz bakiye yok.",

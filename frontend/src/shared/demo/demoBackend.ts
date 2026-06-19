@@ -64,7 +64,6 @@ const STATIC_GET_RESPONSES: Record<string, () => unknown> = {
     google: { client_id: null, android_client_id: null },
     demo_mode_enabled: true
   }),
-  "/api/overview/": () => demoFixtures.overview,
   "/api/groups/": () => demoFixtures.groupsList,
   "/api/friends/": () => demoFixtures.friendsList,
   "/api/activity/": () => ({ results: demoFixtures.activityEvents, next_offset: null }),

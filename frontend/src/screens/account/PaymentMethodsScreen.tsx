@@ -10,30 +10,45 @@ import {
   List,
   Portal,
   RadioButton,
-  Snackbar,
   Text,
-  TextInput
+  TextInput,
 } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { apiErrorMessage } from "../../shared/lib/apiErrors";
+import {
+  apiErrorMessage,
+  apiWriteErrorMessage,
+} from "../../shared/lib/apiErrors";
+import { usePendingAction } from "../../shared/lib/usePendingAction";
 import { PaymentMethod } from "../../shared/types/models";
 import { KeyboardAvoidingDialog } from "../../shared/ui/KeyboardAvoidingDialog";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 
-type AddState = { visible: boolean; input: string; busy: boolean; error: string };
+type AddState = {
+  visible: boolean;
+  input: string;
+  busy: boolean;
+  error: string;
+};
 
-const EMPTY_ADD_STATE: AddState = { visible: false, input: "", busy: false, error: "" };
+const EMPTY_ADD_STATE: AddState = {
+  visible: false,
+  input: "",
+  busy: false,
+  error: "",
+};
 
 export function PaymentMethodsScreen() {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSnackbar } = useSnackbar();
+  const { hasPending, isPending, runPendingAction } = usePendingAction();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [add, setAdd] = useState<AddState>(EMPTY_ADD_STATE);
-  const [snackbar, setSnackbar] = useState("");
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -41,36 +56,42 @@ export function PaymentMethodsScreen() {
       const rows = await api.get<PaymentMethod[]>("/api/me/payment-methods/");
       setMethods(rows);
     } catch (error) {
-      setSnackbar(apiErrorMessage(error, t));
+      showSnackbar(apiErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
-  }, [api, t]);
+  }, [api, showSnackbar, t]);
 
   useFocusEffect(
     useCallback(() => {
       reload().catch(() => undefined);
-    }, [reload])
+    }, [reload]),
   );
 
   async function setPreferred(method: PaymentMethod) {
     if (method.is_preferred) return;
-    try {
-      await api.patch(`/api/me/payment-methods/${method.id}/`, { is_preferred: true });
-      await reload();
-    } catch (error) {
-      setSnackbar(apiErrorMessage(error, t));
-    }
+    await runPendingAction(`preferred:${method.id}`, async () => {
+      try {
+        await api.patch(`/api/me/payment-methods/${method.id}/`, {
+          is_preferred: true,
+        });
+        await reload();
+      } catch (error) {
+        showSnackbar(apiWriteErrorMessage(error, t));
+      }
+    });
   }
 
   async function remove(method: PaymentMethod) {
-    try {
-      await api.delete(`/api/me/payment-methods/${method.id}/`);
-      await reload();
-      setSnackbar(t("paymentMethods.removed"));
-    } catch (error) {
-      setSnackbar(apiErrorMessage(error, t));
-    }
+    await runPendingAction(`remove:${method.id}`, async () => {
+      try {
+        await api.delete(`/api/me/payment-methods/${method.id}/`);
+        await reload();
+        showSnackbar(t("paymentMethods.removed"));
+      } catch (error) {
+        showSnackbar(apiWriteErrorMessage(error, t));
+      }
+    });
   }
 
   async function submitNew() {
@@ -80,12 +101,12 @@ export function PaymentMethodsScreen() {
       await api.post("/api/me/payment-methods/", { paypal: add.input.trim() });
       setAdd(EMPTY_ADD_STATE);
       await reload();
-      setSnackbar(t("paymentMethods.added"));
+      showSnackbar(t("paymentMethods.added"));
     } catch (error) {
       setAdd((prev) => ({
         ...prev,
         busy: false,
-        error: apiErrorMessage(error, t)
+        error: apiWriteErrorMessage(error, t),
       }));
     }
   }
@@ -98,7 +119,9 @@ export function PaymentMethodsScreen() {
         <Card.Content style={styles.gap}>
           {methods.length === 0 ? (
             <Text variant="bodyMedium">
-              {loading ? t("paymentMethods.loading") : t("paymentMethods.empty")}
+              {loading
+                ? t("paymentMethods.loading")
+                : t("paymentMethods.empty")}
             </Text>
           ) : (
             <RadioButton.Group
@@ -115,10 +138,13 @@ export function PaymentMethodsScreen() {
                     value={method.id.toString()}
                     position="leading"
                     style={styles.flex}
+                    disabled={hasPending}
                   />
                   <IconButton
                     icon="trash-can-outline"
                     onPress={() => remove(method)}
+                    loading={isPending(`remove:${method.id}`)}
+                    disabled={hasPending}
                     accessibilityLabel={t("paymentMethods.removeLabel")}
                   />
                 </View>
@@ -129,6 +155,7 @@ export function PaymentMethodsScreen() {
             mode="contained"
             icon="plus"
             onPress={() => setAdd({ ...EMPTY_ADD_STATE, visible: true })}
+            disabled={hasPending}
           >
             {t("paymentMethods.addPaypal")}
           </Button>
@@ -142,7 +169,9 @@ export function PaymentMethodsScreen() {
         >
           <Dialog.Title>{t("paymentMethods.addPaypal")}</Dialog.Title>
           <Dialog.Content style={styles.gap}>
-            <Text variant="bodyMedium">{t("paymentMethods.addPaypalHelp")}</Text>
+            <Text variant="bodyMedium">
+              {t("paymentMethods.addPaypalHelp")}
+            </Text>
             <List.Item
               left={(props) => <List.Icon {...props} icon="link-variant" />}
               title={t("paymentMethods.formatHandle")}
@@ -164,7 +193,9 @@ export function PaymentMethodsScreen() {
               autoCorrect={false}
               disabled={add.busy}
             />
-            {add.error ? <HelperText type="error">{add.error}</HelperText> : null}
+            {add.error ? (
+              <HelperText type="error">{add.error}</HelperText>
+            ) : null}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setAdd(EMPTY_ADD_STATE)} disabled={add.busy}>
@@ -181,14 +212,6 @@ export function PaymentMethodsScreen() {
           </Dialog.Actions>
         </KeyboardAvoidingDialog>
       </Portal>
-      <Snackbar
-        visible={!!snackbar}
-        onDismiss={() => setSnackbar("")}
-        duration={6000}
-        action={{ label: t("common.dismiss"), onPress: () => setSnackbar("") }}
-      >
-        {snackbar}
-      </Snackbar>
     </Screen>
   );
 }

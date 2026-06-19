@@ -157,6 +157,8 @@
   "common.preview": "Réamhamharc",
   "common.save": "Sábháil",
   "common.search": "Cuardaigh",
+  "search.offline": "Níl cuardach ar fáil ach amháin nuair atá tú ar líne.",
+  "write.offline": "Níorbh fhéidir na hathruithe a shábháil. An bhfuil tú ceangailte leis an idirlíon?",
   "common.today": "Inniu",
   "common.you": "Tú",
   "balance.empty": "Níl aon iarmhéideanna fós.",

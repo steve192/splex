@@ -157,6 +157,8 @@
   "common.preview": "Vorschau",
   "common.save": "Speichern",
   "common.search": "Suchen",
+  "search.offline": "Suche ist nur online verfügbar.",
+  "write.offline": "Änderungen konnten nicht gespeichert werden. Bist du mit dem Internet verbunden?",
   "common.today": "Heute",
   "common.you": "Du",
   "balance.empty": "Noch keine Salden.",

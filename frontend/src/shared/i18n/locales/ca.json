@@ -157,6 +157,8 @@
   "common.preview": "Previsualització",
   "common.save": "Desa",
   "common.search": "Cerca",
+  "search.offline": "La cerca només està disponible quan tens connexió.",
+  "write.offline": "No s'han pogut desar els canvis. Tens connexió a internet?",
   "common.today": "Avui",
   "common.you": "Tu",
   "balance.empty": "Encara no hi ha saldos.",

@@ -13,3 +13,9 @@ export function apiErrorMessage(error: unknown, t: TranslateFn): string {
   if (error instanceof Error && error.message) return error.message;
   return t("common.error");
 }
+
+export function apiWriteErrorMessage(error: unknown, t: TranslateFn): string {
+  if (error instanceof Error && "offline" in error && error.offline === true)
+    return t("write.offline");
+  return apiErrorMessage(error, t);
+}

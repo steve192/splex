@@ -8,30 +8,28 @@
  * silence the others.
  *
  * Lifecycle contract:
- *   - Every app launch with a session re-sends this device's current token /
- *     subscription to the backend. That upload doubles as the liveness
- *     heartbeat: the backend deletes rows not re-registered (and not
- *     successfully delivered to) within PUSH_TOKEN_TTL_DAYS, and a deleted
- *     row is transparently recreated by this re-send on the next launch.
+ *   - Every successful login re-sends this device's current token /
+ *     subscription to the backend. A deleted backend row is transparently
+ *     recreated by this re-send on the next login.
  *   - An explicit "off" via the Account toggle persists across launches: the
- *     token is disabled on the backend and NOT re-sent or re-enabled at
- *     startup. Only a fresh login clears the preference and re-enables push
- *     (resetPushPreferenceOnLogin, called by the auth login flows).
+ *     token is disabled on the backend and NOT re-sent or re-enabled until a
+ *     fresh login clears the preference (resetPushPreferenceOnLogin, called by
+ *     the auth login flows).
  *   - If the OS permission is still askable, the prompt is shown; if it was
  *     permanently denied, we record that (so the Account screen can offer a
- *     manual re-enable) but do NOT re-prompt on every launch.
+ *     manual re-enable) but do NOT loop prompts.
  *   - Demo sessions never touch the real push stack.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
-import { ApiClient } from "../api/client";
+import { ApiClient, ApiError } from "../api/client";
 import { ensureServiceWorkerRegistration } from "../lib/serviceWorker";
 import { subscriptionMatchesServerKey, urlBase64ToArrayBuffer } from "../lib/webPush";
 import {
-  decideStartupPushRegistration,
+  decideLoginPushRegistration,
   PermissionDecision,
-  preferenceToPersistAfterStartup,
+  preferenceToPersistAfterLogin,
   PushPreference,
   PushRegistrationStatus
 } from "./registrationHelpers";
@@ -44,6 +42,7 @@ export type DevicePushState = {
   preference: PushPreference;
   lastStatus: PushRegistrationStatus;
   lastError?: string;
+  lastErrorCode?: "offline";
 };
 
 export async function getLocalPushPreference(): Promise<DevicePushState["preference"]> {
@@ -170,7 +169,12 @@ export async function setDevicePushEnabled(api: ApiClient, enabled: boolean): Pr
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("[splex:push] registration failed", error);
-    return { preference: "off", lastStatus: "error", lastError: message };
+    return {
+      preference: "off",
+      lastStatus: "error",
+      lastError: message,
+      lastErrorCode: error instanceof ApiError && error.offline ? "offline" : undefined
+    };
   }
 }
 
@@ -200,16 +204,16 @@ export async function resetPushPreferenceOnLogin(): Promise<void> {
 }
 
 /**
- * Re-send this device's push token on app launch; see the file header for the
+ * Re-send this device's push token after login; see the file header for the
  * full contract. Skips registration when the user explicitly disabled push on
  * this device or the OS permission is permanently denied.
  */
-export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePushState> {
+export async function bootstrapPushAfterLogin(api: ApiClient): Promise<DevicePushState> {
   if (api.isDemoMode()) {
     return { preference: "off", lastStatus: "idle" };
   }
   try {
-    const decision = decideStartupPushRegistration(
+    const decision = decideLoginPushRegistration(
       await getLocalPushPreference(),
       await getPermissionDecision()
     );
@@ -222,7 +226,7 @@ export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePush
       return { preference: "off", lastStatus: "permission_denied" };
     }
     const result = await registerForPlatform(api, true);
-    const preferenceToPersist = preferenceToPersistAfterStartup(result.lastStatus);
+    const preferenceToPersist = preferenceToPersistAfterLogin(result.lastStatus);
     if (preferenceToPersist) {
       await setLocalPushPreference(preferenceToPersist);
     }
@@ -230,7 +234,12 @@ export async function bootstrapPushOnStartup(api: ApiClient): Promise<DevicePush
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn("[splex:push] login registration failed", error);
-    return { preference: "off", lastStatus: "error", lastError: message };
+    return {
+      preference: "off",
+      lastStatus: "error",
+      lastError: message,
+      lastErrorCode: error instanceof ApiError && error.offline ? "offline" : undefined
+    };
   }
 }
 

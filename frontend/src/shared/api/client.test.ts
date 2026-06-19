@@ -22,7 +22,7 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 vi.mock("../demo/demoBackend", () => ({ handleDemoRequest }));
 vi.mock("../demo/demoMode", () => ({ persistDemoMode }));
 
-import { ApiClient, ApiError, tokenStorage } from "./client";
+import { API_REQUEST_TIMEOUT_MS, ApiClient, ApiError, tokenStorage } from "./client";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -43,6 +43,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -100,6 +101,18 @@ describe("ApiClient.request", () => {
     fetchMock.mockRejectedValueOnce(new Error("boom"));
     const api = new ApiClient();
     await expect(api.get("/api/x/")).rejects.toMatchObject({ offline: true });
+  });
+
+  it("throws an offline ApiError when fetch hangs past the request timeout", async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementationOnce(() => new Promise<Response>(() => undefined));
+    const api = new ApiClient();
+
+    const request = api.get("/api/x/");
+    const expectation = expect(request).rejects.toMatchObject({ offline: true });
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
+
+    await expectation;
   });
 
   it("throws ApiError with parsed data on error responses", async () => {
