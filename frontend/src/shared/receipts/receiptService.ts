@@ -11,8 +11,7 @@
  * Opening a receipt:
  *   `openReceipt(api, receipt)` fetches the file with the auth token and either
  *     - opens an object URL in a new browser tab (web), or
- *     - downloads to the device cache and triggers the system "open with"
- *       sheet via `expo-sharing` (native).
+ *     - downloads to the device cache and opens it with the platform viewer.
  */
 
 import * as DocumentPicker from "expo-document-picker";
@@ -36,6 +35,9 @@ const RECEIPT_FORM_FIELDS = {
   friendshipId: "friendship_id",
   clientId: "client_id",
 } as const;
+
+const ANDROID_VIEW_INTENT = "android.intent.action.VIEW";
+const ANDROID_GRANT_READ_URI_PERMISSION = 1;
 
 export type PickedReceipt = {
   uri: string;
@@ -122,8 +124,8 @@ export function deleteReceipt(api: ApiClient, receiptId: number): Promise<void> 
 /**
  * Open a receipt for the user.
  *   - Web: fetch as Blob → object URL → window.open in a new tab.
- *   - Native: stream to a cache file → `expo-sharing` raises the OS "open with"
- *     dialog so the user can pick a viewer.
+ *   - Android: stream to a cache file → content URI → ACTION_VIEW viewer intent.
+ *   - Other native platforms: stream to cache and use the system share/open sheet.
  */
 export async function openReceipt(api: ApiClient, receipt: Receipt): Promise<void> {
   if (Platform.OS === "web") {
@@ -136,11 +138,10 @@ export async function openReceipt(api: ApiClient, receipt: Receipt): Promise<voi
     return;
   }
 
-  // Native: pull the file down with auth headers, save to cache, then share.
+  // Native: pull the file down with auth headers and save it to cache.
   // Using the legacy expo-file-system API since downloadAsync supports
   // request headers out of the box, which the new File class does not yet.
   const FileSystem = await import("expo-file-system/legacy");
-  const Sharing = await import("expo-sharing");
   const baseUrl = await api.getBaseUrl();
   const accessToken = api.getAccessToken();
   if (!FileSystem.cacheDirectory) {
@@ -158,6 +159,19 @@ export async function openReceipt(api: ApiClient, receipt: Receipt): Promise<voi
   if (download.status >= 400) {
     throw new Error(`Failed to download receipt (HTTP ${download.status}).`);
   }
+
+  if (Platform.OS === "android") {
+    const IntentLauncher = await import("expo-intent-launcher");
+    const contentUri = await FileSystem.getContentUriAsync(download.uri);
+    await IntentLauncher.startActivityAsync(ANDROID_VIEW_INTENT, {
+      data: contentUri,
+      type: receipt.content_type,
+      flags: ANDROID_GRANT_READ_URI_PERMISSION,
+    });
+    return;
+  }
+
+  const Sharing = await import("expo-sharing");
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(download.uri, {
       mimeType: receipt.content_type,

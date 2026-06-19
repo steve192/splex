@@ -1,13 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const platform = vi.hoisted(() => ({ OS: "web" as string }));
+const downloadAsync = vi.hoisted(() => vi.fn());
+const getContentUriAsync = vi.hoisted(() => vi.fn());
+const startActivityAsync = vi.hoisted(() => vi.fn());
+const isSharingAvailableAsync = vi.hoisted(() => vi.fn());
+const shareAsync = vi.hoisted(() => vi.fn());
 
 vi.mock("react-native", () => ({ Platform: platform }));
 vi.mock("expo-document-picker", () => ({
   getDocumentAsync: vi.fn()
 }));
+vi.mock("expo-file-system/legacy", () => ({
+  cacheDirectory: "file:///cache/",
+  downloadAsync,
+  getContentUriAsync
+}));
+vi.mock("expo-intent-launcher", () => ({ startActivityAsync }));
+vi.mock("expo-sharing", () => ({
+  isAvailableAsync: isSharingAvailableAsync,
+  shareAsync
+}));
 
-import { uploadReceipt, type PickedReceipt } from "./receiptService";
+import { openReceipt, uploadReceipt, type PickedReceipt } from "./receiptService";
+import type { Receipt } from "../types/models";
 
 const pickedReceipt: PickedReceipt = {
   uri: "file:///cache/receipt.pdf",
@@ -18,6 +34,11 @@ const pickedReceipt: PickedReceipt = {
 
 beforeEach(() => {
   platform.OS = "web";
+  downloadAsync.mockReset();
+  getContentUriAsync.mockReset();
+  startActivityAsync.mockReset();
+  isSharingAvailableAsync.mockReset();
+  shareAsync.mockReset();
 });
 
 describe("uploadReceipt", () => {
@@ -62,6 +83,61 @@ describe("uploadReceipt", () => {
         friendship_id: "7",
         client_id: "draft-2"
       }
+    });
+  });
+});
+
+const receipt: Receipt = {
+  id: 42,
+  expense_id: 1,
+  original_filename: "Dinner receipt.pdf",
+  content_type: "application/pdf",
+  size_bytes: 120,
+  uploaded_by_id: 3
+};
+
+describe("openReceipt", () => {
+  it("opens downloaded Android receipts with a viewer intent instead of the share sheet", async () => {
+    platform.OS = "android";
+    downloadAsync.mockResolvedValueOnce({ status: 200, uri: "file:///cache/42-Dinner_receipt.pdf" });
+    getContentUriAsync.mockResolvedValueOnce("content://splex/receipt/42");
+    startActivityAsync.mockResolvedValueOnce({ resultCode: -1 });
+    const api = {
+      getBaseUrl: vi.fn(async () => "https://host.example.com"),
+      getAccessToken: vi.fn(() => "access-token")
+    };
+
+    await openReceipt(api as never, receipt);
+
+    expect(downloadAsync).toHaveBeenCalledWith(
+      "https://host.example.com/api/receipts/42/download/",
+      "file:///cache/42-Dinner_receipt.pdf",
+      { headers: { Authorization: "Bearer access-token" } }
+    );
+    expect(getContentUriAsync).toHaveBeenCalledWith("file:///cache/42-Dinner_receipt.pdf");
+    expect(startActivityAsync).toHaveBeenCalledWith("android.intent.action.VIEW", {
+      data: "content://splex/receipt/42",
+      type: "application/pdf",
+      flags: 1
+    });
+    expect(shareAsync).not.toHaveBeenCalled();
+  });
+
+  it("keeps the sharing fallback for non-Android native platforms", async () => {
+    platform.OS = "ios";
+    downloadAsync.mockResolvedValueOnce({ status: 200, uri: "file:///cache/42-Dinner_receipt.pdf" });
+    isSharingAvailableAsync.mockResolvedValueOnce(true);
+    const api = {
+      getBaseUrl: vi.fn(async () => "https://host.example.com"),
+      getAccessToken: vi.fn(() => null)
+    };
+
+    await openReceipt(api as never, receipt);
+
+    expect(startActivityAsync).not.toHaveBeenCalled();
+    expect(shareAsync).toHaveBeenCalledWith("file:///cache/42-Dinner_receipt.pdf", {
+      mimeType: "application/pdf",
+      dialogTitle: "Dinner receipt.pdf"
     });
   });
 });
