@@ -25,6 +25,7 @@ import { ensureServiceWorkerRegistration } from "../shared/lib/serviceWorker";
 import { PwaInstallPrompt } from "../shared/pwa/PwaInstallPrompt";
 import { ThemeMode } from "../shared/types/models";
 import { styles } from "../shared/ui/styles";
+import { appLinkingScreens } from "./linkingConfig";
 import { AppNavigator } from "./AppNavigator";
 import { PreferencesContext } from "./PreferencesContext";
 import { RootStackParamList } from "./navigationTypes";
@@ -73,40 +74,7 @@ export function AppShell() {
     () => ({
       prefixes: [Linking.createURL("/"), NATIVE_DEFAULT_BASE_URL],
       config: {
-        screens: {
-          Login: "login",
-          LoginMagic: "login/magic",
-          TermsOfService: "tos",
-          PrivacyPolicy: "privacy",
-          Imprint: "imprint",
-          InvitationAccept: "invite/:token",
-          Main: {
-            screens: {
-              Overview: {
-                screens: {
-                  OverviewHome: "",
-                  CreateGroup: "groups/new",
-                  GroupDetail: "groups/:id",
-                  GroupSettings: "groups/:id/settings",
-                  FriendDetail: "friends/:id",
-                  ExpenseDetail: "expenses/:id",
-                  SettlementDetail: "settlements/:id"
-                }
-              },
-              Add: {
-                screens: {
-                  AddHome: "add"
-                }
-              },
-              Activity: {
-                screens: {
-                  ActivityHome: "activity"
-                }
-              },
-              Account: "account"
-            }
-          }
-        }
+        screens: appLinkingScreens
       },
       // The app is served under /app (expo.experiments.baseUrl). React
       // Navigation matches the screen config above relative to the root, so we

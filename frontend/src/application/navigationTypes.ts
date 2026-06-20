@@ -1,7 +1,9 @@
+import type { NavigatorScreenParams } from "@react-navigation/native";
+
 import { ContextType } from "../shared/types/models";
 
 export type RootStackParamList = {
-  Main: undefined;
+  Main: NavigatorScreenParams<TabParamList> | undefined;
   Login: undefined;
   LoginMagic: { token?: string; inviteToken?: string } | undefined;
   TermsOfService: undefined;
@@ -72,8 +74,8 @@ export type AddStackParamList = {
 };
 
 export type TabParamList = {
-  Overview: undefined;
-  Add: undefined;
-  Activity: undefined;
-  Account: undefined;
+  Overview: NavigatorScreenParams<OverviewStackParamList> | undefined;
+  Add: NavigatorScreenParams<AddStackParamList> | undefined;
+  Activity: NavigatorScreenParams<ActivityStackParamList> | undefined;
+  Account: NavigatorScreenParams<AccountStackParamList> | undefined;
 };
