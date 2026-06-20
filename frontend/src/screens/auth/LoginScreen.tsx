@@ -57,6 +57,9 @@ export function LoginScreen({ route }: Readonly<Props>) {
     setMessage({ text, tone: "info" });
   }
 
+  const routeToken = route.params?.token;
+  const routeInviteToken = route.params?.inviteToken;
+
   const {
     googleClientId,
     googleAndroidClientId,
@@ -68,7 +71,8 @@ export function LoginScreen({ route }: Readonly<Props>) {
     api,
     loginWithGoogle,
     loginWithToken,
-    routeToken: route?.params?.token,
+    routeToken,
+    routeInviteToken,
     setLoading,
     notifyError,
     notifyInfo,
@@ -93,6 +97,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
     try {
       const requestLocale = detectDeviceLocale();
       const inviteToken =
+        routeInviteToken ||
         inviteTokenFromCurrentUrl() ||
         (await AsyncStorage.getItem(PENDING_INVITE_STORAGE_KEY));
       inviteDebug("magic link request using invite token", {

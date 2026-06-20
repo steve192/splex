@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 
@@ -7,8 +8,10 @@ import {
   clearUrlQuery,
   inviteDebug,
   inviteTokenFromCurrentUrl,
+  inviteTokenFromUrl,
   PENDING_INVITE_STORAGE_KEY,
   tokenFromCurrentUrl,
+  tokenFromUrl,
 } from "../../shared/lib/inviteLinks";
 
 import {
@@ -28,6 +31,7 @@ type LoginBootstrapArgs = Readonly<{
   loginWithGoogle: (idToken: string) => Promise<unknown>;
   loginWithToken: (token: string) => Promise<unknown>;
   routeToken: string | undefined;
+  routeInviteToken: string | undefined;
   setLoading: (value: boolean) => void;
   notifyError: (message: string) => void;
   notifyInfo: (message: string) => void;
@@ -90,9 +94,20 @@ async function finishGoogleRedirectLogin(
   }
 }
 
-async function persistPendingInvite(onStored: () => void) {
+async function nativeInitialUrl(): Promise<string> {
+  if (Platform.OS === "web") {
+    return "";
+  }
+  return (await Linking.getInitialURL()) ?? "";
+}
+
+async function persistPendingInvite(
+  routeInviteToken: string | undefined,
+  initialUrl: string,
+  onStored: () => void
+) {
   inviteDebug("login screen mounted");
-  const inviteToken = inviteTokenFromCurrentUrl();
+  const inviteToken = routeInviteToken || inviteTokenFromCurrentUrl() || inviteTokenFromUrl(initialUrl);
   if (!inviteToken) {
     return;
   }
@@ -127,6 +142,7 @@ export function useLoginBootstrap({
   loginWithGoogle,
   loginWithToken,
   routeToken,
+  routeInviteToken,
   setLoading,
   notifyError,
   notifyInfo,
@@ -139,6 +155,8 @@ export function useLoginBootstrap({
   const [backendUrl, setBackendUrl] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     hydrateAndroidBackendUrl(api, setBackendUrl);
     loadLoginProviders(
       api,
@@ -152,14 +170,29 @@ export function useLoginBootstrap({
     finishGoogleRedirectLogin(loginWithGoogle, setLoading, () =>
       notifyError(t("auth.googleFailed"))
     ).catch(() => undefined);
-    persistPendingInvite(() => notifyInfo(t("invite.loginRequired"))).catch(() => undefined);
 
-    const token = resolveLoginToken(routeToken, tokenFromCurrentUrl());
-    if (token) {
-      loginWithMagicToken(token, loginWithToken, setLoading, () =>
-        notifyError(t("auth.linkFailed"))
-      ).catch(() => undefined);
+    async function finishLinkBootstrap() {
+      const initialUrl = await nativeInitialUrl();
+      await persistPendingInvite(routeInviteToken, initialUrl, () =>
+        notifyInfo(t("invite.loginRequired"))
+      );
+      if (cancelled) return;
+      const token = resolveLoginToken(
+        routeToken,
+        tokenFromCurrentUrl() || tokenFromUrl(initialUrl)
+      );
+      if (token) {
+        await loginWithMagicToken(token, loginWithToken, setLoading, () =>
+          notifyError(t("auth.linkFailed"))
+        );
+      }
     }
+
+    finishLinkBootstrap().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
     // Mount-only: provider config, the OAuth-redirect handoff, pending-invite
     // capture and magic-token login should each run exactly once on entry.
   }, []);
