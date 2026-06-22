@@ -84,8 +84,8 @@
   "devDependencies": {
     "@types/leaflet": "1.9.21",
     "@types/react": "19.2.15",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.9",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   }
 }
