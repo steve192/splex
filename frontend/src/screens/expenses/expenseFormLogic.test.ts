@@ -9,10 +9,10 @@ import {
   computeExpenseValidation,
   currencyAmount,
   effectiveSplitMethod,
+  expenseLocationDescriptionKey,
   hydrateSplit,
   normalizeExpenseAmountInput,
   perMemberShare,
-  shouldUseCurrentLocationForExpense,
   splitEvenly,
   splitTabValue
 } from "./expenseFormLogic";
@@ -42,61 +42,94 @@ describe("expense form logic", () => {
     expect(normalizeExpenseAmountInput("1.2.3,4")).toBe("1.234");
   });
 
-  it("uses current location for new expenses only when the date is today", () => {
-    const today = new Date(2026, 5, 19);
-    expect(shouldUseCurrentLocationForExpense({ date: "", editing: false, today })).toBe(true);
-    expect(shouldUseCurrentLocationForExpense({ date: "2026-06-19", editing: false, today })).toBe(true);
-    expect(shouldUseCurrentLocationForExpense({ date: "2026-06-18", editing: false, today })).toBe(false);
-  });
-
-  it("does not attach current location on edit saves", () => {
-    expect(
-      shouldUseCurrentLocationForExpense({
-        date: "2026-06-18",
-        editing: true,
-        today: new Date(2026, 5, 19)
-      })
-    ).toBe(false);
+  it("leaves existing expense location unchanged when edit location is on", () => {
     expect(
       buildExpenseLocationPayload({
         latitude: 52.1234567,
         longitude: 13.9876543,
-        date: "2026-06-19",
         editing: true,
-        today: new Date(2026, 5, 19)
+        includeLocation: true,
+        locationTrackingEnabled: true
       })
     ).toBeUndefined();
   });
 
-  it("builds rounded location payloads only when location should be attached", () => {
-    const today = new Date(2026, 5, 19);
+  it("deletes existing expense location when edit location is off", () => {
     expect(
       buildExpenseLocationPayload({
         latitude: 52.1234567,
         longitude: 13.9876543,
-        date: "2026-06-19",
+        editing: true,
+        includeLocation: false,
+        locationTrackingEnabled: true
+      })
+    ).toEqual({ latitude: null, longitude: null, approximate_location: "" });
+  });
+
+  it("omits location updates when global location tracking is disabled", () => {
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
+        editing: true,
+        includeLocation: false,
+        locationTrackingEnabled: false
+      })
+    ).toBeUndefined();
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
         editing: false,
-        today
+        includeLocation: true,
+        locationTrackingEnabled: false
+      })
+    ).toBeUndefined();
+  });
+
+  it("builds rounded location payloads for new expenses only when opted in", () => {
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
+        editing: false,
+        includeLocation: true,
+        locationTrackingEnabled: true
       })
     ).toEqual({ latitude: 52.123457, longitude: 13.987654 });
     expect(
       buildExpenseLocationPayload({
         latitude: 52.1234567,
         longitude: 13.9876543,
-        date: "2026-06-18",
         editing: false,
-        today
+        includeLocation: false,
+        locationTrackingEnabled: true
       })
     ).toBeUndefined();
     expect(
       buildExpenseLocationPayload({
         latitude: null,
         longitude: 13.9876543,
-        date: "",
         editing: false,
-        today
+        includeLocation: true,
+        locationTrackingEnabled: true
       })
     ).toBeUndefined();
+  });
+
+  it("selects location description keys by edit mode and switch state", () => {
+    expect(expenseLocationDescriptionKey({ editing: false, includeLocation: true })).toBe(
+      "expense.locationAddDescription"
+    );
+    expect(expenseLocationDescriptionKey({ editing: false, includeLocation: false })).toBe(
+      "expense.locationSkipDescription"
+    );
+    expect(expenseLocationDescriptionKey({ editing: true, includeLocation: true })).toBe(
+      "expense.locationKeepDescription"
+    );
+    expect(expenseLocationDescriptionKey({ editing: true, includeLocation: false })).toBe(
+      "expense.locationRemoveDescription"
+    );
   });
 
   it("computes per-member shares for exact and percentage", () => {

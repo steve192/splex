@@ -8,7 +8,9 @@ import {
   Card,
   Dialog,
   HelperText,
+  List,
   Portal,
+  Switch,
   Text,
   TextInput,
   useTheme,
@@ -62,6 +64,7 @@ import {
   buildPayments,
   buildSplitPayload,
   effectiveSplitMethod,
+  expenseLocationDescriptionKey,
   hydrateSplit,
   normalizeExpenseAmountInput,
   perMemberShare,
@@ -95,8 +98,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const { showSuccess } = useFeedback();
   const theme = useTheme();
   const dangerColor = negativeColor(theme);
+  const locationTrackingEnabled = user?.location_tracking_enabled ?? false;
   const expenseId = route?.params?.expenseId;
   const pendingMutationId = route?.params?.pendingMutationId;
+  const editingSavedExpense = Boolean(expenseId);
   const editing = Boolean(expenseId || pendingMutationId);
   // "AddHome" is the navigation tab entry point. Opening the screen from a group
   // or friend uses the "AddExpense" route with a pre-populated target instead.
@@ -140,6 +145,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [loadingEditExpense, setLoadingEditExpense] = useState(editing);
   const [editLoadFailed, setEditLoadFailed] = useState(false);
   const [deletingPendingExpense, setDeletingPendingExpense] = useState(false);
+  const [includeLocation, setIncludeLocation] = useState(
+    locationTrackingEnabled,
+  );
   // client_id is generated once and stays stable for the lifetime of the form.
   // It links any draft receipts the user uploads before save to the eventual
   // expense (see uploadReceipt + backend attach_drafts_to_expense).
@@ -162,9 +170,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     onMissingContext: () => setMessage(t("expense.contextChoose")),
   });
 
-  const locationForm = useLocationForm(
-    user?.location_tracking_enabled ?? false,
-  );
+  const locationForm = useLocationForm(locationTrackingEnabled);
 
   function resetForm(params = route?.params ?? {}) {
     const nextContextType = params.contextType ?? "group";
@@ -194,6 +200,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       Boolean(params.expenseId || params.pendingMutationId),
     );
     setEditLoadFailed(false);
+    setIncludeLocation(locationTrackingEnabled);
   }
 
   const contextOptions = useMemo<ContextOption[]>(() => {
@@ -282,6 +289,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   useEffect(() => {
     resetForm(route?.params ?? {});
   }, [route?.params?.resetKey]);
+
+  useEffect(() => {
+    setIncludeLocation(locationTrackingEnabled);
+  }, [locationTrackingEnabled, route?.params?.resetKey]);
 
   // When opened from the navigation tab, restore the "Remember Group / Friend"
   // checkbox and, if it is on, pre-populate the last context the user picked.
@@ -650,8 +661,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       ...buildExpenseLocationPayload({
         latitude: locationForm.latitude,
         longitude: locationForm.longitude,
-        date,
-        editing,
+        editing: editingSavedExpense,
+        includeLocation,
+        locationTrackingEnabled,
       }),
       ...(expenseId
         ? {
@@ -781,6 +793,12 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     value: code,
     label: code,
   }));
+  const locationDescription = t(
+    expenseLocationDescriptionKey({
+      editing: editingSavedExpense,
+      includeLocation,
+    }),
+  );
   const editViewState = expenseEditViewState({
     editing,
     loading: loadingEditExpense,
@@ -900,6 +918,30 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
               onShowContextInfo={() => setContextMoveInfoVisible(true)}
               disabled={contextArchived}
             />
+
+            {locationTrackingEnabled ? (
+              <Card mode="elevated" style={styles.card}>
+                <List.Item
+                  title={t("expense.location")}
+                  description={locationDescription}
+                  onPress={() => {
+                    if (!contextArchived) {
+                      setIncludeLocation((current) => !current);
+                    }
+                  }}
+                  left={(props) => (
+                    <List.Icon {...props} icon="map-marker-outline" />
+                  )}
+                  right={() => (
+                    <Switch
+                      value={includeLocation}
+                      disabled={contextArchived}
+                      onValueChange={setIncludeLocation}
+                    />
+                  )}
+                />
+              </Card>
+            ) : null}
 
             {selectedContext ? (
               <ReceiptsCard

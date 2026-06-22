@@ -29,46 +29,57 @@ export function normalizeExpenseAmountInput(value: string): string {
   return parts.length <= 2 ? normalized : parts[0] + "." + parts.slice(1).join("");
 }
 
-function localDateOnly(value: Date): string {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-export function shouldUseCurrentLocationForExpense({
-  date,
-  editing,
-  today = new Date()
-}: {
-  date: string;
-  editing: boolean;
-  today?: Date;
-}): boolean {
-  if (editing) return false;
-  const selectedDate = date.trim();
-  return !selectedDate || selectedDate === localDateOnly(today);
-}
-
 export function buildExpenseLocationPayload({
   latitude,
   longitude,
-  date,
   editing,
-  today
+  includeLocation,
+  locationTrackingEnabled
 }: {
   latitude: number | null;
   longitude: number | null;
-  date: string;
   editing: boolean;
-  today?: Date;
-}): { latitude: number; longitude: number } | undefined {
+  includeLocation: boolean;
+  locationTrackingEnabled: boolean;
+}):
+  | { latitude: number; longitude: number }
+  | { latitude: null; longitude: null; approximate_location: "" }
+  | undefined {
+  if (!locationTrackingEnabled) return undefined;
+  if (editing) {
+    return includeLocation
+      ? undefined
+      : { latitude: null, longitude: null, approximate_location: "" };
+  }
+  if (!includeLocation) return undefined;
   if (latitude == null || longitude == null) return undefined;
-  if (!shouldUseCurrentLocationForExpense({ date, editing, today })) return undefined;
   return {
     latitude: Math.round(latitude * 1000000) / 1000000,
     longitude: Math.round(longitude * 1000000) / 1000000
   };
+}
+
+export type ExpenseLocationDescriptionKey =
+  | "expense.locationAddDescription"
+  | "expense.locationSkipDescription"
+  | "expense.locationKeepDescription"
+  | "expense.locationRemoveDescription";
+
+export function expenseLocationDescriptionKey({
+  editing,
+  includeLocation
+}: {
+  editing: boolean;
+  includeLocation: boolean;
+}): ExpenseLocationDescriptionKey {
+  if (editing) {
+    return includeLocation
+      ? "expense.locationKeepDescription"
+      : "expense.locationRemoveDescription";
+  }
+  return includeLocation
+    ? "expense.locationAddDescription"
+    : "expense.locationSkipDescription";
 }
 
 export function effectiveSplitMethod(
