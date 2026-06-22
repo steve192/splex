@@ -372,10 +372,6 @@ AI helps with speed, not accountability. Responsibility for Splex stays with me.
 
 </details>
 
-## Roadmap
-
-- Import from Splitwise
-- Import from other split tools such as SplitPro
 
 ## Contributing
 
