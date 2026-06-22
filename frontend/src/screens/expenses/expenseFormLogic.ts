@@ -45,7 +45,7 @@ export function shouldUseCurrentLocationForExpense({
   editing: boolean;
   today?: Date;
 }): boolean {
-  if (editing) return true;
+  if (editing) return false;
   const selectedDate = date.trim();
   return !selectedDate || selectedDate === localDateOnly(today);
 }

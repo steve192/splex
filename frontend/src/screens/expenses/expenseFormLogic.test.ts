@@ -49,14 +49,23 @@ describe("expense form logic", () => {
     expect(shouldUseCurrentLocationForExpense({ date: "2026-06-18", editing: false, today })).toBe(false);
   });
 
-  it("keeps edit saves unaffected by the selected date", () => {
+  it("does not attach current location on edit saves", () => {
     expect(
       shouldUseCurrentLocationForExpense({
         date: "2026-06-18",
         editing: true,
         today: new Date(2026, 5, 19)
       })
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      buildExpenseLocationPayload({
+        latitude: 52.1234567,
+        longitude: 13.9876543,
+        date: "2026-06-19",
+        editing: true,
+        today: new Date(2026, 5, 19)
+      })
+    ).toBeUndefined();
   });
 
   it("builds rounded location payloads only when location should be attached", () => {
