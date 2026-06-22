@@ -73,9 +73,10 @@
       "automerge": true
     },
     {
-      "description": "Backend: Python runtime/dev dependencies from pyproject (PEP 621)",
+      "description": "Backend: Python runtime/dev dependencies from pyproject",
       "matchManagers": [
-        "pep621"
+        "pep621",
+        "poetry"
       ],
       "matchFileNames": [
         "backend/**"
