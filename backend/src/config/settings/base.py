@@ -288,7 +288,7 @@ REST_FRAMEWORK = {
         "private_media": env("THROTTLE_PRIVATE_MEDIA_RATE", "120/minute"),
         # User-triggered "remind me" pushes (settle, track expense).  Kept
         # tight so a frustrated user can't spam their group with nags.
-        "reminders": env("THROTTLE_REMINDERS_RATE", "5/minute"),
+        "reminders": env("THROTTLE_REMINDERS_RATE", "2/minute"),
     },
     "EXCEPTION_HANDLER": "splex.shared.api.exception_handler",
     # Pin proxy depth so throttle identities use a trustworthy client IP rather
