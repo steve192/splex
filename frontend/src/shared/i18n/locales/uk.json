@@ -521,5 +521,21 @@
   "calculator.percent": "Відсоток",
   "calculator.preview": "Попередній перегляд обчислення",
   "calculator.subtract": "Відняти",
-  "calculator.title": "Калькулятор"
+  "calculator.title": "Калькулятор",
+  "currencyConverter.amount": "Сума",
+  "currencyConverter.commonValues": "Поширені значення",
+  "currencyConverter.convertedAmount": "Конвертована сума",
+  "currencyConverter.fromCurrency": "Вихідна валюта",
+  "currencyConverter.invalidAmount": "Введіть дійсну суму",
+  "currencyConverter.noRates": "Курси валют ще недоступні офлайн. Підключіться до інтернету, щоб завантажити їх.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Курси конвертації",
+  "currencyConverter.ratesOutdated": "Курси конвертації можуть бути застарілими",
+  "currencyConverter.ratesOutdatedHelp": "Не вдалося завантажити останні курси. Підключіться до інтернету й повторіть спробу.",
+  "currencyConverter.ratesUpdated": "Останнє отримання сервером: {date}",
+  "currencyConverter.refreshRates": "Оновити курси",
+  "currencyConverter.swap": "Поміняти валюти",
+  "currencyConverter.title": "Конвертер валют",
+  "currencyConverter.toCurrency": "Цільова валюта",
+  "overview.menu": "Меню огляду"
 }

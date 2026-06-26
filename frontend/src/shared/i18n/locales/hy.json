@@ -521,5 +521,21 @@
   "calculator.percent": "Տոկոս",
   "calculator.preview": "Հաշվարկի նախադիտում",
   "calculator.subtract": "Հանել",
-  "calculator.title": "Հաշվիչ"
+  "calculator.title": "Հաշվիչ",
+  "currencyConverter.amount": "Գումար",
+  "currencyConverter.commonValues": "Ընդհանուր արժեքներ",
+  "currencyConverter.convertedAmount": "Փոխարկված գումար",
+  "currencyConverter.fromCurrency": "Աղբյուր արժույթ",
+  "currencyConverter.invalidAmount": "Մուտքագրեք վավեր գումար",
+  "currencyConverter.noRates": "Օֆլայն ռեժիմում արժույթի փոխարժեքներ դեռ հասանելի չեն։ Միացեք ինտերնետին՝ դրանք ներբեռնելու համար։",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Փոխարկման փոխարժեքներ",
+  "currencyConverter.ratesOutdated": "Փոխարկման փոխարժեքները կարող են հնացած լինել",
+  "currencyConverter.ratesOutdatedHelp": "Վերջին փոխարժեքները չհաջողվեց ներբեռնել։ Միացեք ինտերնետին և կրկին փորձեք։",
+  "currencyConverter.ratesUpdated": "Սերվերի վերջին ներբեռնումը՝ {date}",
+  "currencyConverter.refreshRates": "Թարմացնել փոխարժեքները",
+  "currencyConverter.swap": "Փոխել արժույթները",
+  "currencyConverter.title": "Արժույթի փոխարկիչ",
+  "currencyConverter.toCurrency": "Թիրախ արժույթ",
+  "overview.menu": "Ամփոփման ընտրացանկ"
 }

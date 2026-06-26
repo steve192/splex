@@ -521,5 +521,21 @@
   "calculator.percent": "Percento",
   "calculator.preview": "Náhľad výpočtu",
   "calculator.subtract": "Odčítať",
-  "calculator.title": "Kalkulačka"
+  "calculator.title": "Kalkulačka",
+  "currencyConverter.amount": "Suma",
+  "currencyConverter.commonValues": "Bežné hodnoty",
+  "currencyConverter.convertedAmount": "Prepočítaná suma",
+  "currencyConverter.fromCurrency": "Zdrojová mena",
+  "currencyConverter.invalidAmount": "Zadajte platnú sumu",
+  "currencyConverter.noRates": "Offline zatiaľ nie sú dostupné žiadne výmenné kurzy. Pripojte sa na internet a stiahnite ich.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Konverzné kurzy",
+  "currencyConverter.ratesOutdated": "Konverzné kurzy môžu byť zastarané",
+  "currencyConverter.ratesOutdatedHelp": "Najnovšie kurzy sa nepodarilo stiahnuť. Pripojte sa na internet a skúste to znova.",
+  "currencyConverter.ratesUpdated": "Server naposledy stiahol dňa {date}",
+  "currencyConverter.refreshRates": "Obnoviť kurzy",
+  "currencyConverter.swap": "Vymeniť meny",
+  "currencyConverter.title": "Prevodník mien",
+  "currencyConverter.toCurrency": "Cieľová mena",
+  "overview.menu": "Menu prehľadu"
 }

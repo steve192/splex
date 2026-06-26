@@ -521,5 +521,21 @@
   "calculator.percent": "Procent",
   "calculator.preview": "Förhandsvisning av beräkning",
   "calculator.subtract": "Subtrahera",
-  "calculator.title": "Kalkylator"
+  "calculator.title": "Kalkylator",
+  "currencyConverter.amount": "Belopp",
+  "currencyConverter.commonValues": "Vanliga värden",
+  "currencyConverter.convertedAmount": "Omräknat belopp",
+  "currencyConverter.fromCurrency": "Källvaluta",
+  "currencyConverter.invalidAmount": "Ange ett giltigt belopp",
+  "currencyConverter.noRates": "Inga valutakurser är tillgängliga offline ännu. Anslut till internet för att ladda ner dem.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Omräkningskurser",
+  "currencyConverter.ratesOutdated": "Omräkningskurserna kan vara inaktuella",
+  "currencyConverter.ratesOutdatedHelp": "De senaste kurserna kunde inte laddas ner. Anslut till internet och försök igen.",
+  "currencyConverter.ratesUpdated": "Senast hämtad av servern den {date}",
+  "currencyConverter.refreshRates": "Uppdatera kurser",
+  "currencyConverter.swap": "Byt valutor",
+  "currencyConverter.title": "Valutaomvandlare",
+  "currencyConverter.toCurrency": "Målvaluta",
+  "overview.menu": "Översiktsmeny"
 }

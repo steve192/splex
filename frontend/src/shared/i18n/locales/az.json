@@ -521,5 +521,21 @@
   "calculator.percent": "Faiz",
   "calculator.preview": "Hesablama önizləməsi",
   "calculator.subtract": "Çıx",
-  "calculator.title": "Kalkulyator"
+  "calculator.title": "Kalkulyator",
+  "currencyConverter.amount": "Məbləğ",
+  "currencyConverter.commonValues": "Ümumi dəyərlər",
+  "currencyConverter.convertedAmount": "Çevrilmiş məbləğ",
+  "currencyConverter.fromCurrency": "Mənbə valyuta",
+  "currencyConverter.invalidAmount": "Düzgün məbləğ daxil edin",
+  "currencyConverter.noRates": "Oflayn rejimdə hələ valyuta məzənnələri mövcud deyil. Onları yükləmək üçün internetə qoşulun.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Konvertasiya məzənnələri",
+  "currencyConverter.ratesOutdated": "Konvertasiya məzənnələri köhnəlmiş ola bilər",
+  "currencyConverter.ratesOutdatedHelp": "Ən son məzənnələr yüklənə bilmədi. İnternetə qoşulun və yenidən cəhd edin.",
+  "currencyConverter.ratesUpdated": "Server tərəfindən son yüklənmə: {date}",
+  "currencyConverter.refreshRates": "Məzənnələri yenilə",
+  "currencyConverter.swap": "Valyutaları dəyiş",
+  "currencyConverter.title": "Valyuta çevirici",
+  "currencyConverter.toCurrency": "Hədəf valyuta",
+  "overview.menu": "İcmal menyusu"
 }

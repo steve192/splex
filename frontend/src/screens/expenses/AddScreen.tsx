@@ -25,7 +25,10 @@ import { ApiError } from "../../shared/api/client";
 import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
-import { CURRENCIES } from "../../shared/lib/currencies";
+import {
+  currencyCodeOrFallback,
+  type CurrencyCode,
+} from "../../shared/lib/currencies";
 import { useLocationForm } from "../../shared/location/useLocationForm";
 import { cachedGet } from "../../shared/lib/offlineCache";
 import {
@@ -49,12 +52,9 @@ import {
 } from "../../shared/types/models";
 import { DatePickerSheet } from "../../shared/ui/DatePickerSheet";
 import { negativeColor } from "../../shared/ui/colors";
+import { CurrencySelectionSheet } from "../../shared/ui/CurrencySelectionSheet";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
-import {
-  SelectionOption,
-  SelectionSheet,
-} from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
@@ -121,7 +121,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   >(null);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("EUR");
+  const [currency, setCurrency] = useState<CurrencyCode>("EUR");
   const [date, setDate] = useState("");
   const [splitMethod, setSplitMethod] = useState<SplitMethod>("equal_all");
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<
@@ -373,7 +373,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setLoadedExpense(expense);
         setDescription(expense.description);
         setAmount(expense.original_amount);
-        setCurrency(expense.original_currency);
+        setCurrency(currencyCodeOrFallback(expense.original_currency));
         setDate(expense.date);
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
@@ -430,7 +430,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setContextId(payload.context_id);
         setDescription(expense.description);
         setAmount(expense.amount);
-        setCurrency(expense.currency);
+        setCurrency(currencyCodeOrFallback(expense.currency));
         setDate(expense.date ?? "");
         const splitMethodFromPayload = expense.split_method ?? "equal_all";
         setSplitMethod(splitMethodFromPayload);
@@ -491,7 +491,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             current ?? group.current_participant_id ?? rows[0]?.id ?? null,
         );
         if (!loadedExpense && !pendingMutationId)
-          setCurrency(group.default_currency);
+          setCurrency(currencyCodeOrFallback(group.default_currency));
         if (!loadedExpense && !pendingMutationId && group.default_split_method)
           setSplitMethod(group.default_split_method);
         if (!loadedExpense && !pendingMutationId)
@@ -511,7 +511,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             current ?? friend.current_participant_id ?? rows[0]?.id ?? null,
         );
         if (!loadedExpense && !pendingMutationId)
-          setCurrency(friend.default_currency);
+          setCurrency(currencyCodeOrFallback(friend.default_currency));
         if (!loadedExpense && !pendingMutationId)
           setSelectedParticipantIds(rows.map((participant) => participant.id));
       }
@@ -590,7 +590,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     }
     setContextType(option.type);
     setContextId(option.id);
-    setCurrency(option.currency);
+    setCurrency(currencyCodeOrFallback(option.currency));
     setContextArchived(false);
     setArchivedContextOption(null);
     // Only contexts chosen here (i.e. when opened from navigation) are remembered.
@@ -779,10 +779,6 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     !splitConfigInvalid &&
     !paymentConfigInvalid;
 
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
-    value: code,
-    label: code,
-  }));
   const locationDescription = t(
     expenseLocationDescriptionKey({
       editing: editingSavedExpense,
@@ -976,12 +972,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         ) : null}
       </Screen>
 
-      <SelectionSheet
+      <CurrencySelectionSheet
         visible={activeSheet === "currency" && !contextArchived}
         title={t("expense.currency")}
-        options={currencyOptions}
         value={currency}
-        searchable
         onSelect={setCurrency}
         onDismiss={() => setActiveSheet(null)}
       />

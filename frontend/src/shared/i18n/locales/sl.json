@@ -521,5 +521,21 @@
   "calculator.percent": "Odstotek",
   "calculator.preview": "Predogled izračuna",
   "calculator.subtract": "Odštej",
-  "calculator.title": "Kalkulator"
+  "calculator.title": "Kalkulator",
+  "currencyConverter.amount": "Znesek",
+  "currencyConverter.commonValues": "Pogoste vrednosti",
+  "currencyConverter.convertedAmount": "Pretvorjeni znesek",
+  "currencyConverter.fromCurrency": "Izvorna valuta",
+  "currencyConverter.invalidAmount": "Vnesite veljaven znesek",
+  "currencyConverter.noRates": "Tečaji valut še niso na voljo brez povezave. Povežite se z internetom, da jih prenesete.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Pretvorbeni tečaji",
+  "currencyConverter.ratesOutdated": "Pretvorbeni tečaji so lahko zastareli",
+  "currencyConverter.ratesOutdatedHelp": "Najnovejših tečajev ni bilo mogoče prenesti. Povežite se z internetom in poskusite znova.",
+  "currencyConverter.ratesUpdated": "Strežnik je nazadnje prenesel dne {date}",
+  "currencyConverter.refreshRates": "Osveži tečaje",
+  "currencyConverter.swap": "Zamenjaj valuti",
+  "currencyConverter.title": "Pretvornik valut",
+  "currencyConverter.toCurrency": "Ciljna valuta",
+  "overview.menu": "Meni pregleda"
 }

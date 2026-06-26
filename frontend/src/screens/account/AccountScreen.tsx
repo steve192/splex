@@ -31,7 +31,10 @@ import {
   apiWriteErrorMessage,
 } from "../../shared/lib/apiErrors";
 import { appVersionLabel } from "../../shared/lib/appVersion";
-import { CURRENCIES } from "../../shared/lib/currencies";
+import {
+  currencyCodeOrFallback,
+  type CurrencyCode,
+} from "../../shared/lib/currencies";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
 import {
   DevicePushState,
@@ -45,6 +48,7 @@ import { LocationTrackingToggle } from "../../shared/ui/LocationTrackingToggle";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { Screen } from "../../shared/ui/Screen";
+import { CurrencySelectionSheet } from "../../shared/ui/CurrencySelectionSheet";
 import {
   SelectionOption,
   SelectionSheet,
@@ -88,7 +92,9 @@ export function AccountScreen() {
     installPwa();
   }
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
-  const [currency, setCurrency] = useState(user?.default_currency ?? "EUR");
+  const [currency, setCurrency] = useState<CurrencyCode>(() =>
+    currencyCodeOrFallback(user?.default_currency),
+  );
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [languageSheetOpen, setLanguageSheetOpen] = useState(false);
   const [themeSheetOpen, setThemeSheetOpen] = useState(false);
@@ -109,10 +115,6 @@ export function AccountScreen() {
     deleteKeyword,
     locale,
   );
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
-    value: code,
-    label: code,
-  }));
   const languageOptions: SelectionOption<Locale>[] = SUPPORTED_LOCALES.map(
     (value) => ({
       value,
@@ -183,7 +185,7 @@ export function AccountScreen() {
     saveFields({ display_name: trimmed });
   }
 
-  function handleCurrencySelect(next: string) {
+  function handleCurrencySelect(next: CurrencyCode) {
     setCurrency(next);
     saveFields({ default_currency: next });
   }
@@ -382,10 +384,9 @@ export function AccountScreen() {
       >
         {appVersionLabel(t)}
       </Text>
-      <SelectionSheet
+      <CurrencySelectionSheet
         visible={currencySheetOpen}
         title={t("account.defaultCurrency")}
-        options={currencyOptions}
         value={currency}
         onSelect={handleCurrencySelect}
         onDismiss={() => setCurrencySheetOpen(false)}

@@ -521,5 +521,21 @@
   "calculator.percent": "Prósenta",
   "calculator.preview": "Forskoðun útreiknings",
   "calculator.subtract": "Draga frá",
-  "calculator.title": "Reiknivél"
+  "calculator.title": "Reiknivél",
+  "currencyConverter.amount": "Upphæð",
+  "currencyConverter.commonValues": "Algeng gildi",
+  "currencyConverter.convertedAmount": "Umreiknuð upphæð",
+  "currencyConverter.fromCurrency": "Upphafsgjaldmiðill",
+  "currencyConverter.invalidAmount": "Sláðu inn gilda upphæð",
+  "currencyConverter.noRates": "Engin gengi eru enn tiltæk án nettengingar. Tengstu internetinu til að sækja þau.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Umreikningsgengi",
+  "currencyConverter.ratesOutdated": "Umreikningsgengi gætu verið úrelt",
+  "currencyConverter.ratesOutdatedHelp": "Ekki tókst að sækja nýjustu gengin. Tengstu internetinu og reyndu aftur.",
+  "currencyConverter.ratesUpdated": "Síðast sótt af þjóninum þann {date}",
+  "currencyConverter.refreshRates": "Endurnýja gengi",
+  "currencyConverter.swap": "Víxla gjaldmiðlum",
+  "currencyConverter.title": "Gjaldmiðlabreytir",
+  "currencyConverter.toCurrency": "Markgjaldmiðill",
+  "overview.menu": "Yfirlitsvalmynd"
 }

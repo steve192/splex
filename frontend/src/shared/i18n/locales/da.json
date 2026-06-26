@@ -521,5 +521,21 @@
   "calculator.percent": "Procent",
   "calculator.preview": "Beregningsforhåndsvisning",
   "calculator.subtract": "Træk fra",
-  "calculator.title": "Lommeregner"
+  "calculator.title": "Lommeregner",
+  "currencyConverter.amount": "Beløb",
+  "currencyConverter.commonValues": "Almindelige værdier",
+  "currencyConverter.convertedAmount": "Omregnet beløb",
+  "currencyConverter.fromCurrency": "Fra valuta",
+  "currencyConverter.invalidAmount": "Indtast et gyldigt beløb",
+  "currencyConverter.noRates": "Der er endnu ingen valutakurser tilgængelige offline. Opret forbindelse til internettet for at hente dem.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Omregningskurser",
+  "currencyConverter.ratesOutdated": "Omregningskurser kan være forældede",
+  "currencyConverter.ratesOutdatedHelp": "De seneste kurser kunne ikke hentes. Opret forbindelse til internettet, og prøv igen.",
+  "currencyConverter.ratesUpdated": "Sidst hentet af serveren den {date}",
+  "currencyConverter.refreshRates": "Opdater kurser",
+  "currencyConverter.swap": "Byt valutaer",
+  "currencyConverter.title": "Valutaomregner",
+  "currencyConverter.toCurrency": "Til valuta",
+  "overview.menu": "Oversigtsmenu"
 }

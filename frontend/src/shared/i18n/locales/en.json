@@ -521,5 +521,21 @@
   "calculator.percent": "Percent",
   "calculator.preview": "Calculation preview",
   "calculator.subtract": "Subtract",
-  "calculator.title": "Calculator"
+  "calculator.title": "Calculator",
+  "currencyConverter.amount": "Amount",
+  "currencyConverter.commonValues": "Common values",
+  "currencyConverter.convertedAmount": "Converted amount",
+  "currencyConverter.fromCurrency": "From currency",
+  "currencyConverter.invalidAmount": "Enter a valid amount",
+  "currencyConverter.noRates": "No currency rates are available offline yet. Connect to the internet to download them.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Conversion rates",
+  "currencyConverter.ratesOutdated": "Conversion rates may be outdated",
+  "currencyConverter.ratesOutdatedHelp": "The latest rates could not be downloaded. Connect to the internet and try again.",
+  "currencyConverter.ratesUpdated": "Last fetched by the server on {date}",
+  "currencyConverter.refreshRates": "Refresh rates",
+  "currencyConverter.swap": "Swap currencies",
+  "currencyConverter.title": "Currency converter",
+  "currencyConverter.toCurrency": "To currency",
+  "overview.menu": "Overview menu"
 }

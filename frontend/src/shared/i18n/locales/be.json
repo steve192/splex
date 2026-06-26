@@ -521,5 +521,21 @@
   "calculator.percent": "Працэнт",
   "calculator.preview": "Папярэдні прагляд разліку",
   "calculator.subtract": "Адняць",
-  "calculator.title": "Калькулятар"
+  "calculator.title": "Калькулятар",
+  "currencyConverter.amount": "Сума",
+  "currencyConverter.commonValues": "Пашыраныя значэнні",
+  "currencyConverter.convertedAmount": "Канвертаваная сума",
+  "currencyConverter.fromCurrency": "Зыходная валюта",
+  "currencyConverter.invalidAmount": "Увядзіце сапраўдную суму",
+  "currencyConverter.noRates": "У аўтаномным рэжыме курсы валют яшчэ недаступныя. Падключыцеся да інтэрнэту, каб спампаваць іх.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Курсы канвертацыі",
+  "currencyConverter.ratesOutdated": "Курсы канвертацыі могуць быць састарэлымі",
+  "currencyConverter.ratesOutdatedHelp": "Не ўдалося спампаваць апошнія курсы. Падключыцеся да інтэрнэту і паспрабуйце яшчэ раз.",
+  "currencyConverter.ratesUpdated": "Апошняе атрыманне серверам: {date}",
+  "currencyConverter.refreshRates": "Абнавіць курсы",
+  "currencyConverter.swap": "Памяняць валюты",
+  "currencyConverter.title": "Канвертар валют",
+  "currencyConverter.toCurrency": "Мэтавая валюта",
+  "overview.menu": "Меню агляду"
 }

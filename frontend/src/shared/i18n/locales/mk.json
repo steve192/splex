@@ -521,5 +521,21 @@
   "calculator.percent": "Процент",
   "calculator.preview": "Преглед на пресметка",
   "calculator.subtract": "Одземи",
-  "calculator.title": "Калкулатор"
+  "calculator.title": "Калкулатор",
+  "currencyConverter.amount": "Износ",
+  "currencyConverter.commonValues": "Вообичаени вредности",
+  "currencyConverter.convertedAmount": "Конвертиран износ",
+  "currencyConverter.fromCurrency": "Изворна валута",
+  "currencyConverter.invalidAmount": "Внесете валиден износ",
+  "currencyConverter.noRates": "Сè уште нема девизни курсеви достапни офлајн. Поврзете се на интернет за да ги преземете.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Курсеви за конверзија",
+  "currencyConverter.ratesOutdated": "Курсевите за конверзија може да се застарени",
+  "currencyConverter.ratesOutdatedHelp": "Најновите курсеви не можеа да се преземат. Поврзете се на интернет и обидете се повторно.",
+  "currencyConverter.ratesUpdated": "Последно преземено од серверот на {date}",
+  "currencyConverter.refreshRates": "Освежи курсеви",
+  "currencyConverter.swap": "Замени валути",
+  "currencyConverter.title": "Конвертор на валути",
+  "currencyConverter.toCurrency": "Целна валута",
+  "overview.menu": "Мени за преглед"
 }

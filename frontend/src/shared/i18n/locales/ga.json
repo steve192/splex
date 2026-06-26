@@ -521,5 +521,21 @@
   "calculator.percent": "Céatadán",
   "calculator.preview": "Réamhamharc ríomha",
   "calculator.subtract": "Dealaigh",
-  "calculator.title": "Áireamhán"
+  "calculator.title": "Áireamhán",
+  "currencyConverter.amount": "Méid",
+  "currencyConverter.commonValues": "Luachanna coitianta",
+  "currencyConverter.convertedAmount": "Méid tiontaithe",
+  "currencyConverter.fromCurrency": "Airgeadra foinse",
+  "currencyConverter.invalidAmount": "Cuir isteach méid bailí",
+  "currencyConverter.noRates": "Níl rátaí malairte ar fáil as líne fós. Ceangail leis an idirlíon chun iad a íoslódáil.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Rátaí tiontaithe",
+  "currencyConverter.ratesOutdated": "D’fhéadfadh na rátaí tiontaithe a bheith as dáta",
+  "currencyConverter.ratesOutdatedHelp": "Níorbh fhéidir na rátaí is déanaí a íoslódáil. Ceangail leis an idirlíon agus bain triail eile as.",
+  "currencyConverter.ratesUpdated": "Íoslódáilte ag an bhfreastalaí den uair dheireanach ar {date}",
+  "currencyConverter.refreshRates": "Athnuaigh rátaí",
+  "currencyConverter.swap": "Babhtáil airgeadraí",
+  "currencyConverter.title": "Tiontaire airgeadra",
+  "currencyConverter.toCurrency": "Airgeadra sprice",
+  "overview.menu": "Roghchlár forbhreathnaithe"
 }

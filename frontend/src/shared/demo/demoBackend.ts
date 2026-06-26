@@ -7,6 +7,7 @@
  */
 import { demoFixtures, groupDetail, statisticsForGroup } from "./demoFixtures";
 import { DemoWriteBlockedError, notifyDemoWriteBlocked } from "./demoMode";
+import { CURRENCIES } from "../lib/currencies";
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -68,8 +69,10 @@ const STATIC_GET_RESPONSES: Record<string, () => unknown> = {
   "/api/friends/": () => demoFixtures.friendsList,
   "/api/activity/": () => ({ results: demoFixtures.activityEvents, next_offset: null }),
   "/api/currency/rates/": () => ({
-    base: "EUR",
-    rates: { USD: "1.08", GBP: "0.86", EUR: "1.00" }
+    base_currency: "EUR",
+    rates: Object.fromEntries(CURRENCIES.map((currency) => [currency, "1"])),
+    source: "frankfurter",
+    fetched_at: "2026-06-26T12:00:00+00:00"
   }),
   "/api/notifications/config/": () => ({ web_push_enabled: false, vapid_public_key: "" }),
   "/api/expenses/location-suggestions/": () => ({ suggestions: [] }),

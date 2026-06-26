@@ -521,5 +521,21 @@
   "calculator.percent": "Procenti",
   "calculator.preview": "Aprēķina priekšskatījums",
   "calculator.subtract": "Atņemt",
-  "calculator.title": "Kalkulators"
+  "calculator.title": "Kalkulators",
+  "currencyConverter.amount": "Summa",
+  "currencyConverter.commonValues": "Biežās vērtības",
+  "currencyConverter.convertedAmount": "Konvertētā summa",
+  "currencyConverter.fromCurrency": "Sākuma valūta",
+  "currencyConverter.invalidAmount": "Ievadiet derīgu summu",
+  "currencyConverter.noRates": "Bezsaistē valūtas kursi vēl nav pieejami. Izveidojiet savienojumu ar internetu, lai tos lejupielādētu.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Konvertācijas kursi",
+  "currencyConverter.ratesOutdated": "Konvertācijas kursi var būt novecojuši",
+  "currencyConverter.ratesOutdatedHelp": "Neizdevās lejupielādēt jaunākos kursus. Izveidojiet savienojumu ar internetu un mēģiniet vēlreiz.",
+  "currencyConverter.ratesUpdated": "Serveris pēdējo reizi lejupielādēja: {date}",
+  "currencyConverter.refreshRates": "Atjaunināt kursus",
+  "currencyConverter.swap": "Samainīt valūtas",
+  "currencyConverter.title": "Valūtas konvertētājs",
+  "currencyConverter.toCurrency": "Mērķa valūta",
+  "overview.menu": "Pārskata izvēlne"
 }

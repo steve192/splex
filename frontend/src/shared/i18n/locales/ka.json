@@ -521,5 +521,21 @@
   "calculator.percent": "პროცენტი",
   "calculator.preview": "გამოთვლის წინასწარი ნახვა",
   "calculator.subtract": "გამოკლება",
-  "calculator.title": "კალკულატორი"
+  "calculator.title": "კალკულატორი",
+  "currencyConverter.amount": "თანხა",
+  "currencyConverter.commonValues": "ხშირი მნიშვნელობები",
+  "currencyConverter.convertedAmount": "კონვერტირებული თანხა",
+  "currencyConverter.fromCurrency": "საწყისი ვალუტა",
+  "currencyConverter.invalidAmount": "შეიყვანეთ სწორი თანხა",
+  "currencyConverter.noRates": "ოფლაინ რეჟიმში ვალუტის კურსები ჯერ ხელმისაწვდომი არ არის. ჩამოსატვირთად დაუკავშირდით ინტერნეტს.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "კონვერტაციის კურსები",
+  "currencyConverter.ratesOutdated": "კონვერტაციის კურსები შეიძლება მოძველებული იყოს",
+  "currencyConverter.ratesOutdatedHelp": "უახლესი კურსების ჩამოტვირთვა ვერ მოხერხდა. დაუკავშირდით ინტერნეტს და სცადეთ ხელახლა.",
+  "currencyConverter.ratesUpdated": "სერვერმა ბოლოს ჩამოტვირთა: {date}",
+  "currencyConverter.refreshRates": "კურსების განახლება",
+  "currencyConverter.swap": "ვალუტების გაცვლა",
+  "currencyConverter.title": "ვალუტის გადამყვანი",
+  "currencyConverter.toCurrency": "სამიზნე ვალუტა",
+  "overview.menu": "მიმოხილვის მენიუ"
 }

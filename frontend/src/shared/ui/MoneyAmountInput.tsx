@@ -1,9 +1,19 @@
 import { ComponentProps, useEffect, useRef, useState } from "react";
 import { Keyboard, Platform, useWindowDimensions, View } from "react-native";
-import { Button, MD3Theme, Modal, Portal, Text, TextInput, TouchableRipple, useTheme } from "react-native-paper";
+import {
+  Button,
+  MD3Theme,
+  Modal,
+  Portal,
+  Text,
+  TextInput,
+  TouchableRipple,
+  useTheme,
+} from "react-native-paper";
 
 import { useI18n } from "../i18n/I18nContext";
 import { useKeyboardHeight } from "../lib/useKeyboardHeight";
+import { triggerCalculatorKeyFeedback } from "./calculatorFeedback";
 import { calculatorKeySize, isCalculatorFullscreen } from "./calculatorLayout";
 import { shouldRestoreKeyboard } from "./keyboardRestorePolicy";
 import { styles } from "./styles";
@@ -15,17 +25,28 @@ import {
   calculatorKeyboardAction,
   calculatorPreview,
   calculatorReduce,
-  formatCalculatorResult
+  formatCalculatorResult,
 } from "./calculatorModel";
 
-type MoneyAmountInputProps = Omit<ComponentProps<typeof TextInput>, "keyboardType" | "right" | "inputMode">;
+type MoneyAmountInputProps = Omit<
+  ComponentProps<typeof TextInput>,
+  "keyboardType" | "right" | "inputMode"
+>;
 type MoneyAmountInputRef = { focus?: () => void; isFocused?: () => boolean };
 
 function isMoneyAmountInputRef(value: unknown): value is MoneyAmountInputRef {
-  return typeof value === "object" && value !== null && "focus" in value && "isFocused" in value;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "focus" in value &&
+    "isFocused" in value
+  );
 }
 
-export function MoneyAmountInput({ value = "", ...props }: Readonly<MoneyAmountInputProps>) {
+export function MoneyAmountInput({
+  value = "",
+  ...props
+}: Readonly<MoneyAmountInputProps>) {
   const { t } = useI18n();
   const keyboardHeight = useKeyboardHeight();
   const inputRef = useRef<MoneyAmountInputRef | null>(null);
@@ -84,11 +105,18 @@ type CalculatorDialogProps = {
   onApply: (result: string) => void;
 };
 
-function CalculatorDialog({ visible, initialValue, onDismiss, onApply }: Readonly<CalculatorDialogProps>) {
+function CalculatorDialog({
+  visible,
+  initialValue,
+  onDismiss,
+  onApply,
+}: Readonly<CalculatorDialogProps>) {
   const { t } = useI18n();
   const theme = useTheme();
   const { height, width } = useWindowDimensions();
-  const [state, setState] = useState<CalculatorState>(() => calculatorInitialState(initialValue));
+  const [state, setState] = useState<CalculatorState>(() =>
+    calculatorInitialState(initialValue),
+  );
   const fullScreen = isCalculatorFullscreen(width);
   const keySize = calculatorKeySize(width, height, fullScreen);
   const preview = calculatorPreview(state.expression);
@@ -125,9 +153,13 @@ function CalculatorDialog({ visible, initialValue, onDismiss, onApply }: Readonl
         onDismiss={onDismiss}
         contentContainerStyle={[
           fullScreen ? styles.calculatorFullscreen : styles.calculatorPopup,
-          { backgroundColor: theme.colors.surface }
+          { backgroundColor: theme.colors.surface },
         ]}
-        style={fullScreen ? styles.calculatorFullscreenWrapper : styles.calculatorPopupWrapper}
+        style={
+          fullScreen
+            ? styles.calculatorFullscreenWrapper
+            : styles.calculatorPopupWrapper
+        }
       >
         <View style={styles.calculatorHeader}>
           <Text variant="titleLarge">{t("calculator.title")}</Text>
@@ -139,22 +171,34 @@ function CalculatorDialog({ visible, initialValue, onDismiss, onApply }: Readonl
           style={[
             styles.calculatorDisplay,
             fullScreen ? styles.calculatorDisplayFullscreen : undefined,
-            { backgroundColor: theme.colors.surfaceVariant }
+            { backgroundColor: theme.colors.surfaceVariant },
           ]}
         >
-          <Text numberOfLines={1} variant={fullScreen ? "displaySmall" : "headlineMedium"} style={styles.calculatorExpression}>
+          <Text
+            numberOfLines={1}
+            variant={fullScreen ? "displaySmall" : "headlineMedium"}
+            style={styles.calculatorExpression}
+          >
             {state.expression || "0"}
           </Text>
           <Text
             numberOfLines={1}
             variant={fullScreen ? "headlineLarge" : "titleLarge"}
-            style={[styles.calculatorResult, { color: theme.colors.onSurfaceVariant }]}
+            style={[
+              styles.calculatorResult,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
           >
             {preview === null ? "—" : formatCalculatorResult(preview)}
           </Text>
         </View>
         <CalculatorKeypad dispatch={dispatch} keySize={keySize} />
-        <Button mode="contained" disabled={preview === null} onPress={apply} style={styles.calculatorApply}>
+        <Button
+          mode="contained"
+          disabled={preview === null}
+          onPress={apply}
+          style={styles.calculatorApply}
+        >
           {t("calculator.apply")}
         </Button>
       </Modal>
@@ -164,25 +208,66 @@ function CalculatorDialog({ visible, initialValue, onDismiss, onApply }: Readonl
 
 function CalculatorKeypad({
   dispatch,
-  keySize
-}: Readonly<{ dispatch: (action: CalculatorAction) => void; keySize: number }>) {
+  keySize,
+}: Readonly<{
+  dispatch: (action: CalculatorAction) => void;
+  keySize: number;
+}>) {
   const { t } = useI18n();
+  function dispatchWithFeedback(action: CalculatorAction) {
+    triggerCalculatorKeyFeedback();
+    dispatch(action);
+  }
+
   const rows: Array<Array<CalculatorKeyDefinition | null>> = [
     [
-      { label: "C", action: { type: "clear" }, accessibilityLabel: t("calculator.clear"), tone: "operation" },
-      { label: "%", action: { type: "percent" }, accessibilityLabel: t("calculator.percent"), tone: "operation" },
-      { label: "⌫", action: { type: "backspace" }, accessibilityLabel: t("calculator.backspace"), tone: "operation" },
-      { label: "÷", action: { type: "operator", value: "÷" }, accessibilityLabel: t("calculator.divide"), tone: "operation" }
+      {
+        label: "C",
+        action: { type: "clear" },
+        accessibilityLabel: t("calculator.clear"),
+        tone: "operation",
+      },
+      {
+        label: "%",
+        action: { type: "percent" },
+        accessibilityLabel: t("calculator.percent"),
+        tone: "operation",
+      },
+      {
+        label: "⌫",
+        action: { type: "backspace" },
+        accessibilityLabel: t("calculator.backspace"),
+        tone: "operation",
+      },
+      {
+        label: "÷",
+        action: { type: "operator", value: "÷" },
+        accessibilityLabel: t("calculator.divide"),
+        tone: "operation",
+      },
     ],
-    ["7", "8", "9"].map(digitKey).concat(operatorKey("×", t("calculator.multiply"))),
-    ["4", "5", "6"].map(digitKey).concat(operatorKey("-", t("calculator.subtract"))),
+    ["7", "8", "9"]
+      .map(digitKey)
+      .concat(operatorKey("×", t("calculator.multiply"))),
+    ["4", "5", "6"]
+      .map(digitKey)
+      .concat(operatorKey("-", t("calculator.subtract"))),
     ["1", "2", "3"].map(digitKey).concat(operatorKey("+", t("calculator.add"))),
     [
       { label: "0", action: { type: "digit", value: "0" } },
-      { label: ".", action: { type: "decimal" }, accessibilityLabel: t("calculator.decimal") },
-      { label: "=", action: { type: "evaluate" }, accessibilityLabel: t("calculator.equals"), tone: "equals" },
-      null
-    ]
+      {
+        label: ".",
+        action: { type: "decimal" },
+        accessibilityLabel: t("calculator.decimal"),
+      },
+      {
+        label: "=",
+        action: { type: "evaluate" },
+        accessibilityLabel: t("calculator.equals"),
+        tone: "equals",
+      },
+      null,
+    ],
   ];
 
   return (
@@ -195,11 +280,17 @@ function CalculatorKeypad({
                 key={key.label}
                 keyDefinition={key}
                 size={keySize}
-                onPress={() => dispatch(key.action)}
+                onPress={() => dispatchWithFeedback(key.action)}
               />
             ) : (
-              <View key={`placeholder-${keyIndex}`} style={[styles.calculatorKeyPlaceholder, { height: keySize, width: keySize }]} />
-            )
+              <View
+                key={`placeholder-${keyIndex}`}
+                style={[
+                  styles.calculatorKeyPlaceholder,
+                  { height: keySize, width: keySize },
+                ]}
+              />
+            ),
           )}
         </View>
       ))}
@@ -222,33 +313,52 @@ type CalculatorKeyDefinition = {
   tone?: CalculatorKeyTone;
 };
 
-function CalculatorKey({ keyDefinition, size, onPress }: Readonly<CalculatorKeyProps>) {
+function CalculatorKey({
+  keyDefinition,
+  size,
+  onPress,
+}: Readonly<CalculatorKeyProps>) {
   const theme = useTheme();
   const colors = calculatorKeyColors(theme, keyDefinition.tone);
   return (
     <TouchableRipple
-      accessibilityLabel={keyDefinition.accessibilityLabel ?? keyDefinition.label}
+      accessibilityLabel={
+        keyDefinition.accessibilityLabel ?? keyDefinition.label
+      }
       accessibilityRole="button"
       borderless={false}
       onPress={onPress}
       style={[
         styles.calculatorKey,
-        { backgroundColor: colors.background, height: size, width: size }
+        { backgroundColor: colors.background, height: size, width: size },
       ]}
     >
-      <Text variant="titleLarge" style={[styles.calculatorKeyLabel, { color: colors.text }]}>
+      <Text
+        variant="titleLarge"
+        style={[styles.calculatorKeyLabel, { color: colors.text }]}
+      >
         {keyDefinition.label}
       </Text>
     </TouchableRipple>
   );
 }
 
-function calculatorKeyColors(theme: MD3Theme, tone: CalculatorKeyTone | undefined) {
-  if (tone === "equals") return { background: theme.colors.primary, text: theme.colors.onPrimary };
+function calculatorKeyColors(
+  theme: MD3Theme,
+  tone: CalculatorKeyTone | undefined,
+) {
+  if (tone === "equals")
+    return { background: theme.colors.primary, text: theme.colors.onPrimary };
   if (tone === "operation") {
-    return { background: theme.colors.secondaryContainer, text: theme.colors.onSecondaryContainer };
+    return {
+      background: theme.colors.secondaryContainer,
+      text: theme.colors.onSecondaryContainer,
+    };
   }
-  return { background: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
+  return {
+    background: theme.colors.surfaceVariant,
+    text: theme.colors.onSurfaceVariant,
+  };
 }
 
 function digitKey(value: string): { label: string; action: CalculatorAction } {
@@ -257,7 +367,12 @@ function digitKey(value: string): { label: string; action: CalculatorAction } {
 
 function operatorKey(
   value: CalculatorOperator,
-  accessibilityLabel: string
+  accessibilityLabel: string,
 ): CalculatorKeyDefinition {
-  return { label: value, action: { type: "operator", value }, accessibilityLabel, tone: "operation" };
+  return {
+    label: value,
+    action: { type: "operator", value },
+    accessibilityLabel,
+    tone: "operation",
+  };
 }

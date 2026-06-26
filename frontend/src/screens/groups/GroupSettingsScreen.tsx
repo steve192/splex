@@ -24,7 +24,10 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { shareLink } from "../../shared/lib/shareLink";
 import { useCachedQuery } from "../../shared/lib/useCachedQuery";
-import { CURRENCIES } from "../../shared/lib/currencies";
+import {
+  currencyCodeOrFallback,
+  type CurrencyCode,
+} from "../../shared/lib/currencies";
 import { formatDeviceDate } from "../../shared/lib/dates";
 import { asNumber } from "../../shared/lib/money";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
@@ -39,10 +42,7 @@ import { ImageUploadField } from "../../shared/ui/ImageUploadField";
 import { ManualCopyDialog } from "../../shared/ui/ManualCopyDialog";
 import { negativeColor } from "../../shared/ui/colors";
 import { Screen } from "../../shared/ui/Screen";
-import {
-  SelectionOption,
-  SelectionSheet,
-} from "../../shared/ui/SelectionSheet";
+import { CurrencySelectionSheet } from "../../shared/ui/CurrencySelectionSheet";
 import { styles } from "../../shared/ui/styles";
 import {
   buildAddParticipantPayload,
@@ -102,7 +102,7 @@ export function GroupSettingsScreen({
   const dangerColor = negativeColor(theme);
   const groupId = route.params.id;
   const [name, setName] = useState("");
-  const [currency, setCurrency] = useState("EUR");
+  const [currency, setCurrency] = useState<CurrencyCode>("EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [iconUrl, setIconUrl] = useState("");
   const [iconImage, setIconImage] = useState("");
@@ -138,10 +138,6 @@ export function GroupSettingsScreen({
   const editActionsDisabled = groupMutationDisabled(group, hasPending);
   const friends = settingsQuery.data?.friends ?? [];
   const balances = settingsQuery.data?.balances ?? [];
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
-    value: code,
-    label: code,
-  }));
   const suggestedFriends = getSuggestedFriends(
     newParticipantName,
     friends,
@@ -183,7 +179,7 @@ export function GroupSettingsScreen({
     if (!group) return;
     if (!detailsDirty) {
       setName(group.name);
-      setCurrency(group.default_currency);
+      setCurrency(currencyCodeOrFallback(group.default_currency));
       setIconUrl(group.icon_url ?? "");
       setDefaultSplitMethod(group.default_split_method ?? "equal_all");
     }
@@ -614,10 +610,9 @@ export function GroupSettingsScreen({
         label={t("invite.copyLabel")}
         onDismiss={() => setManualCopyLink("")}
       />
-      <SelectionSheet
+      <CurrencySelectionSheet
         visible={currencySheetOpen}
         title={t("expense.currency")}
-        options={currencyOptions}
         value={currency}
         onSelect={(value) => {
           setCurrency(value);

@@ -521,5 +521,21 @@
   "calculator.percent": "Procento",
   "calculator.preview": "Náhled výpočtu",
   "calculator.subtract": "Odečíst",
-  "calculator.title": "Kalkulačka"
+  "calculator.title": "Kalkulačka",
+  "currencyConverter.amount": "Částka",
+  "currencyConverter.commonValues": "Běžné hodnoty",
+  "currencyConverter.convertedAmount": "Převedená částka",
+  "currencyConverter.fromCurrency": "Výchozí měna",
+  "currencyConverter.invalidAmount": "Zadejte platnou částku",
+  "currencyConverter.noRates": "Offline zatím nejsou k dispozici žádné směnné kurzy. Připojte se k internetu a stáhněte je.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Přepočítací kurzy",
+  "currencyConverter.ratesOutdated": "Přepočítací kurzy mohou být zastaralé",
+  "currencyConverter.ratesOutdatedHelp": "Nejnovější kurzy se nepodařilo stáhnout. Připojte se k internetu a zkuste to znovu.",
+  "currencyConverter.ratesUpdated": "Server naposledy stáhl dne {date}",
+  "currencyConverter.refreshRates": "Aktualizovat kurzy",
+  "currencyConverter.swap": "Prohodit měny",
+  "currencyConverter.title": "Převodník měn",
+  "currencyConverter.toCurrency": "Cílová měna",
+  "overview.menu": "Menu přehledu"
 }

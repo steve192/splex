@@ -521,5 +521,21 @@
   "calculator.percent": "Prozent",
   "calculator.preview": "Virschau vun der Berechnung",
   "calculator.subtract": "Ofzéien",
-  "calculator.title": "Rechner"
+  "calculator.title": "Rechner",
+  "currencyConverter.amount": "Betrag",
+  "currencyConverter.commonValues": "Heefeg Wäerter",
+  "currencyConverter.convertedAmount": "Ëmgerechente Betrag",
+  "currencyConverter.fromCurrency": "Ausgangswärung",
+  "currencyConverter.invalidAmount": "Gitt e valabele Betrag an",
+  "currencyConverter.noRates": "Offline si nach keng Wechselcoursen verfügbar. Verbannt Iech mam Internet fir se erofzelueden.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Ëmrechnungs-coursen",
+  "currencyConverter.ratesOutdated": "D’Ëmrechnungs-coursen kéinte veralt sinn",
+  "currencyConverter.ratesOutdatedHelp": "Déi lescht Coursen konnten net erofgeluede ginn. Verbannt Iech mam Internet a probéiert nach eng Kéier.",
+  "currencyConverter.ratesUpdated": "Fir d’lescht vum Server erofgelueden den {date}",
+  "currencyConverter.refreshRates": "Coursen aktualiséieren",
+  "currencyConverter.swap": "Wärungen tauschen",
+  "currencyConverter.title": "Währungsrechner",
+  "currencyConverter.toCurrency": "Zilwärung",
+  "overview.menu": "Iwwersiichtsmenü"
 }

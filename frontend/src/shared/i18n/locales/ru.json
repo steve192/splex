@@ -521,5 +521,21 @@
   "calculator.percent": "Процент",
   "calculator.preview": "Предпросмотр вычисления",
   "calculator.subtract": "Вычесть",
-  "calculator.title": "Калькулятор"
+  "calculator.title": "Калькулятор",
+  "currencyConverter.amount": "Сумма",
+  "currencyConverter.commonValues": "Частые значения",
+  "currencyConverter.convertedAmount": "Конвертированная сумма",
+  "currencyConverter.fromCurrency": "Исходная валюта",
+  "currencyConverter.invalidAmount": "Введите корректную сумму",
+  "currencyConverter.noRates": "Курсы валют пока недоступны офлайн. Подключитесь к интернету, чтобы скачать их.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Курсы конвертации",
+  "currencyConverter.ratesOutdated": "Курсы конвертации могут быть устаревшими",
+  "currencyConverter.ratesOutdatedHelp": "Не удалось скачать последние курсы. Подключитесь к интернету и попробуйте снова.",
+  "currencyConverter.ratesUpdated": "Последнее получение сервером: {date}",
+  "currencyConverter.refreshRates": "Обновить курсы",
+  "currencyConverter.swap": "Поменять валюты",
+  "currencyConverter.title": "Конвертер валют",
+  "currencyConverter.toCurrency": "Целевая валюта",
+  "overview.menu": "Меню обзора"
 }

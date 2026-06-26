@@ -521,5 +521,21 @@
   "calculator.percent": "Yüzde",
   "calculator.preview": "Hesaplama önizlemesi",
   "calculator.subtract": "Çıkar",
-  "calculator.title": "Hesap makinesi"
+  "calculator.title": "Hesap makinesi",
+  "currencyConverter.amount": "Tutar",
+  "currencyConverter.commonValues": "Yaygın değerler",
+  "currencyConverter.convertedAmount": "Dönüştürülen tutar",
+  "currencyConverter.fromCurrency": "Kaynak para birimi",
+  "currencyConverter.invalidAmount": "Geçerli bir tutar girin",
+  "currencyConverter.noRates": "Çevrimdışı kullanılabilir döviz kuru henüz yok. İndirmek için internete bağlanın.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Dönüşüm kurları",
+  "currencyConverter.ratesOutdated": "Dönüşüm kurları güncel olmayabilir",
+  "currencyConverter.ratesOutdatedHelp": "En son kurlar indirilemedi. İnternete bağlanın ve tekrar deneyin.",
+  "currencyConverter.ratesUpdated": "Sunucu tarafından son alınma: {date}",
+  "currencyConverter.refreshRates": "Kurları yenile",
+  "currencyConverter.swap": "Para birimlerini değiştir",
+  "currencyConverter.title": "Döviz çevirici",
+  "currencyConverter.toCurrency": "Hedef para birimi",
+  "overview.menu": "Genel bakış menüsü"
 }

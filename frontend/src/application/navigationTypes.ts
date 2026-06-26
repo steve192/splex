@@ -15,6 +15,7 @@ export type RootStackParamList = {
 
 export type OverviewStackParamList = {
   OverviewHome: undefined;
+  CurrencyConverter: undefined;
   CreateGroup: undefined;
   GroupDetail: { id: number };
   GroupSettings: { id: number };

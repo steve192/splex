@@ -521,5 +521,21 @@
   "calculator.percent": "Percentage",
   "calculator.preview": "Rekenvoorbeeld",
   "calculator.subtract": "Aftrekken",
-  "calculator.title": "Rekenmachine"
+  "calculator.title": "Rekenmachine",
+  "currencyConverter.amount": "Bedrag",
+  "currencyConverter.commonValues": "Veelvoorkomende waarden",
+  "currencyConverter.convertedAmount": "Omgerekend bedrag",
+  "currencyConverter.fromCurrency": "Bronvaluta",
+  "currencyConverter.invalidAmount": "Voer een geldig bedrag in",
+  "currencyConverter.noRates": "Er zijn offline nog geen wisselkoersen beschikbaar. Maak verbinding met internet om ze te downloaden.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Omrekenkoersen",
+  "currencyConverter.ratesOutdated": "Omrekenkoersen kunnen verouderd zijn",
+  "currencyConverter.ratesOutdatedHelp": "De nieuwste koersen konden niet worden gedownload. Maak verbinding met internet en probeer het opnieuw.",
+  "currencyConverter.ratesUpdated": "Laatst door de server opgehaald op {date}",
+  "currencyConverter.refreshRates": "Koersen vernieuwen",
+  "currencyConverter.swap": "Valuta wisselen",
+  "currencyConverter.title": "Valutacalculator",
+  "currencyConverter.toCurrency": "Doelvaluta",
+  "overview.menu": "Overzichtsmenu"
 }

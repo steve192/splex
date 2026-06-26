@@ -521,5 +521,21 @@
   "calculator.percent": "Procentas",
   "calculator.preview": "Skaičiavimo peržiūra",
   "calculator.subtract": "Atimti",
-  "calculator.title": "Skaičiuotuvas"
+  "calculator.title": "Skaičiuotuvas",
+  "currencyConverter.amount": "Suma",
+  "currencyConverter.commonValues": "Dažnos reikšmės",
+  "currencyConverter.convertedAmount": "Konvertuota suma",
+  "currencyConverter.fromCurrency": "Pradinė valiuta",
+  "currencyConverter.invalidAmount": "Įveskite galiojančią sumą",
+  "currencyConverter.noRates": "Valiutų kursai neprisijungus dar nepasiekiami. Prisijunkite prie interneto, kad juos atsisiųstumėte.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Konvertavimo kursai",
+  "currencyConverter.ratesOutdated": "Konvertavimo kursai gali būti pasenę",
+  "currencyConverter.ratesOutdatedHelp": "Naujausių kursų nepavyko atsisiųsti. Prisijunkite prie interneto ir bandykite dar kartą.",
+  "currencyConverter.ratesUpdated": "Serveris paskutinį kartą atsisiuntė: {date}",
+  "currencyConverter.refreshRates": "Atnaujinti kursus",
+  "currencyConverter.swap": "Sukeisti valiutas",
+  "currencyConverter.title": "Valiutos keitiklis",
+  "currencyConverter.toCurrency": "Tikslinė valiuta",
+  "overview.menu": "Apžvalgos meniu"
 }

@@ -521,5 +521,21 @@
   "calculator.percent": "Ποσοστό",
   "calculator.preview": "Προεπισκόπηση υπολογισμού",
   "calculator.subtract": "Αφαίρεση",
-  "calculator.title": "Αριθμομηχανή"
+  "calculator.title": "Αριθμομηχανή",
+  "currencyConverter.amount": "Ποσό",
+  "currencyConverter.commonValues": "Συνηθισμένες τιμές",
+  "currencyConverter.convertedAmount": "Μετατρεπόμενο ποσό",
+  "currencyConverter.fromCurrency": "Νόμισμα προέλευσης",
+  "currencyConverter.invalidAmount": "Εισαγάγετε έγκυρο ποσό",
+  "currencyConverter.noRates": "Δεν υπάρχουν ακόμη διαθέσιμες ισοτιμίες εκτός σύνδεσης. Συνδεθείτε στο διαδίκτυο για να τις κατεβάσετε.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Ισοτιμίες μετατροπής",
+  "currencyConverter.ratesOutdated": "Οι ισοτιμίες μετατροπής μπορεί να είναι παλιές",
+  "currencyConverter.ratesOutdatedHelp": "Δεν ήταν δυνατή η λήψη των πιο πρόσφατων ισοτιμιών. Συνδεθείτε στο διαδίκτυο και δοκιμάστε ξανά.",
+  "currencyConverter.ratesUpdated": "Τελευταία λήψη από τον διακομιστή στις {date}",
+  "currencyConverter.refreshRates": "Ανανέωση ισοτιμιών",
+  "currencyConverter.swap": "Εναλλαγή νομισμάτων",
+  "currencyConverter.title": "Μετατροπέας νομισμάτων",
+  "currencyConverter.toCurrency": "Νόμισμα προορισμού",
+  "overview.menu": "Μενού επισκόπησης"
 }

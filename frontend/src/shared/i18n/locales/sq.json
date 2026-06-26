@@ -521,5 +521,21 @@
   "calculator.percent": "Përqindje",
   "calculator.preview": "Parapamje e llogaritjes",
   "calculator.subtract": "Zbrit",
-  "calculator.title": "Kalkulator"
+  "calculator.title": "Kalkulator",
+  "currencyConverter.amount": "Shuma",
+  "currencyConverter.commonValues": "Vlera të zakonshme",
+  "currencyConverter.convertedAmount": "Shuma e konvertuar",
+  "currencyConverter.fromCurrency": "Monedha burimore",
+  "currencyConverter.invalidAmount": "Vendos një shumë të vlefshme",
+  "currencyConverter.noRates": "Ende nuk ka kurse këmbimi të disponueshme jashtë linje. Lidhu me internetin për t’i shkarkuar.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Kurset e konvertimit",
+  "currencyConverter.ratesOutdated": "Kurset e konvertimit mund të jenë të vjetruara",
+  "currencyConverter.ratesOutdatedHelp": "Kurset më të fundit nuk mund të shkarkoheshin. Lidhu me internetin dhe provo përsëri.",
+  "currencyConverter.ratesUpdated": "Shkarkimi i fundit nga serveri më {date}",
+  "currencyConverter.refreshRates": "Rifresko kurset",
+  "currencyConverter.swap": "Ndërro monedhat",
+  "currencyConverter.title": "Konvertues valutor",
+  "currencyConverter.toCurrency": "Monedha e synuar",
+  "overview.menu": "Menyja e përmbledhjes"
 }

@@ -521,5 +521,21 @@
   "calculator.percent": "Perċentwal",
   "calculator.preview": "Previżjoni tal-kalkolu",
   "calculator.subtract": "Naqqas",
-  "calculator.title": "Kalkulatur"
+  "calculator.title": "Kalkulatur",
+  "currencyConverter.amount": "Ammont",
+  "currencyConverter.commonValues": "Valuri komuni",
+  "currencyConverter.convertedAmount": "Ammont ikkonvertit",
+  "currencyConverter.fromCurrency": "Munita tas-sors",
+  "currencyConverter.invalidAmount": "Daħħal ammont validu",
+  "currencyConverter.noRates": "Għad m’hemmx rati tal-kambju disponibbli offline. Qabbad mal-internet biex tniżżilhom.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Rati ta’ konverżjoni",
+  "currencyConverter.ratesOutdated": "Ir-rati ta’ konverżjoni jistgħu jkunu skaduti",
+  "currencyConverter.ratesOutdatedHelp": "L-aħħar rati ma setgħux jitniżżlu. Qabbad mal-internet u erġa’ pprova.",
+  "currencyConverter.ratesUpdated": "L-aħħar tniżżil mis-server kien fi {date}",
+  "currencyConverter.refreshRates": "Aġġorna r-rati",
+  "currencyConverter.swap": "Ibdel il-muniti",
+  "currencyConverter.title": "Konvertitur tal-munita",
+  "currencyConverter.toCurrency": "Munita fil-mira",
+  "overview.menu": "Menu tal-ħarsa ġenerali"
 }

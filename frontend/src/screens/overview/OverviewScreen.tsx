@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   Button,
   Card,
+  IconButton,
   List,
+  Menu,
   Text,
   TouchableRipple,
 } from "react-native-paper";
@@ -45,6 +47,7 @@ export function OverviewScreen({ navigation }: Readonly<OverviewScreenProps>) {
   const { hasPending, isPending, runPendingAction } =
     usePendingAction<"friend-invite">();
   const [manualCopyLink, setManualCopyLink] = useState("");
+  const [menuVisible, setMenuVisible] = useState(false);
   const overviewQuery = useCachedQuery({
     load: useCallback(
       async ({ cachedGet: getCached }) => {
@@ -158,9 +161,31 @@ export function OverviewScreen({ navigation }: Readonly<OverviewScreenProps>) {
   return (
     <View style={styles.flex}>
       <Screen topInset>
-        <View style={styles.inline}>
-          <Text variant="headlineSmall">{t("tabs.overview")}</Text>
-          {overviewQuery.loading && <ActivityIndicator size={16} />}
+        <View style={styles.rowBetween}>
+          <View style={styles.inline}>
+            <Text variant="headlineSmall">{t("tabs.overview")}</Text>
+            {overviewQuery.loading && <ActivityIndicator size={16} />}
+          </View>
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <IconButton
+                icon="dots-vertical"
+                accessibilityLabel={t("overview.menu")}
+                onPress={() => setMenuVisible(true)}
+              />
+            }
+          >
+            <Menu.Item
+              leadingIcon="swap-horizontal"
+              title={t("currencyConverter.title")}
+              onPress={() => {
+                setMenuVisible(false);
+                navigation.navigate("CurrencyConverter");
+              }}
+            />
+          </Menu>
         </View>
         <View style={styles.rowActions}>
           <Button

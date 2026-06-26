@@ -48,6 +48,7 @@ describe("appLinkingScreens", () => {
     ["/open-source", "OpenSourceLicenses", undefined],
     ["/OpenSourceLicenses", "OpenSourceLicenses", undefined],
     ["/invite/invite-token", "InvitationAccept", { token: "invite-token" }],
+    ["/currency-converter", "CurrencyConverter", undefined],
     ["/groups/new", "CreateGroup", undefined],
     ["/groups/16", "GroupDetail", { id: 16 }],
     ["/groups/16/settings", "GroupSettings", { id: 16 }],

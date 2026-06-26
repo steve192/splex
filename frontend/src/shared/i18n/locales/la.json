@@ -521,5 +521,21 @@
   "calculator.percent": "Centum",
   "calculator.preview": "Praevisio calculationis",
   "calculator.subtract": "Subtrahe",
-  "calculator.title": "Calculator"
+  "calculator.title": "Calculator",
+  "currencyConverter.amount": "Summa",
+  "currencyConverter.commonValues": "Valores communes",
+  "currencyConverter.convertedAmount": "Summa conversa",
+  "currencyConverter.fromCurrency": "Valuta fontis",
+  "currencyConverter.invalidAmount": "Summam validam insere",
+  "currencyConverter.noRates": "Rationes permutationis nondum sine interrete praesto sunt. Interreti coniungere ut eas deprimas.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Rationes conversionis",
+  "currencyConverter.ratesOutdated": "Rationes conversionis obsoletae esse possunt",
+  "currencyConverter.ratesOutdatedHelp": "Rationes novissimae deprimi non potuerunt. Interreti coniungere et iterum conare.",
+  "currencyConverter.ratesUpdated": "A servo novissime deiectum die {date}",
+  "currencyConverter.refreshRates": "Renova rationes",
+  "currencyConverter.swap": "Valutas permuta",
+  "currencyConverter.title": "Conversor valutarum",
+  "currencyConverter.toCurrency": "Valuta destinata",
+  "overview.menu": "Index conspectus"
 }

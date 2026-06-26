@@ -8,13 +8,10 @@ import { useFeedback } from "../../shared/feedback/FeedbackContext";
 import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
-import { CURRENCIES } from "../../shared/lib/currencies";
+import type { CurrencyCode } from "../../shared/lib/currencies";
 import { Group } from "../../shared/types/models";
 import { Screen } from "../../shared/ui/Screen";
-import {
-  SelectionOption,
-  SelectionSheet,
-} from "../../shared/ui/SelectionSheet";
+import { CurrencySelectionSheet } from "../../shared/ui/CurrencySelectionSheet";
 import { styles } from "../../shared/ui/styles";
 
 type CreateGroupScreenProps = NativeStackScreenProps<
@@ -30,13 +27,9 @@ export function CreateGroupScreen({
   const { showSuccess } = useFeedback();
   const { showSnackbar } = useSnackbar();
   const [name, setName] = useState("");
-  const [currency, setCurrency] = useState("EUR");
+  const [currency, setCurrency] = useState<CurrencyCode>("EUR");
   const [currencySheetOpen, setCurrencySheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
-    value: code,
-    label: code,
-  }));
 
   async function save() {
     if (saving) return;
@@ -44,7 +37,7 @@ export function CreateGroupScreen({
     try {
       const group = await api.post<Group>("/api/groups/", {
         name,
-        default_currency: currency.toUpperCase(),
+        default_currency: currency,
       });
       showSuccess({ icon: "check" });
       navigation.replace("GroupDetail", { id: group.id });
@@ -79,10 +72,9 @@ export function CreateGroupScreen({
           </Button>
         </Card.Content>
       </Card>
-      <SelectionSheet
+      <CurrencySelectionSheet
         visible={currencySheetOpen}
         title={t("expense.currency")}
-        options={currencyOptions}
         value={currency}
         onSelect={setCurrency}
         onDismiss={() => setCurrencySheetOpen(false)}

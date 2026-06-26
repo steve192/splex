@@ -13,12 +13,11 @@ import { KeyboardAvoidingDialog } from "../ui/KeyboardAvoidingDialog";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
-import { CURRENCIES } from "../lib/currencies";
 import { payUrlWithAmount } from "../lib/paypal";
 import { PaymentMethod } from "../types/models";
 import { ClickableAvatar } from "../ui/ClickableAvatar";
+import { CurrencySelectionSheet } from "../ui/CurrencySelectionSheet";
 import { MoneyAmountInput } from "../ui/MoneyAmountInput";
-import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
 import { styles } from "../ui/styles";
 
 export type SettlementDialogTarget = {
@@ -97,11 +96,6 @@ export function SettlementDialog({
     const timeout = setTimeout(() => setCopiedHint(false), 2500);
     return () => clearTimeout(timeout);
   }, [copiedHint]);
-
-  const currencyOptions: SelectionOption<string>[] = CURRENCIES.map((code) => ({
-    value: code,
-    label: code,
-  }));
 
   async function openPaypal() {
     if (!preferredMethod) return;
@@ -186,10 +180,9 @@ export function SettlementDialog({
           </Button>
         </Dialog.Actions>
       </KeyboardAvoidingDialog>
-      <SelectionSheet
+      <CurrencySelectionSheet
         visible={visible && currencySheetOpen}
         title={t("expense.currency")}
-        options={currencyOptions}
         value={currency}
         onSelect={onCurrencyChange}
         onDismiss={() => setCurrencySheetOpen(false)}

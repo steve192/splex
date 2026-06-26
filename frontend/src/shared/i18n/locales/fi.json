@@ -521,5 +521,21 @@
   "calculator.percent": "Prosentti",
   "calculator.preview": "Laskelman esikatselu",
   "calculator.subtract": "Vähennä",
-  "calculator.title": "Laskin"
+  "calculator.title": "Laskin",
+  "currencyConverter.amount": "Summa",
+  "currencyConverter.commonValues": "Yleiset arvot",
+  "currencyConverter.convertedAmount": "Muunnettu summa",
+  "currencyConverter.fromCurrency": "Lähtövaluutta",
+  "currencyConverter.invalidAmount": "Anna kelvollinen summa",
+  "currencyConverter.noRates": "Valuuttakursseja ei ole vielä saatavilla offline-tilassa. Yhdistä internetiin ladataksesi ne.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Muuntokurssit",
+  "currencyConverter.ratesOutdated": "Muuntokurssit voivat olla vanhentuneita",
+  "currencyConverter.ratesOutdatedHelp": "Uusimpia kursseja ei voitu ladata. Yhdistä internetiin ja yritä uudelleen.",
+  "currencyConverter.ratesUpdated": "Palvelin haki viimeksi {date}",
+  "currencyConverter.refreshRates": "Päivitä kurssit",
+  "currencyConverter.swap": "Vaihda valuutat",
+  "currencyConverter.title": "Valuuttamuunnin",
+  "currencyConverter.toCurrency": "Kohdevaluutta",
+  "overview.menu": "Yleisnäkymän valikko"
 }

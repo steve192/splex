@@ -521,5 +521,21 @@
   "calculator.percent": "Procent",
   "calculator.preview": "Previzualizare calcul",
   "calculator.subtract": "Scade",
-  "calculator.title": "Calculator"
+  "calculator.title": "Calculator",
+  "currencyConverter.amount": "Sumă",
+  "currencyConverter.commonValues": "Valori comune",
+  "currencyConverter.convertedAmount": "Sumă convertită",
+  "currencyConverter.fromCurrency": "Monedă sursă",
+  "currencyConverter.invalidAmount": "Introduceți o sumă validă",
+  "currencyConverter.noRates": "Nu există încă rate de schimb disponibile offline. Conectați-vă la internet pentru a le descărca.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Rate de conversie",
+  "currencyConverter.ratesOutdated": "Ratele de conversie pot fi învechite",
+  "currencyConverter.ratesOutdatedHelp": "Cele mai recente rate nu au putut fi descărcate. Conectați-vă la internet și încercați din nou.",
+  "currencyConverter.ratesUpdated": "Ultima descărcare de către server la {date}",
+  "currencyConverter.refreshRates": "Actualizează ratele",
+  "currencyConverter.swap": "Schimbă monedele",
+  "currencyConverter.title": "Convertor valutar",
+  "currencyConverter.toCurrency": "Monedă țintă",
+  "overview.menu": "Meniu prezentare generală"
 }

@@ -13,6 +13,7 @@ import { PaymentMethodsScreen } from "../screens/account/PaymentMethodsScreen";
 import { SplitProImportScreen } from "../screens/account/SplitProImportScreen";
 import { SplitwiseImportScreen } from "../screens/account/SplitwiseImportScreen";
 import { LoginScreen } from "../screens/auth/LoginScreen";
+import { CurrencyConverterScreen } from "../screens/currency/CurrencyConverterScreen";
 import { AddScreen } from "../screens/expenses/AddScreen";
 import { ExpenseDetailScreen } from "../screens/expenses/ExpenseDetailScreen";
 import { FriendDetailScreen } from "../screens/friends/FriendDetailScreen";
@@ -28,6 +29,7 @@ import { OpenSourceLicensesScreen } from "../screens/legal/OpenSourceLicensesScr
 import { OverviewScreen } from "../screens/overview/OverviewScreen";
 import { SettlementDetailScreen } from "../screens/settlements/SettlementDetailScreen";
 import { useI18n } from "../shared/i18n/I18nContext";
+import { bootstrapCurrencyRates } from "../shared/currency/rates";
 import { inviteDebug, inviteTokenFromCurrentUrl, PENDING_INVITE_STORAGE_KEY } from "../shared/lib/inviteLinks";
 import { syncPendingMutations } from "../shared/sync/queue";
 import { pendingInviteTokenForAuthSession } from "./appNavigatorInvite";
@@ -48,6 +50,11 @@ function OverviewStackNavigator() {
         name="OverviewHome"
         component={OverviewScreen}
         options={{ headerShown: false, title: t("tabs.overview") }}
+      />
+      <OverviewStack.Screen
+        name="CurrencyConverter"
+        component={CurrencyConverterScreen}
+        options={{ title: t("currencyConverter.title") }}
       />
       <OverviewStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: t("group.create") }} />
       <OverviewStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: t("group.title") }} />
@@ -276,6 +283,11 @@ export function AppNavigator() {
         syncPendingMutations.flush(api).catch(() => undefined);
       }
     });
+  }, [api, tokens]);
+
+  useEffect(() => {
+    if (!tokens) return;
+    bootstrapCurrencyRates(api).catch(() => undefined);
   }, [api, tokens]);
 
   if (!initialized) {

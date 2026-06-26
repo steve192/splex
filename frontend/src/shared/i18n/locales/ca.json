@@ -521,5 +521,21 @@
   "calculator.percent": "Percentatge",
   "calculator.preview": "Previsualització del càlcul",
   "calculator.subtract": "Resta",
-  "calculator.title": "Calculadora"
+  "calculator.title": "Calculadora",
+  "currencyConverter.amount": "Import",
+  "currencyConverter.commonValues": "Valors habituals",
+  "currencyConverter.convertedAmount": "Import convertit",
+  "currencyConverter.fromCurrency": "Moneda d’origen",
+  "currencyConverter.invalidAmount": "Introdueix un import vàlid",
+  "currencyConverter.noRates": "Encara no hi ha tipus de canvi disponibles sense connexió. Connecta’t a internet per descarregar-los.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Tipus de conversió",
+  "currencyConverter.ratesOutdated": "Els tipus de conversió poden estar desactualitzats",
+  "currencyConverter.ratesOutdatedHelp": "No s’han pogut descarregar els tipus més recents. Connecta’t a internet i torna-ho a provar.",
+  "currencyConverter.ratesUpdated": "Última descàrrega del servidor el {date}",
+  "currencyConverter.refreshRates": "Actualitza els tipus",
+  "currencyConverter.swap": "Intercanvia monedes",
+  "currencyConverter.title": "Convertidor de divises",
+  "currencyConverter.toCurrency": "Moneda de destinació",
+  "overview.menu": "Menú de resum"
 }

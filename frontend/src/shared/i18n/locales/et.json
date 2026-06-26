@@ -521,5 +521,21 @@
   "calculator.percent": "Protsent",
   "calculator.preview": "Arvutuse eelvaade",
   "calculator.subtract": "Lahuta",
-  "calculator.title": "Kalkulaator"
+  "calculator.title": "Kalkulaator",
+  "currencyConverter.amount": "Summa",
+  "currencyConverter.commonValues": "Levinud väärtused",
+  "currencyConverter.convertedAmount": "Teisendatud summa",
+  "currencyConverter.fromCurrency": "Lähtevaluuta",
+  "currencyConverter.invalidAmount": "Sisesta kehtiv summa",
+  "currencyConverter.noRates": "Võrguühenduseta pole valuutakursse veel saadaval. Nende allalaadimiseks ühendu internetiga.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Teisenduskursid",
+  "currencyConverter.ratesOutdated": "Teisenduskursid võivad olla aegunud",
+  "currencyConverter.ratesOutdatedHelp": "Uusimaid kursse ei saanud alla laadida. Ühendu internetiga ja proovi uuesti.",
+  "currencyConverter.ratesUpdated": "Server laadis viimati alla: {date}",
+  "currencyConverter.refreshRates": "Värskenda kursse",
+  "currencyConverter.swap": "Vaheta valuutad",
+  "currencyConverter.title": "Valuutakalkulaator",
+  "currencyConverter.toCurrency": "Sihtvaluuta",
+  "overview.menu": "Ülevaate menüü"
 }

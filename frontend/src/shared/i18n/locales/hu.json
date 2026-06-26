@@ -521,5 +521,21 @@
   "calculator.percent": "Százalék",
   "calculator.preview": "Számítás előnézete",
   "calculator.subtract": "Kivonás",
-  "calculator.title": "Számológép"
+  "calculator.title": "Számológép",
+  "currencyConverter.amount": "Összeg",
+  "currencyConverter.commonValues": "Gyakori értékek",
+  "currencyConverter.convertedAmount": "Átváltott összeg",
+  "currencyConverter.fromCurrency": "Forrás pénznem",
+  "currencyConverter.invalidAmount": "Adj meg egy érvényes összeget",
+  "currencyConverter.noRates": "Offline még nem érhetők el árfolyamok. Csatlakozz az internethez a letöltésükhöz.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Átváltási árfolyamok",
+  "currencyConverter.ratesOutdated": "Az átváltási árfolyamok elavultak lehetnek",
+  "currencyConverter.ratesOutdatedHelp": "A legfrissebb árfolyamokat nem sikerült letölteni. Csatlakozz az internethez, és próbáld újra.",
+  "currencyConverter.ratesUpdated": "A szerver utoljára ekkor töltötte le: {date}",
+  "currencyConverter.refreshRates": "Árfolyamok frissítése",
+  "currencyConverter.swap": "Pénznemek felcserélése",
+  "currencyConverter.title": "Valutaváltó",
+  "currencyConverter.toCurrency": "Cél pénznem",
+  "overview.menu": "Áttekintés menü"
 }

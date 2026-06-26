@@ -521,5 +521,21 @@
   "calculator.percent": "Prosent",
   "calculator.preview": "Forhåndsvisning av beregning",
   "calculator.subtract": "Trekk fra",
-  "calculator.title": "Kalkulator"
+  "calculator.title": "Kalkulator",
+  "currencyConverter.amount": "Beløp",
+  "currencyConverter.commonValues": "Vanlige verdier",
+  "currencyConverter.convertedAmount": "Konvertert beløp",
+  "currencyConverter.fromCurrency": "Fra valuta",
+  "currencyConverter.invalidAmount": "Skriv inn et gyldig beløp",
+  "currencyConverter.noRates": "Ingen valutakurser er tilgjengelige offline ennå. Koble til internett for å laste dem ned.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Konverteringskurser",
+  "currencyConverter.ratesOutdated": "Konverteringskursene kan være utdaterte",
+  "currencyConverter.ratesOutdatedHelp": "De nyeste kursene kunne ikke lastes ned. Koble til internett og prøv igjen.",
+  "currencyConverter.ratesUpdated": "Sist hentet av serveren den {date}",
+  "currencyConverter.refreshRates": "Oppdater kurser",
+  "currencyConverter.swap": "Bytt valutaer",
+  "currencyConverter.title": "Valutakalkulator",
+  "currencyConverter.toCurrency": "Til valuta",
+  "overview.menu": "Oversiktsmeny"
 }

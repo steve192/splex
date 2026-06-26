@@ -521,5 +521,21 @@
   "calculator.percent": "Percentuale",
   "calculator.preview": "Anteprima del calcolo",
   "calculator.subtract": "Sottrai",
-  "calculator.title": "Calcolatrice"
+  "calculator.title": "Calcolatrice",
+  "currencyConverter.amount": "Importo",
+  "currencyConverter.commonValues": "Valori comuni",
+  "currencyConverter.convertedAmount": "Importo convertito",
+  "currencyConverter.fromCurrency": "Valuta di origine",
+  "currencyConverter.invalidAmount": "Inserisci un importo valido",
+  "currencyConverter.noRates": "Non sono ancora disponibili tassi di cambio offline. Connettiti a internet per scaricarli.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Tassi di conversione",
+  "currencyConverter.ratesOutdated": "I tassi di conversione potrebbero essere obsoleti",
+  "currencyConverter.ratesOutdatedHelp": "Non è stato possibile scaricare i tassi più recenti. Connettiti a internet e riprova.",
+  "currencyConverter.ratesUpdated": "Ultimo download dal server il {date}",
+  "currencyConverter.refreshRates": "Aggiorna tassi",
+  "currencyConverter.swap": "Scambia valute",
+  "currencyConverter.title": "Convertitore di valuta",
+  "currencyConverter.toCurrency": "Valuta di destinazione",
+  "overview.menu": "Menu panoramica"
 }

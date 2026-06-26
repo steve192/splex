@@ -521,5 +521,21 @@
   "calculator.percent": "Pertschient",
   "calculator.preview": "Previsualisaziun dal calcul",
   "calculator.subtract": "Subtrair",
-  "calculator.title": "Calculatur"
+  "calculator.title": "Calculatur",
+  "currencyConverter.amount": "Import",
+  "currencyConverter.commonValues": "Valurs usitads",
+  "currencyConverter.convertedAmount": "Import convertì",
+  "currencyConverter.fromCurrency": "Valuta da partenza",
+  "currencyConverter.invalidAmount": "Endatescha in import valaivel",
+  "currencyConverter.noRates": "I na dat anc naginas cursas da stgomi offline. Collia cun l’internet per las telechargiar.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Cursas da conversiun",
+  "currencyConverter.ratesOutdated": "Las cursas da conversiun pon esser antiquadas",
+  "currencyConverter.ratesOutdatedHelp": "Las pli novas cursas na pudevan betg vegnir telechargiadas. Collia cun l’internet ed emprova anc ina giada.",
+  "currencyConverter.ratesUpdated": "Ultima giada telechargià dal server ils {date}",
+  "currencyConverter.refreshRates": "Actualisar cursas",
+  "currencyConverter.swap": "Barattar valutas",
+  "currencyConverter.title": "Conversur da valuta",
+  "currencyConverter.toCurrency": "Valuta da destinaziun",
+  "overview.menu": "Menu da survista"
 }

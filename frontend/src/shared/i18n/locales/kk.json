@@ -521,5 +521,21 @@
   "calculator.percent": "Пайыз",
   "calculator.preview": "Есептеу алдын ала көрінісі",
   "calculator.subtract": "Азайту",
-  "calculator.title": "Калькулятор"
+  "calculator.title": "Калькулятор",
+  "currencyConverter.amount": "Сома",
+  "currencyConverter.commonValues": "Жиі мәндер",
+  "currencyConverter.convertedAmount": "Айырбасталған сома",
+  "currencyConverter.fromCurrency": "Бастапқы валюта",
+  "currencyConverter.invalidAmount": "Жарамды соманы енгізіңіз",
+  "currencyConverter.noRates": "Офлайн режимінде валюта бағамдары әлі қолжетімді емес. Оларды жүктеу үшін интернетке қосылыңыз.",
+  "currencyConverter.rate": "1 {from} = {rate} {to}",
+  "currencyConverter.rates": "Айырбастау бағамдары",
+  "currencyConverter.ratesOutdated": "Айырбастау бағамдары ескірген болуы мүмкін",
+  "currencyConverter.ratesOutdatedHelp": "Соңғы бағамдарды жүктеу мүмкін болмады. Интернетке қосылып, қайтадан көріңіз.",
+  "currencyConverter.ratesUpdated": "Сервер соңғы рет жүктеген уақыт: {date}",
+  "currencyConverter.refreshRates": "Бағамдарды жаңарту",
+  "currencyConverter.swap": "Валюталарды ауыстыру",
+  "currencyConverter.title": "Валюта айырбастағыш",
+  "currencyConverter.toCurrency": "Мақсатты валюта",
+  "overview.menu": "Шолу мәзірі"
 }

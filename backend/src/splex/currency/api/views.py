@@ -1,22 +1,17 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from splex.currency.models import ExchangeRate
+from splex.currency.services import get_latest_rates_snapshot
 
 
 class CurrencyRatesView(APIView):
     def get(self, request):
-        rates = ExchangeRate.objects.all()[:100]
+        snapshot = get_latest_rates_snapshot()
         return Response(
-            [
-                {
-                    "base_currency": rate.base_currency,
-                    "quote_currency": rate.quote_currency,
-                    "rate": str(rate.rate),
-                    "source": rate.source,
-                    "fetched_at": rate.fetched_at,
-                }
-                for rate in rates
-            ]
+            {
+                "base_currency": snapshot.base_currency,
+                "rates": snapshot.rates,
+                "source": snapshot.source,
+                "fetched_at": snapshot.fetched_at.isoformat(),
+            }
         )
-

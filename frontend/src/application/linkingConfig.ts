@@ -31,6 +31,7 @@ export const appLinkingScreens = {
       Overview: {
         screens: {
           OverviewHome: "",
+          CurrencyConverter: "currency-converter",
           CreateGroup: "groups/new",
           GroupDetail: { path: "groups/:id", parse: detailParams },
           GroupSettings: { path: "groups/:id/settings", parse: detailParams },
