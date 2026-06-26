@@ -1,6 +1,7 @@
 import { ApiClient } from "../api/client";
 import { PendingMutation, syncPendingMutations } from "../sync/queue";
 import { ContextType } from "../types/models";
+import { ApiErrorDescriptor } from "../lib/apiErrors";
 
 export type PendingExpenseDraft = {
   mutationId: string;
@@ -12,7 +13,7 @@ export type PendingExpenseDraft = {
   date: string;
   createdAt: string;
   status: PendingMutation["status"];
-  lastError?: string;
+  lastError?: ApiErrorDescriptor;
 };
 
 export function pendingExpenseContextKey(contextType: ContextType, contextId: number): string {

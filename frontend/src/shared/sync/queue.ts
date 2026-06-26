@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ApiError, ApiClient } from "../api/client";
+import { ApiClient } from "../api/client";
+import { ApiErrorDescriptor, apiErrorDescriptor } from "../lib/apiErrors";
 
 export type PendingMutation = {
   id: string;
@@ -8,24 +9,27 @@ export type PendingMutation = {
   payload: unknown;
   createdAt: string;
   status: "pending" | "syncing" | "failed";
-  lastError?: string;
+  lastError?: ApiErrorDescriptor;
 };
 
 const STORAGE_KEY = "splex.pendingMutations";
 
 async function read(): Promise<PendingMutation[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
-  return raw ? (JSON.parse(raw) as PendingMutation[]) : [];
+  if (!raw) return [];
+  return (JSON.parse(raw) as Array<PendingMutation & { lastError?: ApiErrorDescriptor | string }>).map(
+    (mutation) => ({
+      ...mutation,
+      lastError:
+        typeof mutation.lastError === "string"
+          ? { message: mutation.lastError }
+          : mutation.lastError
+    })
+  );
 }
 
 async function write(mutations: PendingMutation[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mutations));
-}
-
-function syncErrorMessage(error: unknown): string {
-  if (error instanceof ApiError) return error.message;
-  if (error instanceof Error) return error.message;
-  return String(error);
 }
 
 export const syncPendingMutations = {
@@ -55,7 +59,7 @@ export const syncPendingMutations = {
           payload: mutation.payload
         });
       } catch (error) {
-        remaining.push({ ...mutation, status: "failed", lastError: syncErrorMessage(error) });
+        remaining.push({ ...mutation, status: "failed", lastError: apiErrorDescriptor(error) });
       }
     }
     await write(remaining);

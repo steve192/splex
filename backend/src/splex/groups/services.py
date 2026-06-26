@@ -12,6 +12,7 @@ from splex.notifications.services import create_notifications_for_activity
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
+from splex.shared.errors import DomainError, DomainPermissionError, ErrorCode
 from splex.shared.uploads import delete_stored_image, save_data_url_image
 
 
@@ -85,13 +86,19 @@ def add_registered_participant(*, actor, group: Group, participant: Participant)
     assert_group_member(actor, group)
     actor_participant = get_or_create_user_participant(actor)
     if participant.id == actor_participant.id:
-        raise ValueError("You are already a member of this group.")
+        raise DomainError(ErrorCode.GROUP_ALREADY_MEMBER, "You are already a member.")
     if active_friendship_for(actor_participant, participant) is None:
-        raise ValueError("Only existing friends can be added as registered members.")
+        raise DomainError(
+            ErrorCode.GROUP_EXISTING_FRIEND_REQUIRED,
+            "Only existing friends can be added.",
+        )
 
     _, status = activate_group_membership(group=group, participant=participant)
     if status == "already_active":
-        raise ValueError("Participant is already a member of this group.")
+        raise DomainError(
+            ErrorCode.GROUP_PARTICIPANT_ALREADY_MEMBER,
+            "Participant is already a member.",
+        )
 
     ensure_friendships_for_group(group)
     _record_participant_added(actor, group, participant)
@@ -102,7 +109,7 @@ def add_registered_participant(*, actor, group: Group, participant: Participant)
 def update_group(*, actor, group: Group, data: dict) -> Group:
     assert_group_member(actor, group)
     if group.deleted_at:
-        raise ValueError("Deleted groups cannot be changed.")
+        raise DomainError(ErrorCode.GROUP_DELETED, "Deleted groups cannot be changed.")
     changed = []
     old_icon_path = None
     if "name" in data:
@@ -125,7 +132,10 @@ def update_group(*, actor, group: Group, data: dict) -> Group:
             or Settlement.objects.filter(group=group).exists()
         )
         if has_ledger and data["default_currency"].upper() != group.default_currency:
-            raise ValueError("Group currency cannot be changed after ledger entries exist.")
+            raise DomainError(
+                ErrorCode.GROUP_CURRENCY_LOCKED,
+                "Group currency cannot be changed after ledger entries exist.",
+            )
         group.default_currency = data["default_currency"].upper()
         changed.append("default_currency")
     if "default_split_method" in data:
@@ -166,7 +176,7 @@ def delete_group(*, actor, group: Group, require_settled: bool = True) -> None:
     # leaving as the last member abandons the group outright - the only balances
     # left are with unregistered placeholders, so we don't force a settle-up.
     if require_settled and group_has_outstanding_balance(group):
-        raise ValueError("Settle up before deleting this group.")
+        raise DomainError(ErrorCode.GROUP_NOT_SETTLED, "Settle up before deleting this group.")
     now = timezone.now()
     group.deleted_at = now
     if not group.archived_at:
@@ -244,9 +254,12 @@ def remove_group_participant(*, actor, group: Group, participant: Participant) -
     if not GroupMembership.objects.filter(
         group=group, participant=participant, removed_at__isnull=True
     ).exists():
-        raise ValueError("Participant is not an active member of this group.")
+        raise DomainError(
+            ErrorCode.GROUP_PARTICIPANT_INACTIVE,
+            "Participant is not an active member.",
+        )
     if participant.user_id == actor.id:
-        raise ValueError("You cannot remove yourself from the group here.")
+        raise DomainError(ErrorCode.GROUP_REMOVE_SELF, "You cannot remove yourself here.")
 
     if participant.kind == Participant.Kind.UNREGISTERED:
         target_id = _settle_and_soft_delete(group=group, participant=participant)
@@ -322,9 +335,15 @@ def rename_unregistered_participant(
 ) -> Participant:
     assert_group_member(actor, group)
     if participant.kind != Participant.Kind.UNREGISTERED:
-        raise ValueError("Only unregistered participants can be renamed.")
+        raise DomainError(
+            ErrorCode.GROUP_RENAME_REGISTERED,
+            "Only unregistered participants can be renamed.",
+        )
     if not GroupMembership.objects.filter(group=group, participant=participant).exists():
-        raise ValueError("Participant is not in this group.")
+        raise DomainError(
+            ErrorCode.GROUP_PARTICIPANT_NOT_MEMBER,
+            "Participant is not in this group.",
+        )
     old_name = participant.display_name
     participant.display_name = display_name
     participant.save(update_fields=["display_name", "updated_at"])
@@ -347,7 +366,10 @@ def get_group_participant(user, group: Group) -> Participant:
     if not GroupMembership.objects.filter(
         group=group, participant=participant, removed_at__isnull=True
     ).exists():
-        raise PermissionError("You are not a member of this group.")
+        raise DomainPermissionError(
+            ErrorCode.GROUP_MEMBER_REQUIRED,
+            "You are not a member of this group.",
+        )
     return participant
 
 

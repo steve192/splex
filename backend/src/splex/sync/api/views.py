@@ -13,7 +13,10 @@ from splex.expenses.services import create_expense
 from splex.friends.models import Friendship
 from splex.groups.models import Group
 from splex.ledger.serializers import serialize_expense
+from splex.shared.errors import DomainError, ErrorCode
 from splex.sync.models import ClientMutation
+
+SYNC_MUTATION_FAILURE_MESSAGE = "The pending expense could not be synchronized."
 
 logger = logging.getLogger("splex.sync")
 
@@ -31,9 +34,12 @@ class SyncMutationsView(APIView):
             payload = request.data.get("payload", {})
 
             if not client_mutation_id:
-                raise ValueError("clientMutationId is required.")
+                raise DomainError(
+                    ErrorCode.SYNC_MUTATION_INVALID,
+                    "clientMutationId is required.",
+                )
             if not mutation_type:
-                raise ValueError("type is required.")
+                raise DomainError(ErrorCode.SYNC_MUTATION_INVALID, "type is required.")
 
             mutation, created = ClientMutation.objects.get_or_create(
                 user=request.user,
@@ -49,7 +55,10 @@ class SyncMutationsView(APIView):
                 mutation.status = ClientMutation.Status.FAILED
                 mutation.error = "Only create_expense mutations are supported."
                 mutation.save(update_fields=["status", "error"])
-                return Response({"detail": mutation.error}, status=status.HTTP_400_BAD_REQUEST)
+                raise DomainError(
+                    ErrorCode.SYNC_MUTATION_UNSUPPORTED,
+                    mutation.error,
+                )
 
             with transaction.atomic():
                 context_type = payload["context_type"]
@@ -66,15 +75,15 @@ class SyncMutationsView(APIView):
                         data=payload["expense"],
                     )
                 else:
-                    raise ValueError("Unsupported expense context.")
-                expense = (
-                    Expense.objects.prefetch_related(
-                        "payment_shares",
-                        "owed_shares",
-                        "receipts",
+                    raise DomainError(
+                        ErrorCode.SYNC_MUTATION_INVALID,
+                        "Unsupported expense context.",
                     )
-                    .get(id=expense.id)
-                )
+                expense = Expense.objects.prefetch_related(
+                    "payment_shares",
+                    "owed_shares",
+                    "receipts",
+                ).get(id=expense.id)
                 response_payload = {
                     "clientMutationId": client_mutation_id,
                     "type": mutation_type,
@@ -85,7 +94,14 @@ class SyncMutationsView(APIView):
                 mutation.processed_at = timezone.now()
                 mutation.save(update_fields=["response_payload", "status", "processed_at"])
             return Response(response_payload, status=status.HTTP_201_CREATED)
-        except Exception as exc:
+        except DomainError:
+            if mutation is not None:
+                ClientMutation.objects.filter(pk=mutation.pk).update(
+                    status=ClientMutation.Status.FAILED,
+                    error=SYNC_MUTATION_FAILURE_MESSAGE,
+                )
+            raise
+        except Exception:
             logger.exception(
                 "sync mutation failed",
                 extra={
@@ -97,6 +113,6 @@ class SyncMutationsView(APIView):
             if mutation is not None:
                 ClientMutation.objects.filter(pk=mutation.pk).update(
                     status=ClientMutation.Status.FAILED,
-                    error=str(exc),
+                    error=SYNC_MUTATION_FAILURE_MESSAGE,
                 )
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            raise

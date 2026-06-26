@@ -11,6 +11,7 @@ from splex.friends.models import Friendship
 from splex.notifications.services import create_notifications_for_activity
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
+from splex.shared.errors import DomainError, ErrorCode
 
 
 def accessible_friendships(user):
@@ -64,7 +65,7 @@ def end_friendship(actor, friendship: Friendship, participant: Participant) -> F
     from splex.balances.selectors import friendship_balance_for_participant
 
     if friendship_balance_for_participant(friendship, participant) != 0:
-        raise ValueError("Settle up before removing this friend.")
+        raise DomainError(ErrorCode.FRIEND_NOT_SETTLED, "Settle up before removing this friend.")
     other = other_participant(friendship, participant)
     friendship.ended_at = timezone.now()
     friendship.save(update_fields=["ended_at", "updated_at"])
@@ -121,7 +122,7 @@ def create_friendship(actor, other_participant, source=Friendship.Source.EXPLICI
     only (re-acceptance is a silent no-op so we don't spam notifications)."""
     actor_participant = get_or_create_user_participant(actor)
     if actor_participant.id == other_participant.id:
-        raise ValueError("You cannot befriend yourself.")
+        raise DomainError(ErrorCode.FRIEND_SELF, "You cannot befriend yourself.")
     friendship, created = get_or_create_friendship(
         actor_participant,
         other_participant,

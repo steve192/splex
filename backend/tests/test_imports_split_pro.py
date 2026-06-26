@@ -464,12 +464,14 @@ def test_endpoints_return_403_when_risky_imports_disabled(settings):
         "/api/imports/split-pro/users/", payload, format="json",
     )
     assert list_response.status_code == 403
+    assert list_response.data["error"]["code"] == "imports_disabled"
     import_response = api_client.post(
         "/api/imports/split-pro/",
         {**payload, "actor_user_id": 1},
         format="json",
     )
     assert import_response.status_code == 403
+    assert import_response.data["error"]["code"] == "imports_disabled"
 
 
 @pytest.mark.django_db

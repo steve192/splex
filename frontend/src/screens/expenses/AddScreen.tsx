@@ -722,17 +722,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
         navigateAfterSave();
-      } else if (error instanceof ApiError && error.data) {
-        // Extract field-specific validation errors
-        const fieldErrors = Object.entries(error.data)
-          .filter(([, value]) => Array.isArray(value))
-          .map(
-            ([field, messages]) =>
-              `${field}: ${(messages as string[]).join(", ")}`,
-          )
-          .join(" | ");
-        setMessage(fieldErrors || t("expense.saveFailed"));
-      } else if (error instanceof ApiError && error.offline) {
+      } else if (error instanceof ApiError) {
         setMessage(apiWriteErrorMessage(error, t));
       } else {
         setMessage(t("expense.saveFailed"));

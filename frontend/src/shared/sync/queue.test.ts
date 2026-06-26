@@ -91,15 +91,19 @@ describe("syncPendingMutations", () => {
 
     const remaining = await syncPendingMutations.list();
     expect(remaining).toHaveLength(1);
-    expect(remaining[0]).toMatchObject({ id: "bad", status: "failed", lastError: "network down" });
+    expect(remaining[0]).toMatchObject({
+      id: "bad",
+      status: "failed",
+      lastError: { message: "network down" }
+    });
   });
 
-  it("flush stringifies non-Error throwables", async () => {
+  it("does not persist arbitrary non-Error throwables as user-facing text", async () => {
     await syncPendingMutations.enqueue(mutation("bad"));
     const post = vi.fn().mockRejectedValue("boom");
 
     await syncPendingMutations.flush({ post } as never);
 
-    expect((await syncPendingMutations.list())[0].lastError).toBe("boom");
+    expect((await syncPendingMutations.list())[0].lastError).toEqual({});
   });
 });

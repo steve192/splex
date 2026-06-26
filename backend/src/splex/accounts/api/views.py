@@ -27,6 +27,7 @@ from splex.accounts.services import (
     delete_account,
     request_magic_login,
 )
+from splex.shared.errors import DomainError, ErrorCode
 from splex.shared.tos import render_legal_document
 from splex.shared.uploads import delete_stored_image, save_data_url_image
 
@@ -66,9 +67,11 @@ class UpdateLastLoginTokenRefreshView(TokenRefreshView):
                 user_model = get_user_model()
                 cutoff = timezone.now() - _LAST_LOGIN_UPDATE_INTERVAL
                 # Only update if last_login is stale (or never set), to keep DB writes minimal.
-                updated = user_model.objects.filter(pk=user_id).filter(
-                    Q(last_login__lt=cutoff) | Q(last_login__isnull=True)
-                ).update(last_login=timezone.now())
+                updated = (
+                    user_model.objects.filter(pk=user_id)
+                    .filter(Q(last_login__lt=cutoff) | Q(last_login__isnull=True))
+                    .update(last_login=timezone.now())
+                )
                 if updated:
                     logger.debug("Updated last_login via token refresh for user_id=%s", user_id)
             except Exception:
@@ -91,14 +94,10 @@ class LoginConfigView(APIView):
                     "android_client_id": settings.GOOGLE_ANDROID_CLIENT_ID or None,
                 },
                 "demo_mode_enabled": bool(getattr(settings, "DEMO_MODE_ENABLED", False)),
-                "risky_imports_enabled": bool(
-                    getattr(settings, "ENABLE_RISKY_IMPORTS", False)
-                ),
+                "risky_imports_enabled": bool(getattr(settings, "ENABLE_RISKY_IMPORTS", False)),
                 "map_tile_url": getattr(
-                    settings,
-                    "MAP_TILE_URL",
-                    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                )
+                    settings, "MAP_TILE_URL", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                ),
             }
         )
 
@@ -109,11 +108,8 @@ class GoogleAuthView(APIView):
     def post(self, request):
         id_token = request.data.get("id_token", "")
         if not id_token:
-            return Response({"detail": "id_token is required."}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            user, tokens = authenticate_with_google(id_token=id_token)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "Google sign-in failed.")
+        user, tokens = authenticate_with_google(id_token=id_token)
         return Response({"user": UserSerializer(user).data, "tokens": tokens})
 
 
@@ -124,11 +120,18 @@ class MagicLinkRequestView(APIView):
     def post(self, request):
         serializer = MagicLinkRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        request_magic_login(
-            serializer.validated_data["email"],
-            invite_token=serializer.validated_data.get("invite_token", ""),
-            locale=serializer.validated_data.get("locale", ""),
-        )
+        try:
+            request_magic_login(
+                serializer.validated_data["email"],
+                invite_token=serializer.validated_data.get("invite_token", ""),
+                locale=serializer.validated_data.get("locale", ""),
+            )
+        except Exception as exc:
+            raise DomainError(
+                ErrorCode.AUTH_EMAIL_SEND_FAILED,
+                "Could not send the login email.",
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            ) from exc
         return Response({"status": "sent"})
 
 
@@ -139,10 +142,7 @@ class MagicCodeVerifyView(APIView):
     def post(self, request):
         serializer = MagicCodeVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            user, tokens = authenticate_magic_code(**serializer.validated_data)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        user, tokens = authenticate_magic_code(**serializer.validated_data)
         return Response({"user": UserSerializer(user).data, "tokens": tokens})
 
 
@@ -153,10 +153,7 @@ class MagicTokenVerifyView(APIView):
     def post(self, request):
         serializer = MagicTokenVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            user, tokens = authenticate_magic_token(serializer.validated_data["token"])
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        user, tokens = authenticate_magic_token(serializer.validated_data["token"])
         return Response({"user": UserSerializer(user).data, "tokens": tokens})
 
 
@@ -251,14 +248,19 @@ class PaymentMethodListCreateView(APIView):
         try:
             parsed = parse_paypal_input(serializer.validated_data["paypal"])
         except PayPalParseError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            raise DomainError(
+                ErrorCode.PAYMENT_METHOD_INVALID,
+                "Enter a valid PayPal link, handle, or email address.",
+            ) from exc
         method = create_payment_method(
-            user=request.user, parsed=parsed,
+            user=request.user,
+            parsed=parsed,
             make_preferred=serializer.validated_data["make_preferred"],
         )
         method.refresh_from_db()
         return Response(
-            serialize_payment_method(method), status=status.HTTP_201_CREATED,
+            serialize_payment_method(method),
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -276,7 +278,9 @@ class PaymentMethodDetailView(APIView):
         from splex.accounts.payment_services import set_preferred_payment_method
 
         method = get_object_or_404(
-            PaymentMethod, id=payment_method_id, user=request.user,
+            PaymentMethod,
+            id=payment_method_id,
+            user=request.user,
         )
         serializer = PaymentMethodUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -295,7 +299,9 @@ class PaymentMethodDetailView(APIView):
         from splex.accounts.payment_services import delete_payment_method
 
         method = get_object_or_404(
-            PaymentMethod, id=payment_method_id, user=request.user,
+            PaymentMethod,
+            id=payment_method_id,
+            user=request.user,
         )
         delete_payment_method(user=request.user, method=method)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -318,7 +324,8 @@ class ParticipantPreferredPaymentView(APIView):
         from splex.participants.models import Participant
 
         participant = get_object_or_404(
-            Participant.objects.select_related("user"), id=participant_id,
+            Participant.objects.select_related("user"),
+            id=participant_id,
         )
         if participant.user_id is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
@@ -345,7 +352,8 @@ def _shares_context(viewer, target_participant) -> bool:
     if viewer_participant.id == target_participant.id:
         return True
     if GroupMembership.objects.filter(
-        participant=target_participant, removed_at__isnull=True,
+        participant=target_participant,
+        removed_at__isnull=True,
         group__memberships__participant=viewer_participant,
         group__memberships__removed_at__isnull=True,
         group__deleted_at__isnull=True,

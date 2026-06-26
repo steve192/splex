@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from splex.currency.models import ExchangeRate
+from splex.shared.errors import DomainError, ErrorCode
 from splex.shared.money import money
 
 
@@ -49,12 +50,21 @@ def get_latest_rate(base_currency: str, quote_currency: str) -> ExchangeRate:
         except (KeyError, requests.RequestException, ValueError) as exc:
             if cached:
                 return cached
-            raise ValueError("Currency conversion rate could not be fetched.") from exc
+            raise DomainError(
+                ErrorCode.CURRENCY_RATE_UNAVAILABLE,
+                "Currency conversion rate could not be fetched.",
+            ) from exc
     if settings.CURRENCY_RATE_PROVIDER == "placeholder":
         if cached:
             return cached
-        raise ValueError("Currency conversion provider is not configured.")
-    raise ValueError(f"Unsupported currency provider: {settings.CURRENCY_RATE_PROVIDER}")
+        raise DomainError(
+            ErrorCode.CURRENCY_RATE_UNAVAILABLE,
+            "Currency conversion provider is not configured.",
+        )
+    raise DomainError(
+        ErrorCode.CURRENCY_RATE_UNAVAILABLE,
+        f"Unsupported currency provider: {settings.CURRENCY_RATE_PROVIDER}",
+    )
 
 
 def convert(amount, base_currency: str, quote_currency: str):

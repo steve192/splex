@@ -255,7 +255,7 @@ def test_group_settlement_create_endpoint_validation_error_returns_400():
         format="json",
     )
     assert response.status_code == 400
-    assert "different" in str(response.data["detail"])
+    assert response.data["error"]["code"] == "settlement_participants_equal"
 
 
 @pytest.mark.django_db
@@ -304,7 +304,7 @@ def test_settlement_patch_returns_400_for_business_rule_violation():
         format="json",
     )
     assert response.status_code == 400
-    assert "different" in str(response.data["detail"])
+    assert response.data["error"]["code"] == "settlement_participants_equal"
 
 
 @pytest.mark.django_db

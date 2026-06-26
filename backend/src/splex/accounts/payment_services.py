@@ -11,6 +11,7 @@ from django.db import transaction
 
 from splex.accounts.models import PaymentMethod
 from splex.accounts.payments import ParsedPaypal
+from splex.shared.errors import DomainPermissionError, ErrorCode
 
 
 @transaction.atomic
@@ -48,7 +49,10 @@ def set_preferred_payment_method(*, user, method: PaymentMethod) -> PaymentMetho
     safety net.
     """
     if method.user_id != user.id:
-        raise PermissionError("Payment method does not belong to this user.")
+        raise DomainPermissionError(
+            ErrorCode.PAYMENT_METHOD_INVALID,
+            "Payment method does not belong to this user.",
+        )
     PaymentMethod.objects.filter(user=user).exclude(id=method.id).update(
         is_preferred=False,
     )
@@ -68,7 +72,10 @@ def delete_payment_method(*, user, method: PaymentMethod) -> None:
     oldest remaining method to preferred so the settle popup keeps having
     something to suggest."""
     if method.user_id != user.id:
-        raise PermissionError("Payment method does not belong to this user.")
+        raise DomainPermissionError(
+            ErrorCode.PAYMENT_METHOD_INVALID,
+            "Payment method does not belong to this user.",
+        )
     was_preferred = method.is_preferred
     method.delete()
     if not was_preferred:

@@ -8,6 +8,8 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from PIL import Image, ImageOps
 
+from splex.shared.errors import DomainError, ErrorCode
+
 logger = logging.getLogger(__name__)
 
 JPEG_CONTENT_TYPE = "image/jpeg"
@@ -24,11 +26,11 @@ SCALE_PERCENT_STEPS = (100, 80, 65)
 
 def save_data_url_image(*, data_url: str, folder: str) -> str:
     if not data_url.startswith("data:image/"):
-        raise ValueError("Expected an image data URL.")
+        raise DomainError(ErrorCode.IMAGE_INVALID, "Expected an image data URL.")
     try:
         header, encoded = data_url.split(",", 1)
     except ValueError as exc:
-        raise ValueError("Invalid image data URL.") from exc
+        raise DomainError(ErrorCode.IMAGE_INVALID, "Invalid image data URL.") from exc
     content_type = header.split(";", 1)[0].replace("data:", "")
     extension = {
         JPEG_CONTENT_TYPE: "jpg",
@@ -36,13 +38,13 @@ def save_data_url_image(*, data_url: str, folder: str) -> str:
         WEBP_CONTENT_TYPE: "webp",
     }.get(content_type)
     if not extension:
-        raise ValueError("Unsupported image type.")
+        raise DomainError(ErrorCode.IMAGE_TYPE_UNSUPPORTED, "Unsupported image type.")
     try:
         payload = base64.b64decode(encoded, validate=True)
     except binascii.Error as exc:
-        raise ValueError("Invalid image encoding.") from exc
+        raise DomainError(ErrorCode.IMAGE_INVALID, "Invalid image encoding.") from exc
     if len(payload) > MAX_SOURCE_IMAGE_UPLOAD_BYTES:
-        raise ValueError("Image is too large.")
+        raise DomainError(ErrorCode.IMAGE_TOO_LARGE, "Image is too large.")
     payload = validate_and_normalize_image(payload, content_type)
     path = default_storage.save(
         f"{folder}/{uuid.uuid4().hex}.{extension}",
@@ -71,15 +73,15 @@ def validate_and_normalize_image(payload: bytes, content_type: str) -> bytes:
         image = Image.open(BytesIO(payload))
         image.load()
     except OSError as exc:
-        raise ValueError("Invalid image file.") from exc
+        raise DomainError(ErrorCode.IMAGE_INVALID, "Invalid image file.") from exc
     image = ImageOps.exif_transpose(image)
     if image.width * image.height > MAX_IMAGE_PIXELS:
-        raise ValueError("Image dimensions are too large.")
+        raise DomainError(ErrorCode.IMAGE_TOO_LARGE, "Image dimensions are too large.")
 
     image = resize_image(image)
     normalized = encode_image(image, content_type)
     if len(normalized) > MAX_STORED_IMAGE_BYTES:
-        raise ValueError("Image is too large.")
+        raise DomainError(ErrorCode.IMAGE_TOO_LARGE, "Image is too large.")
     return normalized
 
 

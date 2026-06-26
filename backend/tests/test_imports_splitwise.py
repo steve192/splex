@@ -14,7 +14,7 @@ from rest_framework.test import APIClient
 
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.models import Group, GroupMembership
-from splex.imports.splitwise_client import SplitwiseAuthError
+from splex.imports.splitwise_client import SplitwiseAuthError, SplitwiseError
 from splex.imports.splitwise_service import import_from_splitwise
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
@@ -33,8 +33,7 @@ def _sw_user(sw_id: int, name: str) -> dict:
 class FakeSplitwiseClient:
     """In-memory stand-in for ``SplitwiseClient`` used in tests."""
 
-    def __init__(self, *, current_user, groups, friends, group_expenses,
-                 friend_expenses):
+    def __init__(self, *, current_user, groups, friends, group_expenses, friend_expenses):
         self._current_user = current_user
         self._groups = groups
         self._friends = friends
@@ -60,7 +59,9 @@ class FakeSplitwiseClient:
 def _make_user(email="me@example.com", currency="EUR"):
     User = get_user_model()
     return User.objects.create_user(
-        email=email, display_name="Me", default_currency=currency,
+        email=email,
+        display_name="Me",
+        default_currency=currency,
     )
 
 
@@ -111,7 +112,10 @@ def test_import_creates_group_with_unregistered_members_and_expense():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
 
     assert summary.groups_created == 1
@@ -138,8 +142,10 @@ def test_import_creates_group_with_unregistered_members_and_expense():
     assert payer.participant_id == actor_participant.id
     assert payer.amount == Decimal("30.00")
     owed_amounts = sorted(
-        amount for amount in ExpenseOwedShare.objects.filter(expense=expense)
-        .values_list("amount", flat=True)
+        amount
+        for amount in ExpenseOwedShare.objects.filter(expense=expense).values_list(
+            "amount", flat=True
+        )
     )
     assert owed_amounts == [Decimal("10.00"), Decimal("10.00"), Decimal("10.00")]
 
@@ -159,7 +165,10 @@ def test_import_skips_synthetic_non_group_bucket():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
 
     assert summary.groups_created == 1
@@ -194,7 +203,10 @@ def test_import_friend_creates_two_person_group_with_unregistered_friend():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
 
     assert summary.groups_created == 1
@@ -203,8 +215,7 @@ def test_import_friend_creates_two_person_group_with_unregistered_friend():
     members = list(group.memberships.filter(removed_at__isnull=True))
     assert len(members) == 2
     unregistered = [
-        m.participant for m in members
-        if m.participant.kind == Participant.Kind.UNREGISTERED
+        m.participant for m in members if m.participant.kind == Participant.Kind.UNREGISTERED
     ]
     assert [p.display_name for p in unregistered] == ["Pat Doe"]
 
@@ -247,7 +258,8 @@ def test_import_friend_skips_expenses_already_imported_via_group():
         current_user={"id": SELF_SW_ID},
         groups=[
             {
-                "id": 11, "name": "Trip",
+                "id": 11,
+                "name": "Trip",
                 "members": [
                     _sw_user(SELF_SW_ID, "Me"),
                     _sw_user(FRIEND_SW_ID, "Pat Doe"),
@@ -260,7 +272,10 @@ def test_import_friend_skips_expenses_already_imported_via_group():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
 
     # One group expense + one friend-only expense, in two different groups.
@@ -283,8 +298,12 @@ def test_import_skips_friends_by_default():
         friend_expenses={
             FRIEND_SW_ID: [
                 {
-                    "id": 99, "description": "Coffee", "cost": "8.00",
-                    "currency_code": "EUR", "date": "2026-02-03", "payment": False,
+                    "id": 99,
+                    "description": "Coffee",
+                    "cost": "8.00",
+                    "currency_code": "EUR",
+                    "date": "2026-02-03",
+                    "payment": False,
                     "users": [
                         _share(SELF_SW_ID, "Me", "8.00", "4.00"),
                         _share(FRIEND_SW_ID, "Pat Doe", "0", "4.00"),
@@ -308,7 +327,8 @@ def test_import_payment_expense_creates_settlement():
         current_user={"id": SELF_SW_ID},
         groups=[
             {
-                "id": 11, "name": "Trip",
+                "id": 11,
+                "name": "Trip",
                 "members": [_sw_user(SELF_SW_ID, "Me"), _sw_user(ALICE_SW_ID, "Alice")],
             }
         ],
@@ -316,8 +336,11 @@ def test_import_payment_expense_creates_settlement():
         group_expenses={
             11: [
                 {
-                    "id": 1, "description": "Payment", "cost": "25.00",
-                    "currency_code": "EUR", "date": "2026-01-20T00:00:00Z",
+                    "id": 1,
+                    "description": "Payment",
+                    "cost": "25.00",
+                    "currency_code": "EUR",
+                    "date": "2026-01-20T00:00:00Z",
                     "payment": True,
                     "users": [
                         _share(SELF_SW_ID, "Me", "25.00", "0"),
@@ -330,7 +353,10 @@ def test_import_payment_expense_creates_settlement():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
 
     assert summary.expenses_imported == 0
@@ -350,8 +376,11 @@ def test_import_skips_deleted_expenses():
         group_expenses={
             11: [
                 {
-                    "id": 1, "description": "Old", "cost": "5.00",
-                    "currency_code": "EUR", "date": "2026-01-01",
+                    "id": 1,
+                    "description": "Old",
+                    "cost": "5.00",
+                    "currency_code": "EUR",
+                    "date": "2026-01-01",
                     "deleted_at": "2026-01-02T12:00:00Z",
                     "users": [_share(SELF_SW_ID, "Me", "5.00", "5.00")],
                 }
@@ -361,7 +390,10 @@ def test_import_skips_deleted_expenses():
     )
 
     summary = import_from_splitwise(
-        actor=user, api_key="ignored", import_friends_as_groups=True, client=client,
+        actor=user,
+        api_key="ignored",
+        import_friends_as_groups=True,
+        client=client,
     )
     assert summary.expenses_imported == 0
     assert Expense.objects.count() == 0
@@ -377,7 +409,8 @@ def test_import_handles_rounding_drift_to_match_total():
         current_user={"id": SELF_SW_ID},
         groups=[
             {
-                "id": 11, "name": "Trip",
+                "id": 11,
+                "name": "Trip",
                 "members": [
                     _sw_user(SELF_SW_ID, "Me"),
                     _sw_user(ALICE_SW_ID, "Alice"),
@@ -389,8 +422,11 @@ def test_import_handles_rounding_drift_to_match_total():
         group_expenses={
             11: [
                 {
-                    "id": 1, "description": "Snacks", "cost": "10.00",
-                    "currency_code": "EUR", "date": "2026-01-10",
+                    "id": 1,
+                    "description": "Snacks",
+                    "cost": "10.00",
+                    "currency_code": "EUR",
+                    "date": "2026-01-10",
                     "payment": False,
                     "users": [
                         _share(SELF_SW_ID, "Me", "10.00", "3.33"),
@@ -416,8 +452,11 @@ def test_import_handles_rounding_drift_to_match_total():
 def test_import_raises_auth_error_when_current_user_missing():
     user = _make_user()
     client = FakeSplitwiseClient(
-        current_user={}, groups=[], friends=[],
-        group_expenses={}, friend_expenses={},
+        current_user={},
+        groups=[],
+        friends=[],
+        group_expenses={},
+        friend_expenses={},
     )
     with pytest.raises(SplitwiseAuthError):
         import_from_splitwise(actor=user, api_key="ignored", client=client)
@@ -439,7 +478,8 @@ def test_import_endpoint_returns_summary(monkeypatch):
         current_user={"id": SELF_SW_ID},
         groups=[
             {
-                "id": 11, "name": "Trip",
+                "id": 11,
+                "name": "Trip",
                 "members": [
                     _sw_user(SELF_SW_ID, "Me"),
                     _sw_user(ALICE_SW_ID, "Alice"),
@@ -450,8 +490,11 @@ def test_import_endpoint_returns_summary(monkeypatch):
         group_expenses={
             11: [
                 {
-                    "id": 1, "description": "Lunch", "cost": "12.00",
-                    "currency_code": "EUR", "date": "2026-03-01",
+                    "id": 1,
+                    "description": "Lunch",
+                    "cost": "12.00",
+                    "currency_code": "EUR",
+                    "date": "2026-03-01",
                     "payment": False,
                     "users": [
                         _share(SELF_SW_ID, "Me", "12.00", "6.00"),
@@ -463,17 +506,47 @@ def test_import_endpoint_returns_summary(monkeypatch):
         friend_expenses={},
     )
     monkeypatch.setattr(
-        "splex.imports.splitwise_service.SplitwiseClient", lambda api_key: fake,
+        "splex.imports.splitwise_service.SplitwiseClient",
+        lambda api_key: fake,
     )
 
     api_client = APIClient()
     api_client.force_authenticate(user=user)
     response = api_client.post(
-        "/api/imports/splitwise/", {"api_key": "dummy"}, format="json",
+        "/api/imports/splitwise/",
+        {"api_key": "dummy"},
+        format="json",
     )
     assert response.status_code == 200, response.content
     assert response.data["summary"]["groups_created"] == 1
     assert response.data["summary"]["expenses_imported"] == 1
+
+
+@pytest.mark.django_db
+def test_import_endpoint_does_not_expose_provider_error_detail(monkeypatch):
+    user = _make_user()
+
+    def fail_import(**_kwargs):
+        raise SplitwiseError("provider response: password=not-for-the-client")
+
+    monkeypatch.setattr("splex.imports.api.views.import_from_splitwise", fail_import)
+    api_client = APIClient()
+    api_client.force_authenticate(user=user)
+
+    response = api_client.post(
+        "/api/imports/splitwise/",
+        {"api_key": "dummy"},
+        format="json",
+    )
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "error": {
+            "code": "splitwise_failed",
+            "message": "Could not import data from Splitwise.",
+        }
+    }
+    assert "not-for-the-client" not in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -497,12 +570,11 @@ def test_iter_expenses_pages_through_multiple_pages(monkeypatch):
         calls.append(params)
         offset = params["offset"]
         if offset == 0:
-            return FakeResponse(
-                {"expenses": [{"id": i} for i in range(page_size)]}
-            )
+            return FakeResponse({"expenses": [{"id": i} for i in range(page_size)]})
         return FakeResponse({"expenses": [{"id": page_size}]})
 
     import requests
+
     session = requests.Session()
     session.get = fake_get  # type: ignore[assignment]
     client = splitwise_client_module.SplitwiseClient("key", session=session)

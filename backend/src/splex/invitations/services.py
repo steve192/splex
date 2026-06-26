@@ -18,6 +18,7 @@ from splex.invitations.models import Invitation
 from splex.notifications.services import create_notifications_for_activity
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.models import Settlement
+from splex.shared.errors import DomainError, ErrorCode
 
 
 def invitation_url(token: str) -> str:
@@ -256,7 +257,7 @@ def accept_invitation(*, actor, token: str):
         .get(token_hash=Invitation.hash_token(token))
     )
     if not invitation.is_valid():
-        raise ValueError("Invitation is invalid or expired.")
+        raise DomainError(ErrorCode.INVITATION_INVALID, "Invitation is invalid or expired.")
     if invitation.type == Invitation.Type.GROUP_JOIN:
         participant = get_or_create_user_participant(actor)
         _, status = activate_group_membership(group=invitation.group, participant=participant)
@@ -275,7 +276,7 @@ def accept_invitation(*, actor, token: str):
     elif invitation.type == Invitation.Type.CLAIM_PARTICIPANT:
         target = invitation.target_participant
         if target.user_id and target.user_id != actor.id:
-            raise ValueError("Participant has already been claimed.")
+            raise DomainError(ErrorCode.INVITATION_INVALID, "Participant has already been claimed.")
         _claim_participant(actor=actor, target=target)
         ensure_friendships_for_group(invitation.group)
         event = record_activity(
@@ -289,7 +290,7 @@ def accept_invitation(*, actor, token: str):
         invited_by_participant = get_or_create_user_participant(invitation.invited_by)
         create_friendship(actor, invited_by_participant, Friendship.Source.EXPLICIT)
     else:
-        raise ValueError("Unsupported invitation type.")
+        raise DomainError(ErrorCode.INVITATION_INVALID, "Unsupported invitation type.")
     invitation.accepted_by = actor
     invitation.accepted_at = timezone.now()
     invitation.save(update_fields=["accepted_by", "accepted_at"])

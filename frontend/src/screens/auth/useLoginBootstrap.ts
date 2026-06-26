@@ -13,6 +13,7 @@ import {
   tokenFromCurrentUrl,
   tokenFromUrl,
 } from "../../shared/lib/inviteLinks";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 
 import {
   normalizeLoginConfig,
@@ -73,7 +74,7 @@ function hydrateAndroidBackendUrl(api: LoginApi, setBackendUrl: (value: string) 
 async function finishGoogleRedirectLogin(
   loginWithGoogle: (idToken: string) => Promise<unknown>,
   setLoading: (value: boolean) => void,
-  onError: () => void
+  onError: (error: unknown) => void
 ) {
   if (Platform.OS !== "web") {
     return;
@@ -87,8 +88,8 @@ async function finishGoogleRedirectLogin(
   setLoading(true);
   try {
     await loginWithGoogle(googleResponse.idToken);
-  } catch {
-    onError();
+  } catch (error) {
+    onError(error);
   } finally {
     setLoading(false);
   }
@@ -121,7 +122,7 @@ async function loginWithMagicToken(
   token: string,
   loginWithToken: (token: string) => Promise<unknown>,
   setLoading: (value: boolean) => void,
-  onError: () => void
+  onError: (error: unknown) => void
 ) {
   inviteDebug("login screen found magic token; attempting login");
   setLoading(true);
@@ -131,7 +132,7 @@ async function loginWithMagicToken(
     clearUrlQuery();
   } catch (error) {
     inviteDebug("magic token login failed", error);
-    onError();
+    onError(error);
   } finally {
     setLoading(false);
   }
@@ -167,8 +168,8 @@ export function useLoginBootstrap({
       },
       () => setProvidersResolved(true)
     ).catch(() => undefined);
-    finishGoogleRedirectLogin(loginWithGoogle, setLoading, () =>
-      notifyError(t("auth.googleFailed"))
+    finishGoogleRedirectLogin(loginWithGoogle, setLoading, (error) =>
+      notifyError(apiWriteErrorMessage(error, t))
     ).catch(() => undefined);
 
     async function finishLinkBootstrap() {
@@ -182,8 +183,8 @@ export function useLoginBootstrap({
         tokenFromCurrentUrl() || tokenFromUrl(initialUrl)
       );
       if (token) {
-        await loginWithMagicToken(token, loginWithToken, setLoading, () =>
-          notifyError(t("auth.linkFailed"))
+        await loginWithMagicToken(token, loginWithToken, setLoading, (error) =>
+          notifyError(apiWriteErrorMessage(error, t))
         );
       }
     }

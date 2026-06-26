@@ -26,14 +26,11 @@ class SettlementDetailView(APIView):
         settlement = Settlement.objects.get(id=settlement_id, deleted_at__isnull=True)
         serializer = SettlementCreateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        try:
-            settlement = update_settlement(
-                actor=request.user,
-                settlement=settlement,
-                data=serializer.validated_data,
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        settlement = update_settlement(
+            actor=request.user,
+            settlement=settlement,
+            data=serializer.validated_data,
+        )
         settlement = Settlement.objects.select_related(
             "payer_participant__user", "receiver_participant__user"
         ).get(id=settlement.id)

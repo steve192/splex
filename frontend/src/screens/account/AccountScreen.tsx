@@ -26,7 +26,10 @@ import {
   SUPPORTED_LOCALES,
 } from "../../shared/i18n/locale";
 import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
-import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
+import {
+  apiErrorDescriptorMessage,
+  apiWriteErrorMessage,
+} from "../../shared/lib/apiErrors";
 import { appVersionLabel } from "../../shared/lib/appVersion";
 import { CURRENCIES } from "../../shared/lib/currencies";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
@@ -151,9 +154,9 @@ export function AccountScreen() {
     setPushOn(result.preference === "on");
     setPushStatus(result.lastStatus);
     setPushError(
-      result.lastErrorCode === "offline"
-        ? t("write.offline")
-        : result.lastError,
+      result.lastError
+        ? apiErrorDescriptorMessage(result.lastError, t, { write: true })
+        : undefined,
     );
     setPushBusy(false);
   }

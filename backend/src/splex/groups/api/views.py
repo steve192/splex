@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -42,6 +43,7 @@ from splex.notifications.reminders import (
 from splex.participants.models import Participant
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.services import create_settlement
+from splex.shared.errors import DomainError, ErrorCode
 
 
 def get_active_group(group_id):
@@ -49,14 +51,11 @@ def get_active_group(group_id):
 
 
 def user_groups_queryset(user):
-    return (
-        Group.objects.filter(
-            memberships__participant__user=user,
-            memberships__removed_at__isnull=True,
-            deleted_at__isnull=True,
-        )
-        .distinct()
-    )
+    return Group.objects.filter(
+        memberships__participant__user=user,
+        memberships__removed_at__isnull=True,
+        deleted_at__isnull=True,
+    ).distinct()
 
 
 class GroupListCreateView(APIView):
@@ -99,28 +98,19 @@ class GroupDetailView(APIView):
         group = get_active_group(group_id)
         serializer = GroupUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            group = update_group(actor=request.user, group=group, data=serializer.validated_data)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        group = update_group(actor=request.user, group=group, data=serializer.validated_data)
         return Response(GroupSerializer(group, context={"user": request.user}).data)
 
     def delete(self, request, group_id):
         group = get_active_group(group_id)
-        try:
-            delete_group(actor=request.user, group=group)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        delete_group(actor=request.user, group=group)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class GroupLeaveView(APIView):
     def post(self, request, group_id):
         group = get_active_group(group_id)
-        try:
-            leave_group(actor=request.user, group=group)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        leave_group(actor=request.user, group=group)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -135,14 +125,11 @@ class GroupParticipantsView(APIView):
                 id=serializer.validated_data["friend_participant_id"],
                 user__isnull=False,
             )
-            try:
-                participant = add_registered_participant(
-                    actor=request.user,
-                    group=group,
-                    participant=friend_participant,
-                )
-            except ValueError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            participant = add_registered_participant(
+                actor=request.user,
+                group=group,
+                participant=friend_participant,
+            )
         else:
             participant = add_unregistered_participant(
                 actor=request.user,
@@ -158,24 +145,18 @@ class GroupParticipantDetailView(APIView):
         participant = Participant.objects.get(id=participant_id)
         serializer = RenameParticipantSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            participant = rename_unregistered_participant(
-                actor=request.user,
-                group=group,
-                participant=participant,
-                display_name=serializer.validated_data["display_name"],
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        participant = rename_unregistered_participant(
+            actor=request.user,
+            group=group,
+            participant=participant,
+            display_name=serializer.validated_data["display_name"],
+        )
         return Response(ParticipantSerializer(participant).data)
 
     def delete(self, request, group_id, participant_id):
         group = get_active_group(group_id)
         participant = Participant.objects.get(id=participant_id)
-        try:
-            remove_group_participant(actor=request.user, group=group, participant=participant)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        remove_group_participant(actor=request.user, group=group, participant=participant)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -205,10 +186,12 @@ class GroupSettleReminderView(APIView):
         amount = request.data.get("amount")
         currency = (request.data.get("currency") or group.default_currency).upper()
         if not participant_id or amount in (None, ""):
-            return Response(
-                {"detail": "participant_id and amount are required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            fields = {}
+            if not participant_id:
+                fields["participant_id"] = ["This field is required."]
+            if amount in (None, ""):
+                fields["amount"] = ["This field is required."]
+            raise ValidationError(fields)
         target = get_object_or_404(
             Participant.objects.select_related("user"),
             id=participant_id,
@@ -216,18 +199,18 @@ class GroupSettleReminderView(APIView):
             group_memberships__removed_at__isnull=True,
         )
         if target.user_id is None:
-            return Response(
-                {"detail": "Cannot remind an unregistered member."},
-                status=status.HTTP_400_BAD_REQUEST,
+            raise DomainError(
+                ErrorCode.REMINDER_TARGET_UNREGISTERED,
+                "This person cannot receive reminders because they do not have an account.",
             )
         if target.user_id == request.user.id:
-            return Response(
-                {"detail": "You cannot send yourself a reminder."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise DomainError(ErrorCode.REMINDER_SELF, "You cannot send yourself a reminder.")
         sent, _errors = send_settle_reminder_in_group(
-            actor=request.user, group=group, debtor_user=target.user,
-            amount=amount, currency=currency,
+            actor=request.user,
+            group=group,
+            debtor_user=target.user,
+            amount=amount,
+            currency=currency,
         )
         return Response({"sent": bool(sent)})
 
@@ -242,7 +225,8 @@ class GroupTrackExpenseReminderView(APIView):
         group = get_active_group(group_id)
         assert_group_member(request.user, group)
         recipients, sent, _errors = send_track_expense_reminder_in_group(
-            actor=request.user, group=group,
+            actor=request.user,
+            group=group,
         )
         return Response({"recipients": recipients, "sent": sent})
 
@@ -306,14 +290,11 @@ class GroupSettlementsView(APIView):
         group = get_active_group(group_id)
         serializer = SettlementCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            settlement = create_settlement(
-                actor=request.user,
-                group=group,
-                data=serializer.validated_data,
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        settlement = create_settlement(
+            actor=request.user,
+            group=group,
+            data=serializer.validated_data,
+        )
         return Response(serialize_settlement(settlement), status=status.HTTP_201_CREATED)
 
 

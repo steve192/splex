@@ -14,8 +14,7 @@ import {
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useSnackbar } from "../../shared/feedback/SnackbarContext";
-import { ApiError } from "../../shared/api/client";
-import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
+import { useI18n } from "../../shared/i18n/I18nContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -39,21 +38,6 @@ const STEP_KEYS = [
   "splitProImport.step3",
   "splitProImport.step4",
 ];
-
-function extractApiDetail(
-  error: unknown,
-  fallback: string,
-  t: TranslateFn,
-): string {
-  if (error instanceof ApiError) {
-    if (error.offline) return apiWriteErrorMessage(error, t);
-    const detail = error.data?.detail;
-    if (typeof detail === "string" && detail.length > 0) return detail;
-    return fallback;
-  }
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
-}
 
 export function SplitProImportScreen() {
   const { t } = useI18n();
@@ -120,9 +104,7 @@ export function SplitProImportScreen() {
         : undefined;
       setSelectedUserId(match?.id ?? fetched[0]?.id ?? null);
     } catch (error) {
-      showSnackbar(
-        extractApiDetail(error, t("splitProImport.connectionFailed"), t),
-      );
+      showSnackbar(apiWriteErrorMessage(error, t));
     } finally {
       setConnecting(false);
     }
@@ -141,7 +123,7 @@ export function SplitProImportScreen() {
       setSummary(result.summary);
       setPassword("");
     } catch (error) {
-      showSnackbar(extractApiDetail(error, t("common.error"), t));
+      showSnackbar(apiWriteErrorMessage(error, t));
     } finally {
       setRunning(false);
     }

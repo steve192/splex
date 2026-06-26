@@ -14,6 +14,7 @@ from splex.expenses.services import (
 )
 from splex.groups.models import Group
 from splex.notifications.services import create_notifications_for_activity
+from splex.shared.errors import DomainError, ErrorCode
 from splex.shared.money import assert_sum, money
 
 EXPENSE_CONTEXT_GROUP = "group"
@@ -60,7 +61,10 @@ def _requested_context(data: dict) -> tuple[str | None, int | None]:
     if context_type is None and context_id is None:
         return None, None
     if context_type != EXPENSE_CONTEXT_GROUP or context_id is None:
-        raise ValueError("Only group expenses can be moved to another group.")
+        raise DomainError(
+            ErrorCode.EXPENSE_MOVE_GROUP_ONLY,
+            "Only group expenses can be moved to another group.",
+        )
     return context_type, context_id
 
 
@@ -69,7 +73,10 @@ def _resolve_update_context(*, actor, expense: Expense, data: dict):
     if context_type is None:
         return expense.group, expense.friendship
     if expense.friendship_id is not None:
-        raise ValueError("Friend expenses cannot be moved.")
+        raise DomainError(
+            ErrorCode.EXPENSE_FRIEND_MOVE_FORBIDDEN,
+            "Friend expenses cannot be moved.",
+        )
     if expense.group_id == context_id:
         return expense.group, None
     group = Group.objects.filter(
@@ -78,7 +85,10 @@ def _resolve_update_context(*, actor, expense: Expense, data: dict):
         archived_at__isnull=True,
     ).first()
     if group is None:
-        raise ValueError("Target group is not available.")
+        raise DomainError(
+            ErrorCode.EXPENSE_TARGET_GROUP_INVALID,
+            "Target group is not available.",
+        )
     ensure_context_access(actor, group, None)
     return group, None
 
@@ -93,8 +103,9 @@ def _assert_context_contains_shares(
     participant_ids = set(context_participants(group, friendship))
     share_participant_ids = {*payer_shares.keys(), *owed_shares.keys()}
     if not share_participant_ids.issubset(participant_ids):
-        raise ValueError(
-            "The target group must include every payer and payee on the expense."
+        raise DomainError(
+            ErrorCode.EXPENSE_TARGET_PARTICIPANTS_MISSING,
+            "The target group must include every payer and payee.",
         )
 
 

@@ -23,8 +23,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
-import { ApiClient, ApiError } from "../api/client";
+import { ApiClient } from "../api/client";
 import { ensureServiceWorkerRegistration } from "../lib/serviceWorker";
+import { ApiErrorDescriptor, apiErrorDescriptor } from "../lib/apiErrors";
 import { subscriptionMatchesServerKey, urlBase64ToArrayBuffer } from "../lib/webPush";
 import {
   decideLoginPushRegistration,
@@ -41,8 +42,7 @@ const LOCAL_PREF_KEY = "splex.push.devicePreference";
 export type DevicePushState = {
   preference: PushPreference;
   lastStatus: PushRegistrationStatus;
-  lastError?: string;
-  lastErrorCode?: "offline";
+  lastError?: ApiErrorDescriptor;
 };
 
 export async function getLocalPushPreference(): Promise<DevicePushState["preference"]> {
@@ -167,13 +167,11 @@ export async function setDevicePushEnabled(api: ApiClient, enabled: boolean): Pr
     await setLocalPushPreference(result.preference);
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.warn("[splex:push] registration failed", error);
     return {
       preference: "off",
       lastStatus: "error",
-      lastError: message,
-      lastErrorCode: error instanceof ApiError && error.offline ? "offline" : undefined
+      lastError: apiErrorDescriptor(error)
     };
   }
 }
@@ -232,13 +230,11 @@ export async function bootstrapPushAfterLogin(api: ApiClient): Promise<DevicePus
     }
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.warn("[splex:push] login registration failed", error);
     return {
       preference: "off",
       lastStatus: "error",
-      lastError: message,
-      lastErrorCode: error instanceof ApiError && error.offline ? "offline" : undefined
+      lastError: apiErrorDescriptor(error)
     };
   }
 }

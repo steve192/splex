@@ -10,6 +10,7 @@ from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.services import assert_group_member
 from splex.notifications.services import create_notifications_for_activity
 from splex.participants.services import get_or_create_user_participant
+from splex.shared.errors import DomainError, DomainPermissionError, ErrorCode
 from splex.shared.money import assert_sum, money, split_evenly
 
 
@@ -18,7 +19,10 @@ def context_currency(group=None, friendship=None) -> str:
         return group.default_currency
     if friendship:
         return friendship.default_currency
-    raise ValueError("Expense requires a group or friendship context.")
+    raise DomainError(
+        ErrorCode.EXPENSE_CONTEXT_REQUIRED,
+        "Expense requires a group or friendship context.",
+    )
 
 
 def context_participants(group=None, friendship=None):
@@ -41,7 +45,10 @@ def ensure_context_access(actor, group=None, friendship=None):
         friendship.participant_b_id,
     ]:
         return actor_participant
-    raise PermissionError("You cannot access this expense context.")
+    raise DomainPermissionError(
+        ErrorCode.EXPENSE_ACCESS_DENIED,
+        "You cannot access this expense context.",
+    )
 
 
 def _normalize_equal_all(total, payload, participant_ids):
@@ -67,7 +74,7 @@ def _normalize_percentage(total, payload, participant_ids):
         percent_sum += percent
         shares[int(item["participant_id"])] = money(total * percent / Decimal("100"))
     if percent_sum != Decimal("100"):
-        raise ValueError("Percentages must sum to 100.")
+        raise DomainError(ErrorCode.EXPENSE_PERCENTAGE_INVALID, "Percentages must sum to 100.")
     assert_sum("Percentage owed shares", shares.values(), total)
     return shares
 
@@ -87,7 +94,10 @@ def _normalize_adjusted_equal(total, payload, participant_ids):
         for participant_id, amount in base.items()
     }
     if any(amount < Decimal("0") for amount in adjusted.values()):
-        raise ValueError("Adjustments push someone's owed share below zero.")
+        raise DomainError(
+            ErrorCode.EXPENSE_ADJUSTMENT_NEGATIVE,
+            "Adjustments push an owed share below zero.",
+        )
     assert_sum("Adjusted owed shares", adjusted.values(), total)
     return adjusted
 
@@ -104,7 +114,7 @@ _SPLIT_NORMALIZERS = {
 def normalize_owed_shares(total, method: str, payload: dict, participant_ids):
     normalizer = _SPLIT_NORMALIZERS.get(method)
     if not normalizer:
-        raise ValueError(f"Unsupported split method: {method}")
+        raise DomainError(ErrorCode.EXPENSE_SPLIT_UNSUPPORTED, "Unsupported split method.")
     return normalizer(money(total), payload, participant_ids)
 
 

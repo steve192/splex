@@ -1,5 +1,7 @@
 from decimal import ROUND_HALF_UP, Decimal
 
+from splex.shared.errors import DomainError, ErrorCode
+
 CENT = Decimal("0.01")
 
 
@@ -10,7 +12,10 @@ def money(value) -> Decimal:
 def split_evenly(total: Decimal, participant_ids):
     participant_ids = list(participant_ids)
     if not participant_ids:
-        raise ValueError("At least one participant is required.")
+        raise DomainError(
+            ErrorCode.EXPENSE_SHARES_INVALID,
+            "At least one participant is required.",
+        )
     cents = int((money(total) * 100).to_integral_value())
     base = cents // len(participant_ids)
     remainder = cents % len(participant_ids)
@@ -24,5 +29,7 @@ def split_evenly(total: Decimal, participant_ids):
 def assert_sum(name: str, amounts, expected: Decimal) -> None:
     actual = money(sum((money(amount) for amount in amounts), Decimal("0")))
     if actual != money(expected):
-        raise ValueError(f"{name} must sum to {money(expected)}; got {actual}.")
-
+        raise DomainError(
+            ErrorCode.EXPENSE_SHARES_INVALID,
+            f"{name} must sum to {money(expected)}; got {actual}.",
+        )

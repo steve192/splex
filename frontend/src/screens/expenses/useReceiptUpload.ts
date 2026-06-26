@@ -1,8 +1,8 @@
 import { useNetInfo } from "@react-native-community/netinfo";
 import { useState } from "react";
-import { Alert } from "react-native";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { pickReceipt, uploadReceipt } from "../../shared/receipts/receiptService";
 import { ContextType, Receipt } from "../../shared/types/models";
@@ -33,6 +33,7 @@ export function useReceiptUpload({
 }: Options) {
   const { api } = useAuth();
   const { t } = useI18n();
+  const { showSnackbar } = useSnackbar();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -60,7 +61,7 @@ export function useReceiptUpload({
       const uploaded = await uploadReceipt(api, asset, ctx);
       setReceipts((current) => [...current, uploaded]);
     } catch (error) {
-      Alert.alert(receiptUploadErrorMessage(error, t));
+      showSnackbar(receiptUploadErrorMessage(error, t));
     } finally {
       setUploading(false);
     }

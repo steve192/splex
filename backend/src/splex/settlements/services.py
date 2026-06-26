@@ -7,6 +7,7 @@ from splex.currency.services import convert
 from splex.expenses.services import context_currency, context_participants, ensure_context_access
 from splex.notifications.services import create_notifications_for_activity
 from splex.settlements.models import Settlement
+from splex.shared.errors import DomainError, ErrorCode
 
 
 @transaction.atomic
@@ -17,11 +18,20 @@ def create_settlement(*, actor, group=None, friendship=None, data: dict) -> Sett
     converted_amount, _rate = convert(data["amount"], settlement_currency, currency)
     allowed_participant_ids = set(context_participants(group, friendship))
     if data["payer_participant_id"] not in allowed_participant_ids:
-        raise ValueError("Payer is not part of this context.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANT_INVALID,
+            "Payer is not part of this context.",
+        )
     if data["receiver_participant_id"] not in allowed_participant_ids:
-        raise ValueError("Receiver is not part of this context.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANT_INVALID,
+            "Receiver is not part of this context.",
+        )
     if data["payer_participant_id"] == data["receiver_participant_id"]:
-        raise ValueError("Payer and receiver must be different.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANTS_EQUAL,
+            "Payer and receiver must be different.",
+        )
     settlement = Settlement.objects.create(
         client_id=data.get("client_id", ""),
         group=group,
@@ -65,16 +75,25 @@ def soft_delete_settlement(*, actor, settlement: Settlement) -> Settlement:
 def update_settlement(*, actor, settlement: Settlement, data: dict) -> Settlement:
     ensure_context_access(actor, settlement.group, settlement.friendship)
     if settlement.deleted_at:
-        raise ValueError("Deleted settlements cannot be edited.")
+        raise DomainError(ErrorCode.SETTLEMENT_DELETED, "Deleted settlements cannot be edited.")
     allowed_participant_ids = set(context_participants(settlement.group, settlement.friendship))
     payer_id = data.get("payer_participant_id", settlement.payer_participant_id)
     receiver_id = data.get("receiver_participant_id", settlement.receiver_participant_id)
     if payer_id not in allowed_participant_ids:
-        raise ValueError("Payer is not part of this context.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANT_INVALID,
+            "Payer is not part of this context.",
+        )
     if receiver_id not in allowed_participant_ids:
-        raise ValueError("Receiver is not part of this context.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANT_INVALID,
+            "Receiver is not part of this context.",
+        )
     if payer_id == receiver_id:
-        raise ValueError("Payer and receiver must be different.")
+        raise DomainError(
+            ErrorCode.SETTLEMENT_PARTICIPANTS_EQUAL,
+            "Payer and receiver must be different.",
+        )
 
     settlement.payer_participant_id = payer_id
     settlement.receiver_participant_id = receiver_id

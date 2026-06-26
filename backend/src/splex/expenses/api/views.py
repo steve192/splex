@@ -10,6 +10,7 @@ from splex.expenses.services import ensure_context_access, soft_delete_expense
 from splex.expenses.services_update import update_expense
 from splex.groups.api.serializers import ExpenseCreateSerializer
 from splex.ledger.serializers import serialize_expense
+from splex.shared.errors import DomainError, ErrorCode
 
 
 class ExpenseDetailView(APIView):
@@ -26,12 +27,9 @@ class ExpenseDetailView(APIView):
         )
         serializer = ExpenseCreateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        try:
-            expense = update_expense(
-                actor=request.user, expense=expense, data=serializer.validated_data
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        expense = update_expense(
+            actor=request.user, expense=expense, data=serializer.validated_data
+        )
         expense = Expense.objects.prefetch_related("payment_shares", "owed_shares", "receipts").get(
             id=expense.id
         )
@@ -50,9 +48,9 @@ class LocationSuggestionsView(APIView):
         radius = request.query_params.get("radius", 100)
 
         if not latitude or not longitude:
-            return Response(
-                {"error": "latitude and longitude are required"},
-                status=status.HTTP_400_BAD_REQUEST,
+            raise DomainError(
+                ErrorCode.LOCATION_COORDINATES_INVALID,
+                "Latitude and longitude are required.",
             )
 
         try:
@@ -60,9 +58,9 @@ class LocationSuggestionsView(APIView):
             longitude = Decimal(longitude)
             radius = float(radius)
         except (ValueError, TypeError):
-            return Response(
-                {"error": "Invalid latitude, longitude, or radius"},
-                status=status.HTTP_400_BAD_REQUEST,
+            raise DomainError(
+                ErrorCode.LOCATION_COORDINATES_INVALID,
+                "Invalid latitude, longitude, or radius.",
             )
 
         # Simple bounding box query (good approximation for small radii)

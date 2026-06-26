@@ -8,7 +8,7 @@ import { useAuth } from "../../features/auth/AuthContext";
 import { RootStackParamList } from "../../application/navigationTypes";
 import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
-import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
+import { apiErrorMessage, apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import {
   clearUrlQuery,
   inviteDebug,
@@ -72,7 +72,7 @@ export function InvitationAcceptScreen({
     } catch (error) {
       inviteDebug("invitation preview request failed", error);
       setPreview(null);
-      setMessage(t("invite.invalid"));
+      setMessage(apiErrorMessage(error, t));
     }
   }
 

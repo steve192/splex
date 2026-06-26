@@ -6,6 +6,7 @@ import { Button, Divider } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
+import { apiWriteErrorMessage } from "../lib/apiErrors";
 import { startGoogleOAuthRedirect } from "./googleOAuthWeb";
 
 // Closes the in-app browser tab after the OAuth flow on native.
@@ -63,7 +64,7 @@ function GoogleLoginButtonNative({ clientId, androidClientId, onError }: Readonl
     }
     setBusy(true);
     loginWithGoogle(idToken)
-      .catch((error) => onError(`Login failed: ${error instanceof Error ? error.message : String(error)}`))
+      .catch((error) => onError(apiWriteErrorMessage(error, t)))
       .finally(() => setBusy(false));
   }, [response]);
 

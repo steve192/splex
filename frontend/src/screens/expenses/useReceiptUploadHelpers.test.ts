@@ -8,7 +8,8 @@ import { receiptUploadErrorMessage } from "./useReceiptUploadHelpers";
 const translations: Record<string, string> = {
   "common.error": "generic-error",
   "write.offline": "offline-write",
-  "receipts.uploadFailed": "upload-failed"
+  "receipts.uploadFailed": "upload-failed",
+  "receipts.typeInvalid": "unsupported-file-type"
 };
 const t = (key: string) => translations[key] ?? key;
 
@@ -23,6 +24,18 @@ describe("receiptUploadErrorMessage", () => {
     expect(receiptUploadErrorMessage(new ApiError("Network unavailable", { offline: true }), t)).toBe(
       "offline-write"
     );
+  });
+
+  it("uses the translated receipt message for a typed backend upload error", () => {
+    expect(
+      receiptUploadErrorMessage(
+        new ApiError("Unsupported file type.", {
+          status: 400,
+          code: "receipt_type_invalid"
+        }),
+        t
+      )
+    ).toBe("unsupported-file-type");
   });
 
   it("preserves backend validation messages", () => {

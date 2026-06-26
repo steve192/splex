@@ -15,6 +15,7 @@ from splex.accounts.email_copy import build_email_content
 from splex.accounts.models import MagicLoginChallenge
 from splex.notifications.models import DeviceToken, WebPushSubscription
 from splex.participants.services import get_or_create_user_participant
+from splex.shared.errors import DomainError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,10 @@ def authenticate_magic_code(email: str, code: str):
             return consume_challenge(challenge)
         if challenge is not None and challenge.is_valid():
             _record_failed_code_attempt(challenge)
-    raise ValueError("Invalid or expired login code.")
+    raise DomainError(
+        ErrorCode.AUTH_LOGIN_CODE_INVALID,
+        "Invalid or expired login code.",
+    )
 
 
 def _record_failed_code_attempt(challenge) -> None:
@@ -142,7 +146,10 @@ def authenticate_magic_token(token: str):
         MagicLoginChallenge.objects.select_for_update().filter(token_hash=token_hash).first()
     )
     if not challenge or not challenge.is_valid():
-        raise ValueError("Invalid or expired login token.")
+        raise DomainError(
+            ErrorCode.AUTH_LOGIN_TOKEN_INVALID,
+            "Invalid or expired login token.",
+        )
     return consume_challenge(challenge)
 
 
@@ -175,7 +182,7 @@ def authenticate_with_google(*, id_token: str):
         if cid
     }
     if not allowed_client_ids:
-        raise ValueError("Google login is not configured on this server.")
+        raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "Google login is not configured.")
 
     try:
         resp = http_requests.get(
@@ -185,21 +192,24 @@ def authenticate_with_google(*, id_token: str):
         )
         resp.raise_for_status()
         payload = resp.json()
-    except Exception:
-        raise ValueError("Could not verify Google token.")
+    except Exception as exc:
+        raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "Could not verify Google token.") from exc
 
     if payload.get("iss") not in GOOGLE_ISSUERS:
-        raise ValueError("Token issuer is not Google.")
+        raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "Token issuer is not Google.")
 
     if payload.get("aud") not in allowed_client_ids:
-        raise ValueError("Token audience does not match configured client IDs.")
+        raise DomainError(
+            ErrorCode.AUTH_GOOGLE_FAILED,
+            "Token audience does not match configured client IDs.",
+        )
 
     if payload.get("email_verified") not in (True, "true"):
-        raise ValueError("Google account email is not verified.")
+        raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "Google account email is not verified.")
 
     email = payload.get("email", "").strip().lower()
     if not email:
-        raise ValueError("No email address in Google token.")
+        raise DomainError(ErrorCode.AUTH_GOOGLE_FAILED, "No email address in Google token.")
 
     user_model = get_user_model()
     if not settings.ALLOW_REGISTRATION:
@@ -207,7 +217,10 @@ def authenticate_with_google(*, id_token: str):
             user = user_model.objects.get(email=email)
             created = False
         except user_model.DoesNotExist:
-            raise ValueError("Registration is disabled on this server.")
+            raise DomainError(
+                ErrorCode.AUTH_REGISTRATION_DISABLED,
+                "Registration is disabled on this server.",
+            )
     else:
         user, created = user_model.objects.get_or_create(
             email=email,
@@ -226,7 +239,10 @@ def consume_challenge(challenge):
             user = user_model.objects.get(email=challenge.email)
             created = False
         except user_model.DoesNotExist:
-            raise ValueError("Registration is disabled on this server.")
+            raise DomainError(
+                ErrorCode.AUTH_REGISTRATION_DISABLED,
+                "Registration is disabled on this server.",
+            )
     else:
         user, created = user_model.objects.get_or_create(
             email=challenge.email,

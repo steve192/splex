@@ -3,13 +3,14 @@ import mimetypes
 
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.http import FileResponse
+from django.http import FileResponse, Http404
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from splex.invitations.models import Invitation
 from splex.invitations.services import accept_invitation
+from splex.shared.errors import DomainError, ErrorCode
 from splex.shared.media import media_storage_path
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,11 @@ class InvitationPreviewView(APIView):
             invitation = invitation_by_token(token)
         except Invitation.DoesNotExist:
             logger.info("Invitation preview failed token_prefix=%s reason=not_found", token[:6])
-            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+            raise DomainError(
+                ErrorCode.INVITATION_INVALID,
+                "Invitation not found.",
+                status=status.HTTP_404_NOT_FOUND,
+            )
         logger.info(
             "Invitation preview resolved token_prefix=%s invitation_id=%s type=%s valid=%s",
             token[:6],
@@ -83,31 +88,31 @@ class InvitationImageView(APIView):
         try:
             invitation = invitation_by_token(token)
         except Invitation.DoesNotExist:
-            return Response({"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND)
+            raise DomainError(
+                ErrorCode.INVITATION_INVALID,
+                "Invitation not found.",
+                status=status.HTTP_404_NOT_FOUND,
+            )
         if not invitation.is_valid():
-            return Response({"detail": "Invitation is expired."}, status=status.HTTP_404_NOT_FOUND)
+            raise DomainError(
+                ErrorCode.INVITATION_INVALID,
+                "Invitation is expired.",
+                status=status.HTTP_404_NOT_FOUND,
+            )
         if kind == "inviter":
             image_url = invitation.invited_by.avatar_url
         elif kind == "group" and invitation.group:
             image_url = invitation.group.icon_url
         else:
-            return Response(
-                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise Http404(self.IMAGE_NOT_FOUND_DETAIL)
         if not image_url:
-            return Response(
-                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise Http404(self.IMAGE_NOT_FOUND_DETAIL)
         try:
             path = storage_path_from_media_url(image_url)
-        except ValueError:
-            return Response(
-                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
-            )
+        except ValueError as exc:
+            raise Http404(self.IMAGE_NOT_FOUND_DETAIL) from exc
         if not default_storage.exists(path):
-            return Response(
-                {"detail": self.IMAGE_NOT_FOUND_DETAIL}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise Http404(self.IMAGE_NOT_FOUND_DETAIL)
         content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
         return FileResponse(default_storage.open(path, "rb"), content_type=content_type)
 
@@ -122,14 +127,19 @@ class InvitationAcceptView(APIView):
         )
         try:
             invitation = accept_invitation(actor=request.user, token=token)
-        except (Invitation.DoesNotExist, ValueError) as exc:
+        except (Invitation.DoesNotExist, DomainError) as exc:
             logger.info(
                 "Invitation accept failed token_prefix=%s user_id=%s reason=%s",
                 token[:6],
                 getattr(request.user, "id", None),
                 exc,
             )
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            if isinstance(exc, DomainError):
+                raise
+            raise DomainError(
+                ErrorCode.INVITATION_INVALID,
+                "Invitation is invalid or expired.",
+            ) from exc
         logger.info(
             "Invitation accept succeeded token_prefix=%s invitation_id=%s user_id=%s",
             token[:6],

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import { ActivityIndicator, IconButton, List, Text, useTheme } from "react-native-paper";
 
 import { useAuth } from "../../features/auth/AuthContext";
+import { useSnackbar } from "../feedback/SnackbarContext";
 import { useI18n } from "../i18n/I18nContext";
 import { apiWriteErrorMessage } from "../lib/apiErrors";
 import type { Receipt } from "../types/models";
@@ -32,6 +33,7 @@ function formatBytes(bytes: number): string {
 export function ReceiptList({ receipts, allowRemove, onRemoved }: Readonly<ReceiptListProps>) {
   const { t } = useI18n();
   const { api } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const theme = useTheme();
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -44,7 +46,7 @@ export function ReceiptList({ receipts, allowRemove, onRemoved }: Readonly<Recei
     try {
       await openReceipt(api, receipt);
     } catch {
-      Alert.alert(t("receipts.openFailed"));
+      showSnackbar(t("receipts.openFailed"));
     } finally {
       setBusyId(null);
     }
@@ -56,7 +58,7 @@ export function ReceiptList({ receipts, allowRemove, onRemoved }: Readonly<Recei
       await deleteReceipt(api, receipt.id);
       onRemoved?.(receipt.id);
     } catch (error) {
-      Alert.alert(apiWriteErrorMessage(error, t));
+      showSnackbar(apiWriteErrorMessage(error, t));
     } finally {
       setBusyId(null);
     }

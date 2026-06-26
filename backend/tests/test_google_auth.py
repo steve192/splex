@@ -96,7 +96,7 @@ def test_google_login_rejects_wrong_audience(settings):
         )
 
     assert response.status_code == 400
-    assert "audience" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_google_failed"
 
 
 @pytest.mark.django_db
@@ -113,7 +113,7 @@ def test_google_login_rejects_wrong_issuer(settings):
         )
 
     assert response.status_code == 400
-    assert "issuer" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_google_failed"
 
 
 @pytest.mark.django_db
@@ -128,7 +128,7 @@ def test_google_login_rejects_unverified_email(settings):
         )
 
     assert response.status_code == 400
-    assert "verified" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_google_failed"
 
 
 @pytest.mark.django_db
@@ -143,7 +143,7 @@ def test_google_login_returns_400_when_not_configured(settings):
     )
 
     assert response.status_code == 400
-    assert "not configured" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_google_failed"
 
 
 @pytest.mark.django_db
@@ -170,7 +170,7 @@ def test_google_login_returns_400_when_tokeninfo_request_fails(settings):
         )
 
     assert response.status_code == 400
-    assert "verify" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_google_failed"
 
 
 # ---------------------------------------------------------------------------
@@ -238,7 +238,7 @@ def test_google_login_rejects_new_user_when_registration_disabled(settings):
         )
 
     assert response.status_code == 400
-    assert "Registration is disabled" in response.data["detail"]
+    assert response.data["error"]["code"] == "auth_registration_disabled"
 
     user_model = get_user_model()
     assert not user_model.objects.filter(email="newcomer@example.com").exists()

@@ -24,6 +24,7 @@ from splex.notifications.reminders import (
 )
 from splex.participants.services import get_or_create_user_participant
 from splex.settlements.services import create_settlement
+from splex.shared.errors import DomainError, ErrorCode
 
 
 class FriendListView(APIView):
@@ -57,10 +58,7 @@ class FriendDetailView(APIView):
 
     def delete(self, request, friendship_id):
         friendship, participant = ensure_friendship_member(request.user, friendship_id)
-        try:
-            end_friendship(request.user, friendship, participant)
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        end_friendship(request.user, friendship, participant)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -120,14 +118,11 @@ class FriendSettlementsView(APIView):
         friendship, _ = ensure_friendship_member(request.user, friendship_id)
         serializer = SettlementCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            settlement = create_settlement(
-                actor=request.user,
-                friendship=friendship,
-                data=serializer.validated_data,
-            )
-        except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        settlement = create_settlement(
+            actor=request.user,
+            friendship=friendship,
+            data=serializer.validated_data,
+        )
         return Response(serialize_settlement(settlement), status=status.HTTP_201_CREATED)
 
 
@@ -143,31 +138,28 @@ class FriendSettleReminderView(APIView):
 
     def post(self, request, friendship_id):
         friendship, current_participant = ensure_friendship_member(
-            request.user, friendship_id,
+            request.user,
+            friendship_id,
         )
         other = other_participant(friendship, current_participant)
-        if other.user_id is None:
-            return Response(
-                {"detail": "Cannot remind an unregistered friend."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         amount = request.data.get("amount")
-        currency = (
-            (request.data.get("currency") or friendship.default_currency).upper()
-        )
+        currency = (request.data.get("currency") or friendship.default_currency).upper()
         if amount in (None, ""):
             # Default the amount to whatever the friend currently owes so the
             # caller doesn't have to compute it - common case is "tap to nudge".
             balance = friendship_balance_for_participant(friendship, current_participant)
             if balance <= 0:
-                return Response(
-                    {"detail": "Your friend is not currently in debt."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                raise DomainError(
+                    ErrorCode.REMINDER_TARGET_NOT_IN_DEBT,
+                    "This person is not currently in debt.",
                 )
             amount = str(balance)
         sent, _errors = send_settle_reminder_in_friendship(
-            actor=request.user, friendship=friendship, debtor_user=other.user,
-            amount=amount, currency=currency,
+            actor=request.user,
+            friendship=friendship,
+            debtor_user=other.user,
+            amount=amount,
+            currency=currency,
         )
         return Response({"sent": bool(sent)})
 
@@ -180,15 +172,13 @@ class FriendTrackExpenseReminderView(APIView):
 
     def post(self, request, friendship_id):
         friendship, current_participant = ensure_friendship_member(
-            request.user, friendship_id,
+            request.user,
+            friendship_id,
         )
         other = other_participant(friendship, current_participant)
-        if other.user_id is None:
-            return Response(
-                {"detail": "Cannot remind an unregistered friend."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         sent, _errors = send_track_expense_reminder_in_friendship(
-            actor=request.user, friendship=friendship, other_user=other.user,
+            actor=request.user,
+            friendship=friendship,
+            other_user=other.user,
         )
         return Response({"sent": bool(sent)})

@@ -14,7 +14,6 @@ import {
 import { useAuth } from "../../features/auth/AuthContext";
 import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { TranslateFn, useI18n } from "../../shared/i18n/I18nContext";
-import { ApiError } from "../../shared/api/client";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
@@ -99,17 +98,7 @@ export function SplitwiseImportScreen() {
       setSummary(result.summary);
       setApiKey("");
     } catch (error) {
-      let message: string;
-      if (error instanceof ApiError && error.status === 401) {
-        message = t("splitwiseImport.invalidKey");
-      } else if (error instanceof ApiError && error.offline) {
-        message = apiWriteErrorMessage(error, t);
-      } else if (error instanceof Error && error.message) {
-        message = error.message;
-      } else {
-        message = t("common.error");
-      }
-      showSnackbar(message);
+      showSnackbar(apiWriteErrorMessage(error, t));
     } finally {
       setRunning(false);
     }

@@ -123,24 +123,60 @@ describe("ApiClient.request", () => {
     await expectation;
   });
 
-  it("throws ApiError with parsed data on error responses", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: "nope" }, 400));
+  it("throws ApiError with the canonical backend code, message, and parameters", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          error: {
+            code: "throttled",
+            message: "Request was throttled.",
+            params: { wait_seconds: 30 }
+          }
+        },
+        429
+      )
+    );
     const api = new ApiClient();
     await expect(api.get("/api/x/")).rejects.toMatchObject({
-      status: 400,
-      data: { detail: "nope" }
+      status: 429,
+      code: "throttled",
+      message: "Request was throttled.",
+      params: { wait_seconds: 30 },
+      data: {
+        error: {
+          code: "throttled",
+          message: "Request was throttled.",
+          params: { wait_seconds: 30 }
+        }
+      }
     });
+  });
+
+  it("never exposes a JSON error object as the Error message", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ error: { code: "validation_error" }, fields: { amount: ["Invalid."] } }, 400)
+    );
+    const api = new ApiClient();
+
+    const error = (await api.get("/api/x/").catch((caught) => caught)) as ApiError;
+
+    expect(error.message).toBe("Request failed with status 400.");
+    expect(error.message).not.toContain("{");
   });
 
   it("throws ApiError without data when error body is not JSON", async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response("<html>oops</html>", { status: 500, headers: { "content-type": "text/html" } })
+      new Response("internal-password=not-for-the-client", {
+        status: 500,
+        headers: { "content-type": "text/html" }
+      })
     );
     const api = new ApiClient();
     const error = (await api.get("/api/x/").catch((e) => e)) as ApiError;
     expect(error.status).toBe(500);
     expect(error.data).toBeUndefined();
-    expect(error.message).toContain("Unexpected HTML response");
+    expect(error.message).toBe("Request failed with status 500.");
+    expect(error.message).not.toContain("not-for-the-client");
   });
 
   it("throws ApiError when a 200 response is not JSON", async () => {
@@ -319,7 +355,12 @@ describe("ApiClient.uploadFile", () => {
     fileSystemUploadAsync.mockResolvedValueOnce({
       status: 400,
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ detail: "File type not recognized." })
+      body: JSON.stringify({
+        error: {
+          code: "receipt_invalid",
+          message: "File type not recognized."
+        }
+      })
     });
 
     await expect(
@@ -329,7 +370,14 @@ describe("ApiClient.uploadFile", () => {
       })
     ).rejects.toMatchObject({
       status: 400,
-      data: { detail: "File type not recognized." }
+      code: "receipt_invalid",
+      message: "File type not recognized.",
+      data: {
+        error: {
+          code: "receipt_invalid",
+          message: "File type not recognized."
+        }
+      }
     });
   });
 

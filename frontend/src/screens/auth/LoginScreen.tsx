@@ -17,6 +17,7 @@ import { appImages } from "../../shared/assets/images";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { detectDeviceLocale } from "../../shared/i18n/locale";
 import { LegalFooterLinks } from "../../shared/legal/LegalFooterLinks";
+import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import {
   inviteDebug,
   inviteTokenFromCurrentUrl,
@@ -110,7 +111,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
       inviteDebug("magic link request succeeded");
     } catch (error) {
       inviteDebug("magic link request failed", error);
-      notifyError(t("auth.sendFailed"));
+      notifyError(apiWriteErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
@@ -142,7 +143,7 @@ export function LoginScreen({ route }: Readonly<Props>) {
       inviteDebug("magic code verification succeeded");
     } catch (error) {
       inviteDebug("magic code verification failed", error);
-      notifyError(t("auth.codeFailed"));
+      notifyError(apiWriteErrorMessage(error, t));
     } finally {
       setLoading(false);
     }

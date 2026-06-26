@@ -12,6 +12,8 @@ export type Tokens = {
   refresh: string;
 };
 
+type ErrorParams = Record<string, string | number>;
+
 // Web always uses relative URLs - the PWA is served from the same host as the backend.
 // Native uses a configurable URL stored in AsyncStorage; EXPO_PUBLIC_DEFAULT_API_BASE_URL
 // is the pre-filled default shown on the login screen, baked in at build time.
@@ -30,6 +32,7 @@ function summarizeResponseBody(body: string): string {
 }
 
 function formatResponseError(url: string, status: number, body: string): string {
+  if (status >= 500) return `Request failed with status ${status}.`;
   const summary = summarizeResponseBody(body);
   return `${summary} (${status}) at ${url}`;
 }
@@ -82,12 +85,25 @@ export class ApiError extends Error {
   status?: number;
   offline: boolean;
   data?: Record<string, unknown>;
+  code?: string;
+  params?: ErrorParams;
 
-  constructor(message: string, options: { status?: number; offline?: boolean; data?: Record<string, unknown> } = {}) {
+  constructor(
+    message: string,
+    options: {
+      status?: number;
+      offline?: boolean;
+      data?: Record<string, unknown>;
+      code?: string;
+      params?: ErrorParams;
+    } = {}
+  ) {
     super(message);
     this.status = options.status;
     this.offline = options.offline ?? false;
     this.data = options.data;
+    this.code = options.code;
+    this.params = options.params;
   }
 }
 
@@ -172,10 +188,54 @@ function shouldRefreshAccessToken(response: Response, tokens: Tokens | null, ret
 
 function parseErrorData(text: string): Record<string, unknown> | undefined {
   try {
-    return JSON.parse(text) as Record<string, unknown>;
+    const parsed = JSON.parse(text) as unknown;
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : undefined;
   } catch {
     return undefined;
   }
+}
+
+function errorParams(value: unknown): ErrorParams | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const params = Object.entries(value).filter(
+    (entry): entry is [string, string | number] =>
+      typeof entry[1] === "string" || typeof entry[1] === "number"
+  );
+  return params.length ? Object.fromEntries(params) : undefined;
+}
+
+function backendError(data: Record<string, unknown> | undefined): {
+  code?: string;
+  message?: string;
+  params?: ErrorParams;
+} {
+  if (!data) return {};
+  const error = data.error;
+  if (error !== null && typeof error === "object" && !Array.isArray(error)) {
+    const payload = error as Record<string, unknown>;
+    return {
+      code: typeof payload.code === "string" ? payload.code : undefined,
+      message: typeof payload.message === "string" ? payload.message : undefined,
+      params: errorParams(payload.params)
+    };
+  }
+  return {};
+}
+
+function responseApiError(requestUrl: string, status: number, body: string): ApiError {
+  const data = parseErrorData(body);
+  const backend = backendError(data);
+  return new ApiError(
+    backend.message ?? (data ? `Request failed with status ${status}.` : formatResponseError(requestUrl, status, body)),
+    {
+      status,
+      data,
+      code: backend.code,
+      params: backend.params
+    }
+  );
 }
 
 async function readApiResponse<T>(path: string, requestUrl: string, response: Response): Promise<T> {
@@ -184,10 +244,7 @@ async function readApiResponse<T>(path: string, requestUrl: string, response: Re
     if (shouldLogPath(path)) {
       apiDebug("response not ok", { path, status: response.status, body: text });
     }
-    throw new ApiError(formatResponseError(requestUrl, response.status, text), {
-      status: response.status,
-      data: parseErrorData(text)
-    });
+    throw responseApiError(requestUrl, response.status, text);
   }
   if (response.status === 204) {
     return undefined as T;
@@ -365,16 +422,7 @@ export class ApiClient {
       return this.uploadFile<T>(path, file, true);
     }
     if (result.status >= 400) {
-      let errorData: Record<string, unknown> | undefined;
-      try {
-        errorData = parseJsonBody<Record<string, unknown>>(result.body);
-      } catch {
-        // Text might not be JSON, that's ok
-      }
-      throw new ApiError(formatResponseError(requestUrl, result.status, result.body), {
-        status: result.status,
-        data: errorData
-      });
+      throw responseApiError(requestUrl, result.status, result.body);
     }
     if (result.status === 204) {
       return undefined as T;
@@ -428,7 +476,7 @@ export class ApiClient {
       }
     }
     if (!response.ok) {
-      throw new ApiError(`Failed to fetch (${response.status})`, { status: response.status });
+      throw responseApiError(url, response.status, await response.text());
     }
     return response;
   }

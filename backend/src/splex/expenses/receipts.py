@@ -42,6 +42,7 @@ from splex.expenses.services import ensure_context_access
 from splex.friends.models import Friendship
 from splex.groups.models import Group
 from splex.groups.services import assert_group_member
+from splex.shared.errors import DomainError, DomainPermissionError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ _ALLOWED_TYPES: dict[str, tuple[str, callable]] = {
 _MAGIC_PROBE_BYTES = 16
 
 
-class ReceiptError(ValueError):
+class ReceiptError(DomainError):
     """Validation error raised for bad/oversize/unsupported receipts."""
 
 
@@ -100,8 +101,11 @@ def _detect_content_type(file_obj: IO[bytes], declared: str | None) -> str:
             return ct
     # Provide a clearer error if the user picked something obvious but unsupported.
     if declared and declared.lower() not in _ALLOWED_TYPES:
-        raise ReceiptError(f"Unsupported file type: {declared}")
-    raise ReceiptError("File type not recognized. Allowed: JPEG, PNG, WebP, PDF.")
+        raise ReceiptError(ErrorCode.RECEIPT_TYPE_INVALID, f"Unsupported file type: {declared}")
+    raise ReceiptError(
+        ErrorCode.RECEIPT_TYPE_INVALID,
+        "File type not recognized. Allowed: JPEG, PNG, WebP, PDF.",
+    )
 
 
 def _context_storage_prefix(*, group: Group | None, friendship: Friendship | None) -> str:
@@ -109,7 +113,10 @@ def _context_storage_prefix(*, group: Group | None, friendship: Friendship | Non
         return f"receipts/group-{group.id}"
     if friendship:
         return f"receipts/friend-{friendship.id}"
-    raise ReceiptError("Receipt requires a group or friendship context.")
+    raise ReceiptError(
+        ErrorCode.RECEIPT_CONTEXT_REQUIRED,
+        "Receipt requires a group or friendship context.",
+    )
 
 
 def _safe_filename(name: str) -> str:
@@ -138,6 +145,7 @@ def _enforce_group_quota(*, group: Group, new_file_size: int) -> None:
     if used + new_file_size > quota:
         remaining = max(0, quota - used)
         raise ReceiptError(
+            ErrorCode.RECEIPT_QUOTA_EXCEEDED,
             f"Group receipt storage quota exceeded. "
             f"Limit: {quota} bytes, currently used: {used} bytes, "
             f"available: {remaining} bytes."
@@ -162,7 +170,10 @@ def upload_receipt(
     The caller is responsible for closing ``file_obj`` after this returns.
     """
     if not group and not friendship and not expense:
-        raise ReceiptError("Receipt must be associated with a group, friendship or expense.")
+        raise ReceiptError(
+            ErrorCode.RECEIPT_CONTEXT_REQUIRED,
+            "Receipt must be associated with a group, friendship or expense.",
+        )
 
     if expense and not (group or friendship):
         # Reuse the expense's context if the caller did not pass one explicitly.
@@ -174,10 +185,14 @@ def upload_receipt(
 
     max_size = getattr(settings, "RECEIPT_MAX_FILE_SIZE_BYTES", 15 * 1024 * 1024)
     if size_bytes <= 0:
-        raise ReceiptError("Empty file.")
+        raise ReceiptError(ErrorCode.RECEIPT_EMPTY, "Empty file.")
     # max_size = 0 disables the per-file limit (unlimited).
     if max_size > 0 and size_bytes > max_size:
-        raise ReceiptError(f"File is too large. Maximum size is {max_size} bytes.")
+        raise ReceiptError(
+            ErrorCode.RECEIPT_TOO_LARGE,
+            f"File is too large. Maximum size is {max_size} bytes.",
+            params={"max_bytes": max_size},
+        )
 
     # Group quota applies regardless of whether this upload is a draft.
     if group is not None:
@@ -241,7 +256,10 @@ def delete_receipt(*, actor, receipt: Receipt) -> None:
         assert_group_member(actor, receipt.group)
     elif receipt.uploaded_by_id != actor.id:
         # Friendship-context, or no context at all: uploader only.
-        raise PermissionError("Only the uploader can delete this receipt.")
+        raise DomainPermissionError(
+            ErrorCode.RECEIPT_DELETE_FORBIDDEN,
+            "Only the uploader can delete this receipt.",
+        )
     _remove_storage_blob(receipt.storage_path)
     receipt.delete()
 

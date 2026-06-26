@@ -10,6 +10,7 @@ import {
 
 import { useI18n } from "../i18n/I18nContext";
 import { usePendingAction } from "../lib/usePendingAction";
+import { apiErrorDescriptorMessage } from "../lib/apiErrors";
 import { PendingMutation } from "../sync/queue";
 import { negativeColor } from "../ui/colors";
 import { styles } from "../ui/styles";
@@ -64,7 +65,11 @@ export function PendingExpenseList({
                 <List.Item
                   style={styles.listTile}
                   title={expense.description || t("expense.add")}
-                  description={`${t("expense.pendingSync")} - ${mutation.lastError ?? mutation.status}`}
+                  description={`${t("expense.pendingSync")} - ${
+                    mutation.lastError
+                      ? apiErrorDescriptorMessage(mutation.lastError, t, { write: true })
+                      : mutation.status
+                  }`}
                   right={() => (
                     <View style={styles.listTileRight}>
                       <Text>{`${expense.amount ?? ""} ${expense.currency ?? fallbackCurrency ?? ""}`}</Text>

@@ -97,7 +97,9 @@ def test_upload_rejects_unknown_file_type(alice, group, media_root):
         name="virus.exe",
     )
     assert response.status_code == 400
-    detail = response.json()["detail"].lower()
+    error = response.json()["error"]
+    assert error["code"] == "receipt_type_invalid"
+    detail = error["message"].lower()
     assert "unsupported" in detail or "not recognized" in detail
 
 
@@ -107,7 +109,7 @@ def test_upload_rejects_oversized_file(alice, group, media_root):
     with override_settings(RECEIPT_MAX_FILE_SIZE_BYTES=128):
         response = _upload(_auth_client(alice), group_id=group.id, content=big)
     assert response.status_code == 400
-    assert "too large" in response.json()["detail"].lower()
+    assert response.json()["error"]["code"] == "receipt_too_large"
 
 
 @pytest.mark.django_db
@@ -117,7 +119,7 @@ def test_per_group_quota_enforced(alice, group, media_root):
         assert r1.status_code == 201
         r2 = _upload(_auth_client(alice), group_id=group.id, content=PDF_BYTES + b"\x00" * 200)
         assert r2.status_code == 400
-        assert "quota" in r2.json()["detail"].lower()
+        assert r2.json()["error"]["code"] == "receipt_quota_exceeded"
 
 
 @pytest.mark.django_db

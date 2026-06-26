@@ -89,6 +89,7 @@ def test_group_settle_reminder_rejects_self_target():
         format="json",
     )
     assert response.status_code == 400
+    assert response.data["error"]["code"] == "reminder_self"
 
 
 @pytest.mark.django_db
@@ -99,7 +100,9 @@ def test_group_settle_reminder_rejects_unregistered_target():
     actor = _user("a@example.com")
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     placeholder = add_unregistered_participant(
-        actor=actor, group=group, display_name="Ghost",
+        actor=actor,
+        group=group,
+        display_name="Ghost",
     )
     response = _client(actor).post(
         f"/api/groups/{group.id}/reminders/settle/",
@@ -107,6 +110,28 @@ def test_group_settle_reminder_rejects_unregistered_target():
         format="json",
     )
     assert response.status_code == 400
+    assert response.data["error"]["code"] == "reminder_target_unregistered"
+
+
+@pytest.mark.django_db
+def test_group_settle_reminder_reports_missing_fields_as_validation_errors():
+    actor = _user("a@example.com")
+    group = create_group(actor=actor, name="Trip", default_currency="EUR")
+
+    response = _client(actor).post(
+        f"/api/groups/{group.id}/reminders/settle/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.data == {
+        "error": {"code": "validation_error"},
+        "fields": {
+            "participant_id": ["This field is required."],
+            "amount": ["This field is required."],
+        },
+    }
 
 
 @pytest.mark.django_db
@@ -174,7 +199,9 @@ def test_group_track_expense_reminder_pings_every_other_member():
 
     with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
-            f"/api/groups/{group.id}/reminders/track-expense/", {}, format="json",
+            f"/api/groups/{group.id}/reminders/track-expense/",
+            {},
+            format="json",
         )
 
     assert response.status_code == 200
@@ -190,7 +217,9 @@ def test_group_track_expense_reminder_skips_unregistered_members():
     group = create_group(actor=actor, name="Trip", default_currency="EUR")
     add_unregistered_participant(actor=actor, group=group, display_name="Ghost")
     response = _client(actor).post(
-        f"/api/groups/{group.id}/reminders/track-expense/", {}, format="json",
+        f"/api/groups/{group.id}/reminders/track-expense/",
+        {},
+        format="json",
     )
     assert response.status_code == 200
     assert response.data == {"recipients": 0, "sent": 0}
@@ -228,9 +257,12 @@ def test_friend_settle_reminder_rejects_missing_amount_when_no_debt():
     bob = _user("b@example.com")
     friendship = create_friendship(actor, get_or_create_user_participant(bob))
     response = _client(actor).post(
-        f"/api/friends/{friendship.id}/reminders/settle/", {}, format="json",
+        f"/api/friends/{friendship.id}/reminders/settle/",
+        {},
+        format="json",
     )
     assert response.status_code == 400
+    assert response.data["error"]["code"] == "reminder_target_not_in_debt"
 
 
 @pytest.mark.django_db
@@ -260,7 +292,9 @@ def test_friend_track_expense_reminder_pings_other_friend():
     friendship = create_friendship(actor, get_or_create_user_participant(bob))
     with patch("splex.notifications.services.send_expo_notification", return_value=None) as send:
         response = _client(actor).post(
-            f"/api/friends/{friendship.id}/reminders/track-expense/", {}, format="json",
+            f"/api/friends/{friendship.id}/reminders/track-expense/",
+            {},
+            format="json",
         )
     assert response.status_code == 200
     assert response.data["sent"] is True

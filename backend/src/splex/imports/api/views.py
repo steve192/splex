@@ -16,6 +16,14 @@ from splex.imports.split_pro_service import (
 )
 from splex.imports.splitwise_client import SplitwiseAuthError, SplitwiseError
 from splex.imports.splitwise_service import import_from_splitwise
+from splex.shared.errors import DomainError, ErrorCode
+
+SPLITWISE_AUTH_FAILURE_MESSAGE = "Splitwise rejected the API key."
+SPLITWISE_IMPORT_FAILURE_MESSAGE = "Could not import data from Splitwise."
+SPLIT_PRO_AUTH_FAILURE_MESSAGE = "Split Pro rejected the database credentials."
+SPLIT_PRO_USER_NOT_FOUND_MESSAGE = "The selected Split Pro user could not be found."
+SPLIT_PRO_SCHEMA_FAILURE_MESSAGE = "The connected database is not compatible with Splex."
+SPLIT_PRO_CONNECTION_FAILURE_MESSAGE = "Could not connect to the Split Pro database."
 
 
 class SplitwiseImportSerializer(serializers.Serializer):
@@ -36,14 +44,20 @@ class SplitwiseImportView(APIView):
             summary = import_from_splitwise(
                 actor=request.user,
                 api_key=serializer.validated_data["api_key"],
-                import_friends_as_groups=serializer.validated_data[
-                    "import_friends_as_groups"
-                ],
+                import_friends_as_groups=serializer.validated_data["import_friends_as_groups"],
             )
         except SplitwiseAuthError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+            raise DomainError(
+                ErrorCode.SPLITWISE_AUTH_FAILED,
+                SPLITWISE_AUTH_FAILURE_MESSAGE,
+                status=status.HTTP_401_UNAUTHORIZED,
+            ) from exc
         except SplitwiseError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+            raise DomainError(
+                ErrorCode.SPLITWISE_FAILED,
+                SPLITWISE_IMPORT_FAILURE_MESSAGE,
+                status=status.HTTP_502_BAD_GATEWAY,
+            ) from exc
         return Response({"summary": summary.as_dict()})
 
 
@@ -64,12 +78,15 @@ class SplitProImportSerializer(_SplitProCredentialsSerializer):
 
 def _connection_from(data: dict) -> SplitProConnection:
     return SplitProConnection(
-        host=data["host"], port=data["port"], dbname=data["dbname"],
-        user=data["user"], password=data["password"],
+        host=data["host"],
+        port=data["port"],
+        dbname=data["dbname"],
+        user=data["user"],
+        password=data["password"],
     )
 
 
-def _risky_imports_disabled_response() -> Response:
+def _assert_risky_imports_enabled() -> None:
     """403 returned when ``ENABLE_RISKY_IMPORTS`` is off.
 
     The Split Pro import opens an outbound database connection from the
@@ -77,8 +94,11 @@ def _risky_imports_disabled_response() -> Response:
     a malicious endpoint could exploit weaknesses in the client library.
     Operators opt in via the ``ENABLE_RISKY_IMPORTS`` env var.
     """
-    return Response(
-        {"detail": "Risky imports are disabled by server configuration."},
+    if _risky_imports_enabled():
+        return
+    raise DomainError(
+        ErrorCode.IMPORTS_DISABLED,
+        "Imports are disabled by server configuration.",
         status=status.HTTP_403_FORBIDDEN,
     )
 
@@ -87,14 +107,24 @@ def _risky_imports_enabled() -> bool:
     return bool(getattr(settings, "ENABLE_RISKY_IMPORTS", False))
 
 
-def _split_pro_error_response(exc: SplitProError) -> Response:
+def _raise_split_pro_error(exc: SplitProError) -> None:
     if isinstance(exc, SplitProAuthError):
-        return Response({"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
-    if isinstance(exc, SplitProUserNotFoundError):
-        return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-    if isinstance(exc, SplitProSchemaError):
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-    return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        code = ErrorCode.SPLIT_PRO_AUTH_FAILED
+        error_status = status.HTTP_401_UNAUTHORIZED
+        message = SPLIT_PRO_AUTH_FAILURE_MESSAGE
+    elif isinstance(exc, SplitProUserNotFoundError):
+        code = ErrorCode.SPLIT_PRO_USER_NOT_FOUND
+        error_status = status.HTTP_404_NOT_FOUND
+        message = SPLIT_PRO_USER_NOT_FOUND_MESSAGE
+    elif isinstance(exc, SplitProSchemaError):
+        code = ErrorCode.SPLIT_PRO_SCHEMA_INVALID
+        error_status = status.HTTP_400_BAD_REQUEST
+        message = SPLIT_PRO_SCHEMA_FAILURE_MESSAGE
+    else:
+        code = ErrorCode.SPLIT_PRO_CONNECTION_FAILED
+        error_status = status.HTTP_502_BAD_GATEWAY
+        message = SPLIT_PRO_CONNECTION_FAILURE_MESSAGE
+    raise DomainError(code, message, status=error_status) from exc
 
 
 class SplitProListUsersView(APIView):
@@ -105,14 +135,13 @@ class SplitProListUsersView(APIView):
     """
 
     def post(self, request):
-        if not _risky_imports_enabled():
-            return _risky_imports_disabled_response()
+        _assert_risky_imports_enabled()
         serializer = _SplitProCredentialsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
             users = list_split_pro_users(_connection_from(serializer.validated_data))
         except SplitProError as exc:
-            return _split_pro_error_response(exc)
+            _raise_split_pro_error(exc)
         return Response({"users": users})
 
 
@@ -125,17 +154,17 @@ class SplitProImportView(APIView):
     """
 
     def post(self, request):
-        if not _risky_imports_enabled():
-            return _risky_imports_disabled_response()
+        _assert_risky_imports_enabled()
         serializer = SplitProImportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         try:
             summary = import_from_split_pro(
-                actor=request.user, connection=_connection_from(data),
+                actor=request.user,
+                connection=_connection_from(data),
                 actor_user_id=data["actor_user_id"],
                 import_friends_as_groups=data["import_friends_as_groups"],
             )
         except SplitProError as exc:
-            return _split_pro_error_response(exc)
+            _raise_split_pro_error(exc)
         return Response({"summary": summary.as_dict()})

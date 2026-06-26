@@ -11,13 +11,13 @@ from rest_framework.views import APIView
 
 from splex.expenses.models import Expense, Receipt
 from splex.expenses.receipts import (
-    ReceiptError,
     delete_receipt,
     serialize_receipt,
     upload_receipt,
 )
 from splex.friends.models import Friendship
 from splex.groups.models import Group
+from splex.shared.errors import DomainError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -41,32 +41,27 @@ class ReceiptUploadView(APIView):
     def post(self, request):
         file_obj = request.FILES.get("file")
         if file_obj is None:
-            return Response({"detail": "file is required."}, status=status.HTTP_400_BAD_REQUEST)
+            raise DomainError(ErrorCode.RECEIPT_FILE_REQUIRED, "A file is required.")
 
         expense = self._resolve_expense(request)
         group, friendship = self._resolve_context(request, expense)
         client_id = (request.data.get("client_id") or "").strip()
 
-        try:
-            receipt = upload_receipt(
-                actor=request.user,
-                file_obj=file_obj,
-                original_filename=(
-                    request.data.get(RECEIPT_ORIGINAL_FILENAME_FIELD)
-                    or getattr(file_obj, "name", "receipt")
-                    or "receipt"
-                ),
-                declared_content_type=getattr(file_obj, "content_type", None),
-                size_bytes=getattr(file_obj, "size", None) or 0,
-                group=group,
-                friendship=friendship,
-                client_id=client_id,
-                expense=expense,
-            )
-        except ReceiptError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        except PermissionError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        receipt = upload_receipt(
+            actor=request.user,
+            file_obj=file_obj,
+            original_filename=(
+                request.data.get(RECEIPT_ORIGINAL_FILENAME_FIELD)
+                or getattr(file_obj, "name", "receipt")
+                or "receipt"
+            ),
+            declared_content_type=getattr(file_obj, "content_type", None),
+            size_bytes=getattr(file_obj, "size", None) or 0,
+            group=group,
+            friendship=friendship,
+            client_id=client_id,
+            expense=expense,
+        )
 
         return Response(serialize_receipt(receipt), status=status.HTTP_201_CREATED)
 
@@ -105,10 +100,7 @@ class ReceiptDetailView(APIView):
             receipt = Receipt.objects.get(id=receipt_id)
         except Receipt.DoesNotExist:
             raise Http404("Receipt not found.")
-        try:
-            delete_receipt(actor=request.user, receipt=receipt)
-        except PermissionError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        delete_receipt(actor=request.user, receipt=receipt)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -130,10 +122,7 @@ class ReceiptDownloadView(APIView):
         # Permission: re-use the same access check as the expense detail screen.
         from splex.expenses.services import ensure_context_access
 
-        try:
-            ensure_context_access(request.user, receipt.group, receipt.friendship)
-        except PermissionError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        ensure_context_access(request.user, receipt.group, receipt.friendship)
 
         if not default_storage.exists(receipt.storage_path):
             logger.warning(
