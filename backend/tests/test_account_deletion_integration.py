@@ -20,7 +20,6 @@ through the real API and asserts the whole graph is reconciled correctly:
 """
 
 import base64
-from decimal import Decimal
 from io import BytesIO
 from tempfile import TemporaryDirectory
 

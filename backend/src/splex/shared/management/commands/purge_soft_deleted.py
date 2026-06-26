@@ -45,9 +45,9 @@ from splex.expenses.receipts import (
     delete_receipts_for_group,
 )
 from splex.friends.models import Friendship
-from splex.shared.uploads import delete_stored_image
 from splex.groups.models import Group, GroupMembership
 from splex.settlements.models import Settlement
+from splex.shared.uploads import delete_stored_image
 
 logger = logging.getLogger(__name__)
 
