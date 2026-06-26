@@ -508,5 +508,18 @@
   "tabs.account": "Kont",
   "tabs.activity": "Attività",
   "tabs.add": "Żid",
-  "tabs.overview": "Ħarsa ġenerali"
+  "tabs.overview": "Ħarsa ġenerali",
+  "calculator.add": "Żid",
+  "calculator.apply": "Applika",
+  "calculator.backspace": "Ħassar l-aħħar ċifra",
+  "calculator.clear": "Ċara",
+  "calculator.decimal": "Separatur deċimali",
+  "calculator.divide": "Aqsam",
+  "calculator.equals": "Ikkalkula",
+  "calculator.multiply": "Immoltiplika",
+  "calculator.open": "Iftaħ il-kalkulatur",
+  "calculator.percent": "Perċentwal",
+  "calculator.preview": "Previżjoni tal-kalkolu",
+  "calculator.subtract": "Naqqas",
+  "calculator.title": "Kalkulatur"
 }

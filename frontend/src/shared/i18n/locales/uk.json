@@ -508,5 +508,18 @@
   "tabs.account": "Обліковий запис",
   "tabs.activity": "Активність",
   "tabs.add": "Додати",
-  "tabs.overview": "Огляд"
+  "tabs.overview": "Огляд",
+  "calculator.add": "Додати",
+  "calculator.apply": "Застосувати",
+  "calculator.backspace": "Видалити останню цифру",
+  "calculator.clear": "Очистити",
+  "calculator.decimal": "Десятковий роздільник",
+  "calculator.divide": "Поділити",
+  "calculator.equals": "Обчислити",
+  "calculator.multiply": "Помножити",
+  "calculator.open": "Відкрити калькулятор",
+  "calculator.percent": "Відсоток",
+  "calculator.preview": "Попередній перегляд обчислення",
+  "calculator.subtract": "Відняти",
+  "calculator.title": "Калькулятор"
 }

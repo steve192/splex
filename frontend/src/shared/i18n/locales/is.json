@@ -508,5 +508,18 @@
   "tabs.account": "Aðgangur",
   "tabs.activity": "Virkni",
   "tabs.add": "Bæta við",
-  "tabs.overview": "Yfirlit"
+  "tabs.overview": "Yfirlit",
+  "calculator.add": "Leggja við",
+  "calculator.apply": "Nota",
+  "calculator.backspace": "Eyða síðasta tölustaf",
+  "calculator.clear": "Hreinsa",
+  "calculator.decimal": "Tugabrotsskil",
+  "calculator.divide": "Deila",
+  "calculator.equals": "Reikna",
+  "calculator.multiply": "Margfalda",
+  "calculator.open": "Opna reiknivél",
+  "calculator.percent": "Prósenta",
+  "calculator.preview": "Forskoðun útreiknings",
+  "calculator.subtract": "Draga frá",
+  "calculator.title": "Reiknivél"
 }

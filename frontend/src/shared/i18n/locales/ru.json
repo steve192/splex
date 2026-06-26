@@ -508,5 +508,18 @@
   "tabs.account": "Аккаунт",
   "tabs.activity": "Активность",
   "tabs.add": "Добавить",
-  "tabs.overview": "Обзор"
+  "tabs.overview": "Обзор",
+  "calculator.add": "Сложить",
+  "calculator.apply": "Применить",
+  "calculator.backspace": "Удалить последнюю цифру",
+  "calculator.clear": "Очистить",
+  "calculator.decimal": "Десятичный разделитель",
+  "calculator.divide": "Разделить",
+  "calculator.equals": "Вычислить",
+  "calculator.multiply": "Умножить",
+  "calculator.open": "Открыть калькулятор",
+  "calculator.percent": "Процент",
+  "calculator.preview": "Предпросмотр вычисления",
+  "calculator.subtract": "Вычесть",
+  "calculator.title": "Калькулятор"
 }

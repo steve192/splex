@@ -508,5 +508,18 @@
   "tabs.account": "Hesap",
   "tabs.activity": "Etkinlik",
   "tabs.add": "Ekle",
-  "tabs.overview": "Genel bakış"
+  "tabs.overview": "Genel bakış",
+  "calculator.add": "Ekle",
+  "calculator.apply": "Uygula",
+  "calculator.backspace": "Son basamağı sil",
+  "calculator.clear": "Temizle",
+  "calculator.decimal": "Ondalık ayırıcı",
+  "calculator.divide": "Böl",
+  "calculator.equals": "Hesapla",
+  "calculator.multiply": "Çarp",
+  "calculator.open": "Hesap makinesini aç",
+  "calculator.percent": "Yüzde",
+  "calculator.preview": "Hesaplama önizlemesi",
+  "calculator.subtract": "Çıkar",
+  "calculator.title": "Hesap makinesi"
 }

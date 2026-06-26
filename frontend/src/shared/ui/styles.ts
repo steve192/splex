@@ -1,5 +1,17 @@
 import { StyleSheet } from "react-native";
 
+import {
+  CALCULATOR_APPLY_HEIGHT,
+  CALCULATOR_APPLY_TOP_MARGIN,
+  CALCULATOR_CONTENT_PADDING,
+  CALCULATOR_DISPLAY_TOP_MARGIN,
+  CALCULATOR_HEADER_HEIGHT,
+  CALCULATOR_KEY_GAP,
+  CALCULATOR_KEYPAD_TOP_MARGIN,
+  CALCULATOR_POPUP_RESULT_MIN_HEIGHT,
+  CALCULATOR_RESULT_MIN_HEIGHT
+} from "./calculatorLayout";
+
 export const styles = StyleSheet.create({
   balanceCard: {
     alignSelf: "center",
@@ -79,6 +91,73 @@ export const styles = StyleSheet.create({
   },
   currencyInput: {
     width: 120
+  },
+  calculatorApply: {
+    marginTop: CALCULATOR_APPLY_TOP_MARGIN,
+    minHeight: CALCULATOR_APPLY_HEIGHT
+  },
+  calculatorDisplay: {
+    borderRadius: 12,
+    gap: 4,
+    marginTop: CALCULATOR_DISPLAY_TOP_MARGIN,
+    minHeight: CALCULATOR_POPUP_RESULT_MIN_HEIGHT,
+    padding: 16
+  },
+  calculatorDisplayFullscreen: {
+    flex: 1,
+    justifyContent: "center",
+    minHeight: CALCULATOR_RESULT_MIN_HEIGHT
+  },
+  calculatorExpression: {
+    textAlign: "right"
+  },
+  calculatorFullscreen: {
+    flex: 1,
+    padding: CALCULATOR_CONTENT_PADDING,
+    width: "100%"
+  },
+  calculatorFullscreenWrapper: {
+    margin: 0
+  },
+  calculatorHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: CALCULATOR_HEADER_HEIGHT
+  },
+  calculatorKey: {
+    alignItems: "center",
+    borderRadius: 999,
+    justifyContent: "center"
+  },
+  calculatorKeyLabel: {
+    textAlign: "center"
+  },
+  calculatorResult: {
+    textAlign: "right"
+  },
+  calculatorKeypad: {
+    gap: CALCULATOR_KEY_GAP,
+    marginTop: CALCULATOR_KEYPAD_TOP_MARGIN
+  },
+  calculatorKeyPlaceholder: {
+    opacity: 0
+  },
+  calculatorKeyRow: {
+    flexDirection: "row",
+    gap: CALCULATOR_KEY_GAP,
+    justifyContent: "space-between"
+  },
+  calculatorPopup: {
+    alignSelf: "center",
+    borderRadius: 20,
+    maxHeight: "94%",
+    maxWidth: 420,
+    padding: CALCULATOR_CONTENT_PADDING,
+    width: "94%"
+  },
+  calculatorPopupWrapper: {
+    justifyContent: "center"
   },
   emptyStateContent: {
     alignItems: "center",

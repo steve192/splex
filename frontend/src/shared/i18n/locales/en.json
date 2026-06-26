@@ -508,5 +508,18 @@
   "tabs.account": "Account",
   "tabs.activity": "Activity",
   "tabs.add": "Add",
-  "tabs.overview": "Overview"
+  "tabs.overview": "Overview",
+  "calculator.add": "Add",
+  "calculator.apply": "Apply",
+  "calculator.backspace": "Delete last digit",
+  "calculator.clear": "Clear",
+  "calculator.decimal": "Decimal separator",
+  "calculator.divide": "Divide",
+  "calculator.equals": "Calculate",
+  "calculator.multiply": "Multiply",
+  "calculator.open": "Open calculator",
+  "calculator.percent": "Percent",
+  "calculator.preview": "Calculation preview",
+  "calculator.subtract": "Subtract",
+  "calculator.title": "Calculator"
 }

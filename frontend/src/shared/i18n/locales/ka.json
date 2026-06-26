@@ -508,5 +508,18 @@
   "tabs.account": "ანგარიში",
   "tabs.activity": "აქტივობა",
   "tabs.add": "დამატება",
-  "tabs.overview": "მიმოხილვა"
+  "tabs.overview": "მიმოხილვა",
+  "calculator.add": "დამატება",
+  "calculator.apply": "გამოყენება",
+  "calculator.backspace": "ბოლო ციფრის წაშლა",
+  "calculator.clear": "გასუფთავება",
+  "calculator.decimal": "ათწილადი გამყოფი",
+  "calculator.divide": "გაყოფა",
+  "calculator.equals": "გამოთვლა",
+  "calculator.multiply": "გამრავლება",
+  "calculator.open": "კალკულატორის გახსნა",
+  "calculator.percent": "პროცენტი",
+  "calculator.preview": "გამოთვლის წინასწარი ნახვა",
+  "calculator.subtract": "გამოკლება",
+  "calculator.title": "კალკულატორი"
 }

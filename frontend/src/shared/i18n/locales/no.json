@@ -508,5 +508,18 @@
   "tabs.account": "Konto",
   "tabs.activity": "Aktivitet",
   "tabs.add": "Legg til",
-  "tabs.overview": "Oversikt"
+  "tabs.overview": "Oversikt",
+  "calculator.add": "Legg til",
+  "calculator.apply": "Bruk",
+  "calculator.backspace": "Slett siste siffer",
+  "calculator.clear": "Tøm",
+  "calculator.decimal": "Desimalskilletegn",
+  "calculator.divide": "Del",
+  "calculator.equals": "Beregn",
+  "calculator.multiply": "Gang",
+  "calculator.open": "Åpne kalkulator",
+  "calculator.percent": "Prosent",
+  "calculator.preview": "Forhåndsvisning av beregning",
+  "calculator.subtract": "Trekk fra",
+  "calculator.title": "Kalkulator"
 }

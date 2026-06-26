@@ -508,5 +508,18 @@
   "tabs.account": "Профил",
   "tabs.activity": "Активност",
   "tabs.add": "Добави",
-  "tabs.overview": "Общ преглед"
+  "tabs.overview": "Общ преглед",
+  "calculator.add": "Събиране",
+  "calculator.apply": "Приложи",
+  "calculator.backspace": "Изтриване на последната цифра",
+  "calculator.clear": "Изчисти",
+  "calculator.decimal": "Десетичен разделител",
+  "calculator.divide": "Раздели",
+  "calculator.equals": "Изчисли",
+  "calculator.multiply": "Умножи",
+  "calculator.open": "Отвори калкулатора",
+  "calculator.percent": "Процент",
+  "calculator.preview": "Преглед на изчислението",
+  "calculator.subtract": "Извади",
+  "calculator.title": "Калкулатор"
 }

@@ -508,5 +508,18 @@
   "tabs.account": "Cont",
   "tabs.activity": "Activitate",
   "tabs.add": "Adaugă",
-  "tabs.overview": "Prezentare"
+  "tabs.overview": "Prezentare",
+  "calculator.add": "Adună",
+  "calculator.apply": "Aplică",
+  "calculator.backspace": "Șterge ultima cifră",
+  "calculator.clear": "Golește",
+  "calculator.decimal": "Separator zecimal",
+  "calculator.divide": "Împarte",
+  "calculator.equals": "Calculează",
+  "calculator.multiply": "Înmulțește",
+  "calculator.open": "Deschide calculatorul",
+  "calculator.percent": "Procent",
+  "calculator.preview": "Previzualizare calcul",
+  "calculator.subtract": "Scade",
+  "calculator.title": "Calculator"
 }

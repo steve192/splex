@@ -508,5 +508,18 @@
   "tabs.account": "Hesab",
   "tabs.activity": "Fəaliyyət",
   "tabs.add": "Əlavə et",
-  "tabs.overview": "Ümumi baxış"
+  "tabs.overview": "Ümumi baxış",
+  "calculator.add": "Əlavə et",
+  "calculator.apply": "Tətbiq et",
+  "calculator.backspace": "Son rəqəmi sil",
+  "calculator.clear": "Təmizlə",
+  "calculator.decimal": "Onluq ayırıcı",
+  "calculator.divide": "Böl",
+  "calculator.equals": "Hesabla",
+  "calculator.multiply": "Vur",
+  "calculator.open": "Kalkulyatoru aç",
+  "calculator.percent": "Faiz",
+  "calculator.preview": "Hesablama önizləməsi",
+  "calculator.subtract": "Çıx",
+  "calculator.title": "Kalkulyator"
 }

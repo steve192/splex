@@ -6,7 +6,6 @@ import {
   Dialog,
   List,
   Text,
-  TextInput,
   useTheme,
 } from "react-native-paper";
 
@@ -18,6 +17,7 @@ import { CURRENCIES } from "../lib/currencies";
 import { payUrlWithAmount } from "../lib/paypal";
 import { PaymentMethod } from "../types/models";
 import { ClickableAvatar } from "../ui/ClickableAvatar";
+import { MoneyAmountInput } from "../ui/MoneyAmountInput";
 import { SelectionOption, SelectionSheet } from "../ui/SelectionSheet";
 import { styles } from "../ui/styles";
 
@@ -148,10 +148,9 @@ export function SettlementDialog({
             </View>
           ) : null}
           <View style={styles.formRow}>
-            <TextInput
+            <MoneyAmountInput
               mode="outlined"
               label={t("expense.amount")}
-              keyboardType="decimal-pad"
               value={amount}
               onChangeText={onAmountChange}
               style={styles.flex}

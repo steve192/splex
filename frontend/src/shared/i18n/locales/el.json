@@ -508,5 +508,18 @@
   "tabs.account": "Λογαριασμός",
   "tabs.activity": "Δραστηριότητα",
   "tabs.add": "Προσθήκη",
-  "tabs.overview": "Επισκόπηση"
+  "tabs.overview": "Επισκόπηση",
+  "calculator.add": "Προσθήκη",
+  "calculator.apply": "Εφαρμογή",
+  "calculator.backspace": "Διαγραφή τελευταίου ψηφίου",
+  "calculator.clear": "Εκκαθάριση",
+  "calculator.decimal": "Δεκαδικό διαχωριστικό",
+  "calculator.divide": "Διαίρεση",
+  "calculator.equals": "Υπολογισμός",
+  "calculator.multiply": "Πολλαπλασιασμός",
+  "calculator.open": "Άνοιγμα αριθμομηχανής",
+  "calculator.percent": "Ποσοστό",
+  "calculator.preview": "Προεπισκόπηση υπολογισμού",
+  "calculator.subtract": "Αφαίρεση",
+  "calculator.title": "Αριθμομηχανή"
 }

@@ -508,5 +508,18 @@
   "tabs.account": "Llogaria",
   "tabs.activity": "Aktiviteti",
   "tabs.add": "Shto",
-  "tabs.overview": "Përmbledhje"
+  "tabs.overview": "Përmbledhje",
+  "calculator.add": "Shto",
+  "calculator.apply": "Zbato",
+  "calculator.backspace": "Fshi shifrën e fundit",
+  "calculator.clear": "Pastro",
+  "calculator.decimal": "Ndarësi dhjetor",
+  "calculator.divide": "Pjesëto",
+  "calculator.equals": "Llogarit",
+  "calculator.multiply": "Shumëzo",
+  "calculator.open": "Hap kalkulatorin",
+  "calculator.percent": "Përqindje",
+  "calculator.preview": "Parapamje e llogaritjes",
+  "calculator.subtract": "Zbrit",
+  "calculator.title": "Kalkulator"
 }

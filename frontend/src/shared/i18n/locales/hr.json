@@ -508,5 +508,18 @@
   "tabs.account": "Račun",
   "tabs.activity": "Aktivnost",
   "tabs.add": "Dodaj",
-  "tabs.overview": "Pregled"
+  "tabs.overview": "Pregled",
+  "calculator.add": "Zbroji",
+  "calculator.apply": "Primijeni",
+  "calculator.backspace": "Izbriši posljednju znamenku",
+  "calculator.clear": "Obriši",
+  "calculator.decimal": "Decimalni razdjelnik",
+  "calculator.divide": "Podijeli",
+  "calculator.equals": "Izračunaj",
+  "calculator.multiply": "Pomnoži",
+  "calculator.open": "Otvori kalkulator",
+  "calculator.percent": "Postotak",
+  "calculator.preview": "Pregled izračuna",
+  "calculator.subtract": "Oduzmi",
+  "calculator.title": "Kalkulator"
 }

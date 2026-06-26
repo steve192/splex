@@ -508,5 +508,18 @@
   "tabs.account": "Налог",
   "tabs.activity": "Активност",
   "tabs.add": "Додај",
-  "tabs.overview": "Преглед"
+  "tabs.overview": "Преглед",
+  "calculator.add": "Додај",
+  "calculator.apply": "Примени",
+  "calculator.backspace": "Обриши последњу цифру",
+  "calculator.clear": "Очисти",
+  "calculator.decimal": "Децимални раздвајач",
+  "calculator.divide": "Подели",
+  "calculator.equals": "Израчунај",
+  "calculator.multiply": "Помножи",
+  "calculator.open": "Отвори калкулатор",
+  "calculator.percent": "Проценат",
+  "calculator.preview": "Преглед израчунавања",
+  "calculator.subtract": "Одузми",
+  "calculator.title": "Калкулатор"
 }

@@ -508,5 +508,18 @@
   "tabs.account": "Račun",
   "tabs.activity": "Dejavnost",
   "tabs.add": "Dodaj",
-  "tabs.overview": "Pregled"
+  "tabs.overview": "Pregled",
+  "calculator.add": "Dodaj",
+  "calculator.apply": "Uporabi",
+  "calculator.backspace": "Izbriši zadnjo števko",
+  "calculator.clear": "Počisti",
+  "calculator.decimal": "Decimalno ločilo",
+  "calculator.divide": "Deli",
+  "calculator.equals": "Izračunaj",
+  "calculator.multiply": "Pomnoži",
+  "calculator.open": "Odpri kalkulator",
+  "calculator.percent": "Odstotek",
+  "calculator.preview": "Predogled izračuna",
+  "calculator.subtract": "Odštej",
+  "calculator.title": "Kalkulator"
 }

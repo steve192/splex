@@ -508,5 +508,18 @@
   "tabs.account": "Kont",
   "tabs.activity": "Aktivitéit",
   "tabs.add": "Derbäisetzen",
-  "tabs.overview": "Iwwerbléck"
+  "tabs.overview": "Iwwerbléck",
+  "calculator.add": "Dobäiset",
+  "calculator.apply": "Uwenden",
+  "calculator.backspace": "Läscht déi lescht Ziffer",
+  "calculator.clear": "Eidel maachen",
+  "calculator.decimal": "Dezimaltrennzeechen",
+  "calculator.divide": "Deelen",
+  "calculator.equals": "Berechnen",
+  "calculator.multiply": "Multiplizéieren",
+  "calculator.open": "Rechner opmaachen",
+  "calculator.percent": "Prozent",
+  "calculator.preview": "Virschau vun der Berechnung",
+  "calculator.subtract": "Ofzéien",
+  "calculator.title": "Rechner"
 }

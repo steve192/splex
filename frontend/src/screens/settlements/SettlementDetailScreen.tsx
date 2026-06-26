@@ -9,7 +9,6 @@ import {
   List,
   Portal,
   Text,
-  TextInput,
   useTheme,
 } from "react-native-paper";
 
@@ -34,6 +33,7 @@ import {
 } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
+import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
 import { Screen } from "../../shared/ui/Screen";
 import {
   SelectionOption,
@@ -263,13 +263,12 @@ export function SettlementDetailScreen({
           <Dialog.Title>{t("common.edit")}</Dialog.Title>
           <Dialog.Content>
             <View style={styles.gap}>
-              <TextInput
+              <MoneyAmountInput
                 mode="outlined"
                 label={t("expense.amount")}
                 value={amount}
                 disabled={groupArchived}
                 onChangeText={setAmount}
-                keyboardType="decimal-pad"
               />
               <List.Item
                 title={t("settlement.payer")}

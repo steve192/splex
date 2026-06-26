@@ -508,5 +508,18 @@
   "tabs.account": "Cuntas",
   "tabs.activity": "Gníomhaíocht",
   "tabs.add": "Cuir leis",
-  "tabs.overview": "Forbhreathnú"
+  "tabs.overview": "Forbhreathnú",
+  "calculator.add": "Cuir leis",
+  "calculator.apply": "Cuir i bhfeidhm",
+  "calculator.backspace": "Scrios an digit dheireanach",
+  "calculator.clear": "Glan",
+  "calculator.decimal": "Deighilteoir deachúlach",
+  "calculator.divide": "Roinn",
+  "calculator.equals": "Ríomh",
+  "calculator.multiply": "Iolraigh",
+  "calculator.open": "Oscail an t-áireamhán",
+  "calculator.percent": "Céatadán",
+  "calculator.preview": "Réamhamharc ríomha",
+  "calculator.subtract": "Dealaigh",
+  "calculator.title": "Áireamhán"
 }

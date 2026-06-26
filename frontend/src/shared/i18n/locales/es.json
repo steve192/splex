@@ -508,5 +508,18 @@
   "tabs.account": "Cuenta",
   "tabs.activity": "Actividad",
   "tabs.add": "Añadir",
-  "tabs.overview": "Resumen"
+  "tabs.overview": "Resumen",
+  "calculator.add": "Sumar",
+  "calculator.apply": "Aplicar",
+  "calculator.backspace": "Eliminar el último dígito",
+  "calculator.clear": "Borrar",
+  "calculator.decimal": "Separador decimal",
+  "calculator.divide": "Dividir",
+  "calculator.equals": "Calcular",
+  "calculator.multiply": "Multiplicar",
+  "calculator.open": "Abrir calculadora",
+  "calculator.percent": "Porcentaje",
+  "calculator.preview": "Vista previa del cálculo",
+  "calculator.subtract": "Restar",
+  "calculator.title": "Calculadora"
 }

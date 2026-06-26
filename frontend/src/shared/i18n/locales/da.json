@@ -508,5 +508,18 @@
   "tabs.account": "Konto",
   "tabs.activity": "Aktivitet",
   "tabs.add": "Tilføj",
-  "tabs.overview": "Oversigt"
+  "tabs.overview": "Oversigt",
+  "calculator.add": "Læg til",
+  "calculator.apply": "Anvend",
+  "calculator.backspace": "Slet sidste ciffer",
+  "calculator.clear": "Ryd",
+  "calculator.decimal": "Decimalseparator",
+  "calculator.divide": "Divider",
+  "calculator.equals": "Beregn",
+  "calculator.multiply": "Gang",
+  "calculator.open": "Åbn lommeregner",
+  "calculator.percent": "Procent",
+  "calculator.preview": "Beregningsforhåndsvisning",
+  "calculator.subtract": "Træk fra",
+  "calculator.title": "Lommeregner"
 }

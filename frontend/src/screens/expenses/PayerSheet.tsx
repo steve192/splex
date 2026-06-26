@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { List, Modal, Portal, Switch, Text, TextInput, Button, useTheme } from "react-native-paper";
+import { List, Modal, Portal, Switch, Text, Button, useTheme } from "react-native-paper";
 
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { useKeyboardHeight } from "../../shared/lib/useKeyboardHeight";
@@ -7,6 +7,7 @@ import { asNumber } from "../../shared/lib/money";
 import { Participant } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
 import { styles } from "../../shared/ui/styles";
 import { currencyAmount } from "./expenseFormLogic";
 
@@ -86,11 +87,10 @@ export function PayerSheet({
                 })}
                 left={() => <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />}
                 right={() => (
-                  <TextInput
+                  <MoneyAmountInput
                     mode="outlined"
                     dense
                     style={styles.splitRowInput}
-                    keyboardType="decimal-pad"
                     value={paymentValues[participant.id] ?? ""}
                     onChangeText={(value) => onPaymentValueChange(participant.id, value)}
                   />

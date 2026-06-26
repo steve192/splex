@@ -8,6 +8,7 @@ import { formatMoney } from "../../shared/lib/money";
 import { Participant, SplitMethod } from "../../shared/types/models";
 import { negativeColor } from "../../shared/ui/colors";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
+import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
 import { styles } from "../../shared/ui/styles";
 import { currencyAmount, SPLIT_TOLERANCE } from "./expenseFormLogic";
 
@@ -93,7 +94,7 @@ export function SplitSheet({
     const selected = selectedParticipantIds.includes(participant.id);
     const memberShare = perMemberShare(participant.id);
     const showInput = tabValue !== "equal";
-    const suffix = tabValue === "percentage" ? "%" : currency;
+    const splitValue = splitValues[participant.id] ?? "";
 
     return (
       <List.Item
@@ -113,16 +114,27 @@ export function SplitSheet({
         )}
         right={() =>
           showInput ? (
-            <TextInput
-              mode="outlined"
-              dense
-              style={styles.splitRowInput}
-              keyboardType="decimal-pad"
-              value={splitValues[participant.id] ?? ""}
-              disabled={!selected}
-              onChangeText={(value) => onSplitValueChange(participant.id, value)}
-              right={<TextInput.Affix text={suffix} />}
-            />
+            tabValue === "percentage" ? (
+              <TextInput
+                mode="outlined"
+                dense
+                style={styles.splitRowInput}
+                keyboardType="decimal-pad"
+                value={splitValue}
+                disabled={!selected}
+                onChangeText={(value) => onSplitValueChange(participant.id, value)}
+                right={<TextInput.Affix text="%" />}
+              />
+            ) : (
+              <MoneyAmountInput
+                mode="outlined"
+                dense
+                style={styles.splitRowInput}
+                value={splitValue}
+                disabled={!selected}
+                onChangeText={(value) => onSplitValueChange(participant.id, value)}
+              />
+            )
           ) : null
         }
       />

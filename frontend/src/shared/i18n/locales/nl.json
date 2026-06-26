@@ -508,5 +508,18 @@
   "tabs.account": "Account",
   "tabs.activity": "Activiteit",
   "tabs.add": "Toevoegen",
-  "tabs.overview": "Overzicht"
+  "tabs.overview": "Overzicht",
+  "calculator.add": "Optellen",
+  "calculator.apply": "Toepassen",
+  "calculator.backspace": "Verwijder laatste cijfer",
+  "calculator.clear": "Wissen",
+  "calculator.decimal": "Decimaalteken",
+  "calculator.divide": "Delen",
+  "calculator.equals": "Berekenen",
+  "calculator.multiply": "Vermenigvuldigen",
+  "calculator.open": "Rekenmachine openen",
+  "calculator.percent": "Percentage",
+  "calculator.preview": "Rekenvoorbeeld",
+  "calculator.subtract": "Aftrekken",
+  "calculator.title": "Rekenmachine"
 }

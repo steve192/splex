@@ -508,5 +508,18 @@
   "tabs.account": "Уліковы запіс",
   "tabs.activity": "Актыўнасць",
   "tabs.add": "Дадаць",
-  "tabs.overview": "Агляд"
+  "tabs.overview": "Агляд",
+  "calculator.add": "Дадаць",
+  "calculator.apply": "Ужыць",
+  "calculator.backspace": "Выдаліць апошнюю лічбу",
+  "calculator.clear": "Ачысціць",
+  "calculator.decimal": "Дзесятковы раздзяляльнік",
+  "calculator.divide": "Падзяліць",
+  "calculator.equals": "Вылічыць",
+  "calculator.multiply": "Памножыць",
+  "calculator.open": "Адкрыць калькулятар",
+  "calculator.percent": "Працэнт",
+  "calculator.preview": "Папярэдні прагляд разліку",
+  "calculator.subtract": "Адняць",
+  "calculator.title": "Калькулятар"
 }

@@ -508,5 +508,18 @@
   "tabs.account": "Konto",
   "tabs.activity": "Aktivitet",
   "tabs.add": "Lägg till",
-  "tabs.overview": "Översikt"
+  "tabs.overview": "Översikt",
+  "calculator.add": "Addera",
+  "calculator.apply": "Tillämpa",
+  "calculator.backspace": "Radera sista siffran",
+  "calculator.clear": "Rensa",
+  "calculator.decimal": "Decimaltecken",
+  "calculator.divide": "Dela",
+  "calculator.equals": "Beräkna",
+  "calculator.multiply": "Multiplicera",
+  "calculator.open": "Öppna kalkylator",
+  "calculator.percent": "Procent",
+  "calculator.preview": "Förhandsvisning av beräkning",
+  "calculator.subtract": "Subtrahera",
+  "calculator.title": "Kalkylator"
 }

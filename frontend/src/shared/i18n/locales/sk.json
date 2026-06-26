@@ -508,5 +508,18 @@
   "tabs.account": "Účet",
   "tabs.activity": "Aktivita",
   "tabs.add": "Pridať",
-  "tabs.overview": "Prehľad"
+  "tabs.overview": "Prehľad",
+  "calculator.add": "Pridať",
+  "calculator.apply": "Použiť",
+  "calculator.backspace": "Odstrániť poslednú číslicu",
+  "calculator.clear": "Vymazať",
+  "calculator.decimal": "Desatinná čiarka",
+  "calculator.divide": "Deliť",
+  "calculator.equals": "Vypočítať",
+  "calculator.multiply": "Násobiť",
+  "calculator.open": "Otvoriť kalkulačku",
+  "calculator.percent": "Percento",
+  "calculator.preview": "Náhľad výpočtu",
+  "calculator.subtract": "Odčítať",
+  "calculator.title": "Kalkulačka"
 }

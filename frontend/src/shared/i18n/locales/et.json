@@ -508,5 +508,18 @@
   "tabs.account": "Konto",
   "tabs.activity": "Tegevus",
   "tabs.add": "Lisa",
-  "tabs.overview": "Ülevaade"
+  "tabs.overview": "Ülevaade",
+  "calculator.add": "Liida",
+  "calculator.apply": "Rakenda",
+  "calculator.backspace": "Kustuta viimane number",
+  "calculator.clear": "Tühjenda",
+  "calculator.decimal": "Kümnenderaldaja",
+  "calculator.divide": "Jaga",
+  "calculator.equals": "Arvuta",
+  "calculator.multiply": "Korruta",
+  "calculator.open": "Ava kalkulaator",
+  "calculator.percent": "Protsent",
+  "calculator.preview": "Arvutuse eelvaade",
+  "calculator.subtract": "Lahuta",
+  "calculator.title": "Kalkulaator"
 }

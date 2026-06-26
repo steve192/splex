@@ -508,5 +508,18 @@
   "tabs.account": "Compte",
   "tabs.activity": "Activitat",
   "tabs.add": "Afegeix",
-  "tabs.overview": "Resum"
+  "tabs.overview": "Resum",
+  "calculator.add": "Suma",
+  "calculator.apply": "Aplica",
+  "calculator.backspace": "Suprimeix l'últim dígit",
+  "calculator.clear": "Esborra",
+  "calculator.decimal": "Separador decimal",
+  "calculator.divide": "Divideix",
+  "calculator.equals": "Calcula",
+  "calculator.multiply": "Multiplica",
+  "calculator.open": "Obre la calculadora",
+  "calculator.percent": "Percentatge",
+  "calculator.preview": "Previsualització del càlcul",
+  "calculator.subtract": "Resta",
+  "calculator.title": "Calculadora"
 }

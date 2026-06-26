@@ -508,5 +508,18 @@
   "tabs.account": "Paskyra",
   "tabs.activity": "Veikla",
   "tabs.add": "Pridėti",
-  "tabs.overview": "Apžvalga"
+  "tabs.overview": "Apžvalga",
+  "calculator.add": "Pridėti",
+  "calculator.apply": "Taikyti",
+  "calculator.backspace": "Ištrinti paskutinį skaitmenį",
+  "calculator.clear": "Išvalyti",
+  "calculator.decimal": "Dešimtainis skirtukas",
+  "calculator.divide": "Dalinti",
+  "calculator.equals": "Skaičiuoti",
+  "calculator.multiply": "Dauginti",
+  "calculator.open": "Atidaryti skaičiuotuvą",
+  "calculator.percent": "Procentas",
+  "calculator.preview": "Skaičiavimo peržiūra",
+  "calculator.subtract": "Atimti",
+  "calculator.title": "Skaičiuotuvas"
 }

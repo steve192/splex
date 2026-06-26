@@ -508,5 +508,18 @@
   "tabs.account": "Հաշիվ",
   "tabs.activity": "Գործունեություն",
   "tabs.add": "Ավելացնել",
-  "tabs.overview": "Ամփոփում"
+  "tabs.overview": "Ամփոփում",
+  "calculator.add": "Ավելացնել",
+  "calculator.apply": "Կիրառել",
+  "calculator.backspace": "Ջնջել վերջին թվանշանը",
+  "calculator.clear": "Մաքրել",
+  "calculator.decimal": "Տասնորդական բաժանարար",
+  "calculator.divide": "Բաժանել",
+  "calculator.equals": "Հաշվել",
+  "calculator.multiply": "Բազմապատկել",
+  "calculator.open": "Բացել հաշվիչը",
+  "calculator.percent": "Տոկոս",
+  "calculator.preview": "Հաշվարկի նախադիտում",
+  "calculator.subtract": "Հանել",
+  "calculator.title": "Հաշվիչ"
 }

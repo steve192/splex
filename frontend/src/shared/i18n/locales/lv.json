@@ -508,5 +508,18 @@
   "tabs.account": "Konts",
   "tabs.activity": "Aktivitātes",
   "tabs.add": "Pievienot",
-  "tabs.overview": "Pārskats"
+  "tabs.overview": "Pārskats",
+  "calculator.add": "Pievienot",
+  "calculator.apply": "Pielietot",
+  "calculator.backspace": "Dzēst pēdējo ciparu",
+  "calculator.clear": "Notīrīt",
+  "calculator.decimal": "Decimālatdalītājs",
+  "calculator.divide": "Dalīt",
+  "calculator.equals": "Aprēķināt",
+  "calculator.multiply": "Reizināt",
+  "calculator.open": "Atvērt kalkulatoru",
+  "calculator.percent": "Procenti",
+  "calculator.preview": "Aprēķina priekšskatījums",
+  "calculator.subtract": "Atņemt",
+  "calculator.title": "Kalkulators"
 }

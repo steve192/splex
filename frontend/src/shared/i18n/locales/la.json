@@ -508,5 +508,18 @@
   "tabs.account": "Ratio",
   "tabs.activity": "Actio",
   "tabs.add": "Adde",
-  "tabs.overview": "Conspectus"
+  "tabs.overview": "Conspectus",
+  "calculator.add": "Adde",
+  "calculator.apply": "Applica",
+  "calculator.backspace": "Ultimum digitum dele",
+  "calculator.clear": "Purga",
+  "calculator.decimal": "Separator decimalis",
+  "calculator.divide": "Divide",
+  "calculator.equals": "Calcula",
+  "calculator.multiply": "Multiplica",
+  "calculator.open": "Aperi calculatorem",
+  "calculator.percent": "Centum",
+  "calculator.preview": "Praevisio calculationis",
+  "calculator.subtract": "Subtrahe",
+  "calculator.title": "Calculator"
 }

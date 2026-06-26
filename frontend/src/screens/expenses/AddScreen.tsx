@@ -12,7 +12,6 @@ import {
   Portal,
   Switch,
   Text,
-  TextInput,
   useTheme,
 } from "react-native-paper";
 
@@ -74,6 +73,7 @@ import { useExpenseValidation } from "./useExpenseValidation";
 import { PayerSheet } from "./PayerSheet";
 import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
+import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
 import { ExpenseOptionsCard } from "./ExpenseOptionsCard";
 import {
   activeExpenseContexts,
@@ -861,11 +861,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>
             <View style={styles.formRow}>
-              <TextInput
+              <MoneyAmountInput
                 mode="outlined"
                 style={styles.flex}
                 label={t("expense.amount")}
-                keyboardType="decimal-pad"
                 value={amount}
                 disabled={contextArchived}
                 onChangeText={(text) =>

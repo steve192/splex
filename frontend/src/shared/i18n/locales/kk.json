@@ -508,5 +508,18 @@
   "tabs.account": "Тіркелгі",
   "tabs.activity": "Белсенділік",
   "tabs.add": "Қосу",
-  "tabs.overview": "Шолу"
+  "tabs.overview": "Шолу",
+  "calculator.add": "Қосу",
+  "calculator.apply": "Қолдану",
+  "calculator.backspace": "Соңғы цифрды жою",
+  "calculator.clear": "Тазалау",
+  "calculator.decimal": "Ондық бөлгіш",
+  "calculator.divide": "Бөлу",
+  "calculator.equals": "Есептеу",
+  "calculator.multiply": "Көбейту",
+  "calculator.open": "Калькуляторды ашу",
+  "calculator.percent": "Пайыз",
+  "calculator.preview": "Есептеу алдын ала көрінісі",
+  "calculator.subtract": "Азайту",
+  "calculator.title": "Калькулятор"
 }

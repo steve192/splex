@@ -508,5 +508,18 @@
   "tabs.account": "Fiók",
   "tabs.activity": "Aktivitás",
   "tabs.add": "Hozzáadás",
-  "tabs.overview": "Áttekintés"
+  "tabs.overview": "Áttekintés",
+  "calculator.add": "Hozzáadás",
+  "calculator.apply": "Alkalmaz",
+  "calculator.backspace": "Töröld az utolsó számjegyet",
+  "calculator.clear": "Törlés",
+  "calculator.decimal": "Tizedesjel",
+  "calculator.divide": "Osztás",
+  "calculator.equals": "Számítás",
+  "calculator.multiply": "Szorzás",
+  "calculator.open": "Számológép megnyitása",
+  "calculator.percent": "Százalék",
+  "calculator.preview": "Számítás előnézete",
+  "calculator.subtract": "Kivonás",
+  "calculator.title": "Számológép"
 }

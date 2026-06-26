@@ -508,5 +508,18 @@
   "tabs.account": "Tili",
   "tabs.activity": "Tapahtumat",
   "tabs.add": "Lisää",
-  "tabs.overview": "Yleiskatsaus"
+  "tabs.overview": "Yleiskatsaus",
+  "calculator.add": "Lisää",
+  "calculator.apply": "Käytä",
+  "calculator.backspace": "Poista viimeinen numero",
+  "calculator.clear": "Tyhjennä",
+  "calculator.decimal": "Desimaalierotin",
+  "calculator.divide": "Jaa",
+  "calculator.equals": "Laske",
+  "calculator.multiply": "Kerro",
+  "calculator.open": "Avaa laskin",
+  "calculator.percent": "Prosentti",
+  "calculator.preview": "Laskelman esikatselu",
+  "calculator.subtract": "Vähennä",
+  "calculator.title": "Laskin"
 }

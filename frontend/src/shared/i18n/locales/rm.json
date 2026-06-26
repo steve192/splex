@@ -508,5 +508,18 @@
   "tabs.account": "Conto",
   "tabs.activity": "Activitad",
   "tabs.add": "Agiuntar",
-  "tabs.overview": "Survista"
+  "tabs.overview": "Survista",
+  "calculator.add": "Agiuntar",
+  "calculator.apply": "Applicar",
+  "calculator.backspace": "Stizzar l'ultima cifra",
+  "calculator.clear": "Svidar",
+  "calculator.decimal": "Separatur decimal",
+  "calculator.divide": "Divider",
+  "calculator.equals": "Calcular",
+  "calculator.multiply": "Multiplitgar",
+  "calculator.open": "Avrir il calculatur",
+  "calculator.percent": "Pertschient",
+  "calculator.preview": "Previsualisaziun dal calcul",
+  "calculator.subtract": "Subtrair",
+  "calculator.title": "Calculatur"
 }
