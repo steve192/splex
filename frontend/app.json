@@ -27,6 +27,9 @@
     "android": {
       "versionCode": 14,
       "package": "com.sterul.splex",
+      "permissions": [
+        "VIBRATE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/pwa-maskable-icon.png",
         "backgroundColor": "#199c8e"

@@ -1,25 +1,22 @@
 import { Platform, Vibration } from "react-native";
 
 import {
-  CALCULATOR_KEY_FEEDBACK_MS,
-  calculatorFeedbackTarget,
+  calculatorFeedbackRequest,
 } from "./calculatorFeedbackModel";
-
-const CALCULATOR_KEY_FEEDBACK_PATTERN = [CALCULATOR_KEY_FEEDBACK_MS];
 
 export function triggerCalculatorKeyFeedback(): void {
   try {
     const webVibrate = globalThis.navigator?.vibrate;
-    const target = calculatorFeedbackTarget(
+    const request = calculatorFeedbackRequest(
       Platform.OS,
       typeof webVibrate === "function",
     );
-    if (target === "web") {
-      webVibrate.call(globalThis.navigator, CALCULATOR_KEY_FEEDBACK_PATTERN);
+    if (request?.target === "web") {
+      webVibrate.call(globalThis.navigator, request.pattern);
       return;
     }
-    if (target === "native") {
-      Vibration.vibrate(CALCULATOR_KEY_FEEDBACK_PATTERN);
+    if (request?.target === "native") {
+      Vibration.vibrate(request.durationMs);
     }
   } catch {
     // Haptic feedback is intentionally best-effort; unsupported browsers/devices
