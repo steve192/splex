@@ -137,8 +137,8 @@ function CalculatorDialog({
       event.preventDefault();
       dispatch(action);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    globalThis.addEventListener("keydown", handleKeyDown);
+    return () => globalThis.removeEventListener("keydown", handleKeyDown);
   }, [visible]);
 
   function apply() {
@@ -219,8 +219,10 @@ function CalculatorKeypad({
     dispatch(action);
   }
 
-  const rows: Array<Array<CalculatorKeyDefinition | null>> = [
-    [
+  const rows: CalculatorKeyRow[] = [
+    {
+      id: "operations",
+      keys: [
       {
         label: "C",
         action: { type: "clear" },
@@ -245,15 +247,27 @@ function CalculatorKeypad({
         accessibilityLabel: t("calculator.divide"),
         tone: "operation",
       },
-    ],
-    ["7", "8", "9"]
-      .map(digitKey)
-      .concat(operatorKey("×", t("calculator.multiply"))),
-    ["4", "5", "6"]
-      .map(digitKey)
-      .concat(operatorKey("-", t("calculator.subtract"))),
-    ["1", "2", "3"].map(digitKey).concat(operatorKey("+", t("calculator.add"))),
-    [
+      ],
+    },
+    {
+      id: "digits-7-9",
+      keys: ["7", "8", "9"]
+        .map(digitKey)
+        .concat(operatorKey("×", t("calculator.multiply"))),
+    },
+    {
+      id: "digits-4-6",
+      keys: ["4", "5", "6"]
+        .map(digitKey)
+        .concat(operatorKey("-", t("calculator.subtract"))),
+    },
+    {
+      id: "digits-1-3",
+      keys: ["1", "2", "3"].map(digitKey).concat(operatorKey("+", t("calculator.add"))),
+    },
+    {
+      id: "zero",
+      keys: [
       { label: "0", action: { type: "digit", value: "0" } },
       {
         label: ".",
@@ -266,29 +280,30 @@ function CalculatorKeypad({
         accessibilityLabel: t("calculator.equals"),
         tone: "equals",
       },
-      null,
-    ],
+        { id: "zero-placeholder", placeholder: true },
+      ],
+    },
   ];
 
   return (
     <View style={styles.calculatorKeypad}>
-      {rows.map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.calculatorKeyRow}>
-          {row.map((key, keyIndex) =>
-            key ? (
+      {rows.map((row) => (
+        <View key={row.id} style={styles.calculatorKeyRow}>
+          {row.keys.map((key) =>
+            isCalculatorPlaceholder(key) ? (
+              <View
+                key={key.id}
+                style={[
+                  styles.calculatorKeyPlaceholder,
+                  { height: keySize, width: keySize },
+                ]}
+              />
+            ) : (
               <CalculatorKey
                 key={key.label}
                 keyDefinition={key}
                 size={keySize}
                 onPress={() => dispatchWithFeedback(key.action)}
-              />
-            ) : (
-              <View
-                key={`placeholder-${keyIndex}`}
-                style={[
-                  styles.calculatorKeyPlaceholder,
-                  { height: keySize, width: keySize },
-                ]}
               />
             ),
           )}
@@ -306,12 +321,28 @@ type CalculatorKeyProps = {
 
 type CalculatorKeyTone = "operation" | "equals";
 
+type CalculatorKeyRow = {
+  id: string;
+  keys: Array<CalculatorKeyDefinition | CalculatorPlaceholderDefinition>;
+};
+
 type CalculatorKeyDefinition = {
   label: string;
   action: CalculatorAction;
   accessibilityLabel?: string;
   tone?: CalculatorKeyTone;
 };
+
+type CalculatorPlaceholderDefinition = {
+  id: string;
+  placeholder: true;
+};
+
+function isCalculatorPlaceholder(
+  key: CalculatorKeyDefinition | CalculatorPlaceholderDefinition,
+): key is CalculatorPlaceholderDefinition {
+  return "placeholder" in key;
+}
 
 function CalculatorKey({
   keyDefinition,

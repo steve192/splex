@@ -95,6 +95,32 @@ export function SplitSheet({
     const memberShare = perMemberShare(participant.id);
     const showInput = tabValue !== "equal";
     const splitValue = splitValues[participant.id] ?? "";
+    let splitInput = null;
+    if (showInput && tabValue === "percentage") {
+      splitInput = (
+        <TextInput
+          mode="outlined"
+          dense
+          style={styles.splitRowInput}
+          keyboardType="decimal-pad"
+          value={splitValue}
+          disabled={!selected}
+          onChangeText={(value) => onSplitValueChange(participant.id, value)}
+          right={<TextInput.Affix text="%" />}
+        />
+      );
+    } else if (showInput) {
+      splitInput = (
+        <MoneyAmountInput
+          mode="outlined"
+          dense
+          style={styles.splitRowInput}
+          value={splitValue}
+          disabled={!selected}
+          onChangeText={(value) => onSplitValueChange(participant.id, value)}
+        />
+      );
+    }
 
     return (
       <List.Item
@@ -112,31 +138,7 @@ export function SplitSheet({
             <PersonAvatar name={nameFor(participant)} imageUrl={participant.avatar_url} />
           </View>
         )}
-        right={() =>
-          showInput ? (
-            tabValue === "percentage" ? (
-              <TextInput
-                mode="outlined"
-                dense
-                style={styles.splitRowInput}
-                keyboardType="decimal-pad"
-                value={splitValue}
-                disabled={!selected}
-                onChangeText={(value) => onSplitValueChange(participant.id, value)}
-                right={<TextInput.Affix text="%" />}
-              />
-            ) : (
-              <MoneyAmountInput
-                mode="outlined"
-                dense
-                style={styles.splitRowInput}
-                value={splitValue}
-                disabled={!selected}
-                onChangeText={(value) => onSplitValueChange(participant.id, value)}
-              />
-            )
-          ) : null
-        }
+        right={() => splitInput}
       />
     );
   }

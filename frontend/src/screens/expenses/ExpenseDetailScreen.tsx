@@ -1,6 +1,7 @@
 import { RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { View } from "react-native";
 import {
   ActivityIndicator,
@@ -24,10 +25,9 @@ import { useI18n } from "../../shared/i18n/I18nContext";
 import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
 import { formatDeviceDate } from "../../shared/lib/dates";
-import { asNumber } from "../../shared/lib/money";
 import { detailActionState } from "../../shared/ledger/detailActionState";
 import { usePendingAction } from "../../shared/lib/usePendingAction";
-import { Expense, Friend, Group } from "../../shared/types/models";
+import { Expense, ExpenseShare, Friend, Group } from "../../shared/types/models";
 import { LocationMap } from "../../shared/ui/LocationMap";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { negativeColor } from "../../shared/ui/colors";
@@ -36,6 +36,7 @@ import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { expenseDetailViewState } from "./expenseLoading";
+import { expensePersonalNet, isConvertedExpense } from "./expenseDetailModel";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
 
 type ExpenseDetailNavigation = NativeStackNavigationProp<
@@ -71,20 +72,9 @@ export function ExpenseDetailScreen({
     archived: groupArchived,
     deleted: Boolean(expense?.deleted_at)
   });
-  const converted = expense
-    ? expense.original_currency !== expense.converted_currency ||
-      expense.original_amount !== expense.converted_amount
-    : false;
-  const personalNet = useMemo(() => {
-    if (!expense || currentParticipantId == null) return null;
-    const paid = expense.payments
-      .filter((share) => share.participant_id === currentParticipantId)
-      .reduce((sum, share) => sum + asNumber(share.amount), 0);
-    const owed = expense.owed
-      .filter((share) => share.participant_id === currentParticipantId)
-      .reduce((sum, share) => sum + asNumber(share.amount), 0);
-    return paid - owed;
-  }, [expense, currentParticipantId]);
+  const personalNet = expense
+    ? expensePersonalNet(expense, currentParticipantId)
+    : null;
 
   async function load() {
     setLoading(true);
@@ -162,6 +152,24 @@ export function ExpenseDetailScreen({
     hasExpense: Boolean(expense),
     loadFailed,
   });
+  let actionContent = (
+    <Button
+      mode="elevated"
+      icon="delete-outline"
+      textColor={dangerColor}
+      disabled={hasPending}
+      onPress={() => setConfirmDelete(true)}
+    >
+      {t("expense.delete")}
+    </Button>
+  );
+  if (actionState === "deleted") {
+    actionContent = <Text variant="bodyMedium">{t("expense.deleted")}</Text>;
+  } else if (actionState === "archived") {
+    actionContent = (
+      <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
+    );
+  }
 
   return (
     <View style={styles.flex}>
@@ -177,116 +185,11 @@ export function ExpenseDetailScreen({
           </View>
         ) : null}
         {viewState === "content" && expense ? (
-          <>
-            <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
-            {expense.latitude && expense.longitude ? (
-              <Card mode="elevated">
-                <Card.Content style={styles.gap}>
-                  <LocationMap
-                    latitude={expense.latitude}
-                    longitude={expense.longitude}
-                    height={200}
-                  />
-                </Card.Content>
-              </Card>
-            ) : null}
-            <View style={styles.metricGrid}>
-              <Card mode="elevated" style={styles.metricTile}>
-                <Card.Content>
-                  <Text variant="labelLarge">{t("expense.amount")}</Text>
-                  <MoneyText
-                    variant="headlineSmall"
-                    amount={expense.converted_amount}
-                    currency={expense.converted_currency}
-                    plain
-                  />
-                </Card.Content>
-              </Card>
-              {personalNet !== null && (
-                <Card mode="elevated" style={styles.metricTile}>
-                  <Card.Content>
-                    <Text variant="labelLarge">{t("expense.yourBalance")}</Text>
-                    <MoneyText
-                      variant="headlineSmall"
-                      amount={personalNet}
-                      currency={expense.converted_currency}
-                    />
-                  </Card.Content>
-                </Card>
-              )}
-              {converted ? (
-                <Card mode="elevated" style={styles.metricTile}>
-                  <Card.Content>
-                    <Text variant="labelLarge">
-                      {t("expense.originalAmount")}
-                    </Text>
-                    <Text variant="headlineSmall">
-                      {expense.original_amount} {expense.original_currency}
-                    </Text>
-                  </Card.Content>
-                </Card>
-              ) : null}
-            </View>
-
-            <Card mode="elevated">
-              <Card.Content style={styles.gap}>
-                <Text variant="titleMedium">{t("expense.paidBy")}</Text>
-                {expense.payments.map((share) => (
-                  <List.Item
-                    key={share.participant_id}
-                    title={share.display_name}
-                    description={`${share.amount} ${expense.converted_currency}`}
-                    left={() => (
-                      <ClickableAvatar
-                        name={share.display_name}
-                        imageUrl={share.avatar_url}
-                      />
-                    )}
-                  />
-                ))}
-                <Divider />
-                <Text variant="titleMedium">{t("expense.owedBy")}</Text>
-                {expense.owed.map((share) => (
-                  <List.Item
-                    key={share.participant_id}
-                    title={share.display_name}
-                    description={`${share.amount} ${expense.converted_currency}`}
-                    left={() => (
-                      <ClickableAvatar
-                        name={share.display_name}
-                        imageUrl={share.avatar_url}
-                      />
-                    )}
-                  />
-                ))}
-              </Card.Content>
-            </Card>
-
-            {expense.receipts && expense.receipts.length > 0 ? (
-              <Card mode="elevated">
-                <Card.Content style={styles.gap}>
-                  <Text variant="titleMedium">{t("receipts.section")}</Text>
-                  <ReceiptList receipts={expense.receipts} />
-                </Card.Content>
-              </Card>
-            ) : null}
-
-            {actionState === "deleted" ? (
-              <Text variant="bodyMedium">{t("expense.deleted")}</Text>
-            ) : actionState === "archived" ? (
-              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
-            ) : (
-              <Button
-                mode="elevated"
-                icon="delete-outline"
-                textColor={dangerColor}
-                disabled={hasPending}
-                onPress={() => setConfirmDelete(true)}
-              >
-                {t("expense.delete")}
-              </Button>
-            )}
-          </>
+          <ExpenseDetailContent
+            expense={expense}
+            personalNet={personalNet}
+            actionContent={actionContent}
+          />
         ) : null}
       </Screen>
 
@@ -319,5 +222,139 @@ export function ExpenseDetailScreen({
         </Dialog>
       </Portal>
     </View>
+  );
+}
+
+function ExpenseDetailContent({
+  expense,
+  personalNet,
+  actionContent,
+}: Readonly<{
+  expense: Expense;
+  personalNet: number | null;
+  actionContent: ReactNode;
+}>) {
+  return (
+    <>
+      <Text variant="bodyMedium">{formatDeviceDate(expense.date)}</Text>
+      <ExpenseLocationCard expense={expense} />
+      <ExpenseMetrics expense={expense} personalNet={personalNet} />
+      <ExpenseSharesCard expense={expense} />
+      <ExpenseReceiptsCard expense={expense} />
+      {actionContent}
+    </>
+  );
+}
+
+function ExpenseLocationCard({ expense }: Readonly<{ expense: Expense }>) {
+  if (!expense.latitude || !expense.longitude) return null;
+
+  return (
+    <Card mode="elevated">
+      <Card.Content style={styles.gap}>
+        <LocationMap
+          latitude={expense.latitude}
+          longitude={expense.longitude}
+          height={200}
+        />
+      </Card.Content>
+    </Card>
+  );
+}
+
+function ExpenseMetrics({
+  expense,
+  personalNet,
+}: Readonly<{ expense: Expense; personalNet: number | null }>) {
+  const { t } = useI18n();
+
+  return (
+    <View style={styles.metricGrid}>
+      <Card mode="elevated" style={styles.metricTile}>
+        <Card.Content>
+          <Text variant="labelLarge">{t("expense.amount")}</Text>
+          <MoneyText
+            variant="headlineSmall"
+            amount={expense.converted_amount}
+            currency={expense.converted_currency}
+            plain
+          />
+        </Card.Content>
+      </Card>
+      {personalNet !== null ? (
+        <Card mode="elevated" style={styles.metricTile}>
+          <Card.Content>
+            <Text variant="labelLarge">{t("expense.yourBalance")}</Text>
+            <MoneyText
+              variant="headlineSmall"
+              amount={personalNet}
+              currency={expense.converted_currency}
+            />
+          </Card.Content>
+        </Card>
+      ) : null}
+      {isConvertedExpense(expense) ? (
+        <Card mode="elevated" style={styles.metricTile}>
+          <Card.Content>
+            <Text variant="labelLarge">{t("expense.originalAmount")}</Text>
+            <Text variant="headlineSmall">
+              {expense.original_amount} {expense.original_currency}
+            </Text>
+          </Card.Content>
+        </Card>
+      ) : null}
+    </View>
+  );
+}
+
+function ExpenseSharesCard({ expense }: Readonly<{ expense: Expense }>) {
+  const { t } = useI18n();
+
+  return (
+    <Card mode="elevated">
+      <Card.Content style={styles.gap}>
+        <Text variant="titleMedium">{t("expense.paidBy")}</Text>
+        <ExpenseShareRows
+          shares={expense.payments}
+          currency={expense.converted_currency}
+        />
+        <Divider />
+        <Text variant="titleMedium">{t("expense.owedBy")}</Text>
+        <ExpenseShareRows
+          shares={expense.owed}
+          currency={expense.converted_currency}
+        />
+      </Card.Content>
+    </Card>
+  );
+}
+
+function ExpenseShareRows({
+  shares,
+  currency,
+}: Readonly<{ shares: ExpenseShare[]; currency: string }>) {
+  return shares.map((share) => (
+    <List.Item
+      key={share.participant_id}
+      title={share.display_name}
+      description={`${share.amount} ${currency}`}
+      left={() => (
+        <ClickableAvatar name={share.display_name} imageUrl={share.avatar_url} />
+      )}
+    />
+  ));
+}
+
+function ExpenseReceiptsCard({ expense }: Readonly<{ expense: Expense }>) {
+  const { t } = useI18n();
+  if (!expense.receipts || expense.receipts.length === 0) return null;
+
+  return (
+    <Card mode="elevated">
+      <Card.Content style={styles.gap}>
+        <Text variant="titleMedium">{t("receipts.section")}</Text>
+        <ReceiptList receipts={expense.receipts} />
+      </Card.Content>
+    </Card>
   );
 }

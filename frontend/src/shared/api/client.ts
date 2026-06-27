@@ -505,9 +505,15 @@ export const tokenStorage = {
 // correctly whether the user entered "mydomain.com" or "mydomain.com/app".
 // Origins saved before the /app move (no suffix) are unaffected.
 function normalizeBaseUrl(value: string): string {
-  return value
-    .trim()
-    .replace(/\/+$/, "")
-    .replace(/\/app$/i, "")
-    .replace(/\/+$/, "");
+  let normalized = value.trim();
+  while (normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+  if (normalized.toLowerCase().endsWith("/app")) {
+    normalized = normalized.slice(0, -"/app".length);
+  }
+  while (normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
 }

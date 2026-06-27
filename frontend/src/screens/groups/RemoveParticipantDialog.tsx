@@ -15,6 +15,10 @@ import { Participant } from "../../shared/types/models";
 import { MoneyText } from "../../shared/ui/MoneyText";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
+import {
+  hasBlockingOutstandingBalance,
+  removeParticipantWarningKey,
+} from "./removeParticipantDialogModel";
 
 type OutstandingRow = {
   participant_id: number;
@@ -92,18 +96,11 @@ export function RemoveParticipantDialog({
     };
   }, [api, groupId, target]);
 
-  const hasOutstanding =
-    !groupWillBeDeleted &&
-    Boolean(
-      outstanding && (outstanding.owes.length || outstanding.owed_by.length),
-    );
-  // Registered users get converted into an unregistered placeholder that keeps their
-  // history in the group; unregistered users have their balance auto-settled then
-  // get removed outright, so the warning copy differs between the two.
-  const warningKey =
-    target?.kind === "unregistered"
-      ? "group.removeMember.outstandingWarning"
-      : "group.removeMember.convertWarning";
+  const hasOutstanding = hasBlockingOutstandingBalance({
+    groupWillBeDeleted,
+    outstanding,
+  });
+  const warningKey = removeParticipantWarningKey(target);
 
   return (
     <Dialog
@@ -121,43 +118,11 @@ export function RemoveParticipantDialog({
           </View>
         ) : null}
         {hasOutstanding && outstanding ? (
-          <>
-            <HelperText type="info" visible>
-              {t(warningKey, { name: target?.display_name ?? "" })}
-            </HelperText>
-            {outstanding.owes.length ? (
-              <View style={styles.gap}>
-                <Text variant="titleSmall">
-                  {t("group.removeMember.owesHeader", {
-                    name: target?.display_name ?? "",
-                  })}
-                </Text>
-                {outstanding.owes.map((row) => (
-                  <OutstandingLine
-                    key={`owes-${row.participant_id}`}
-                    row={row}
-                    currency={outstanding.currency}
-                  />
-                ))}
-              </View>
-            ) : null}
-            {outstanding.owed_by.length ? (
-              <View style={styles.gap}>
-                <Text variant="titleSmall">
-                  {t("group.removeMember.owedByHeader", {
-                    name: target?.display_name ?? "",
-                  })}
-                </Text>
-                {outstanding.owed_by.map((row) => (
-                  <OutstandingLine
-                    key={`owed-${row.participant_id}`}
-                    row={row}
-                    currency={outstanding.currency}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </>
+          <OutstandingWarningContent
+            outstanding={outstanding}
+            targetName={target?.display_name ?? ""}
+            warningKey={warningKey}
+          />
         ) : null}
       </Dialog.Content>
       <Dialog.Actions>
@@ -169,6 +134,65 @@ export function RemoveParticipantDialog({
         </Button>
       </Dialog.Actions>
     </Dialog>
+  );
+}
+
+function OutstandingWarningContent({
+  outstanding,
+  targetName,
+  warningKey,
+}: Readonly<{
+  outstanding: OutstandingResponse;
+  targetName: string;
+  warningKey: string;
+}>) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <HelperText type="info" visible>
+        {t(warningKey, { name: targetName })}
+      </HelperText>
+      <OutstandingRows
+        rows={outstanding.owes}
+        currency={outstanding.currency}
+        title={t("group.removeMember.owesHeader", { name: targetName })}
+        keyPrefix="owes"
+      />
+      <OutstandingRows
+        rows={outstanding.owed_by}
+        currency={outstanding.currency}
+        title={t("group.removeMember.owedByHeader", { name: targetName })}
+        keyPrefix="owed"
+      />
+    </>
+  );
+}
+
+function OutstandingRows({
+  rows,
+  currency,
+  title,
+  keyPrefix,
+}: Readonly<{
+  rows: OutstandingRow[];
+  currency: string;
+  title: string;
+  keyPrefix: string;
+}>) {
+  if (rows.length === 0) return null;
+
+  return (
+    <View style={styles.gap}>
+      <Text variant="titleSmall">{title}</Text>
+      {rows.map((row) => (
+        <OutstandingLine
+          key={`${keyPrefix}-${row.participant_id}`}
+          row={row}
+          currency={currency}
+        />
+      ))}
+    </View>
   );
 }
 

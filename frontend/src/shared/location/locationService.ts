@@ -2,12 +2,18 @@ import * as Location from "expo-location";
 import { Platform } from "react-native";
 
 import { ApiClient } from "../api/client";
+import {
+  browserPermissionStateToLocationState,
+  expoPermissionStatusToLocationState,
+  type BrowserPermissionState,
+  type LocationPermissionState,
+} from "./locationPermissionModel";
 
 let lastLocation: { latitude: number; longitude: number; timestamp: number } | null = null;
 const LOCATION_CACHE_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 const LOCATION_REQUEST_TIMEOUT = 8000; // 8s before falling back to last-known
 
-export type LocationPermissionState = "granted" | "denied" | "undetermined";
+export type { LocationPermissionState } from "./locationPermissionModel";
 
 /**
  * Read the current location permission without prompting the user.
@@ -18,58 +24,25 @@ export type LocationPermissionState = "granted" | "denied" | "undetermined";
  */
 export async function getLocationPermissionStatus(): Promise<LocationPermissionState> {
   if (Platform.OS === "web") {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      return "denied";
-    }
-    if (typeof navigator.permissions?.query === "function") {
-      try {
-        const status = await navigator.permissions.query({ name: "geolocation" });
-        if (status.state === "granted") return "granted";
-        if (status.state === "denied") return "denied";
-      } catch {
-        // Permissions API unavailable - we can't know without prompting.
-      }
-    }
-    return "undetermined";
+    return browserPermissionStateToLocationState(await readBrowserPermission());
   }
   const { status } = await Location.getForegroundPermissionsAsync();
-  if (status === Location.PermissionStatus.GRANTED) return "granted";
-  if (status === Location.PermissionStatus.DENIED) return "denied";
-  return "undetermined";
+  return expoPermissionStatusToLocationState(status);
 }
 
 export async function requestLocationPermission(): Promise<LocationPermissionState> {
   if (Platform.OS === "web") {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      return "denied";
-    }
+    if (!browserGeolocationAvailable()) return "denied";
     // Browsers expose permission state via the Permissions API where available; this lets us
     // skip the prompt when the user has already granted/denied location for this origin.
-    if (typeof navigator.permissions?.query === "function") {
-      try {
-        const status = await navigator.permissions.query({ name: "geolocation" });
-        if (status.state === "granted") return "granted";
-        if (status.state === "denied") return "denied";
-      } catch {
-        // Some browsers (older Safari, Firefox in private mode) reject - fall through to prompt.
-      }
+    const browserPermission = await readBrowserPermission();
+    if (browserPermission !== "prompt") {
+      return browserPermissionStateToLocationState(browserPermission);
     }
     // Actively trigger the browser prompt by requesting a position. Resolves "granted" on
     // success, "denied" when the user blocks the prompt, "undetermined" on timeout or
     // hardware error so the caller doesn't lock the user out.
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        () => resolve("granted"),
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            resolve("denied");
-          } else {
-            resolve("undetermined");
-          }
-        },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-      );
-    });
+    return promptBrowserLocationPermission();
   }
 
   const { status: existingStatus } = await Location.getForegroundPermissionsAsync();
@@ -78,10 +51,7 @@ export async function requestLocationPermission(): Promise<LocationPermissionSta
   }
 
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status === Location.PermissionStatus.GRANTED) {
-    return "granted";
-  }
-  return status === Location.PermissionStatus.DENIED ? "denied" : "undetermined";
+  return expoPermissionStatusToLocationState(status);
 }
 
 export async function isLocationEnabled(): Promise<boolean> {
@@ -137,7 +107,7 @@ export async function getCurrentLocation(): Promise<{ latitude: number; longitud
 
 function getWebLocation(): Promise<{ latitude: number; longitude: number } | null> {
   return new Promise((resolve) => {
-    if (!navigator.geolocation) {
+    if (!browserGeolocationAvailable()) {
       resolve(null);
       return;
     }
@@ -156,6 +126,35 @@ function getWebLocation(): Promise<{ latitude: number; longitude: number } | nul
       },
       () => {
         resolve(null);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+function browserGeolocationAvailable(): boolean {
+  return typeof navigator !== "undefined" && Boolean(navigator.geolocation);
+}
+
+async function readBrowserPermission(): Promise<BrowserPermissionState> {
+  if (!browserGeolocationAvailable()) return "unsupported";
+  if (typeof navigator.permissions?.query !== "function") return "prompt";
+
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state;
+  } catch {
+    // Some browsers (older Safari, Firefox in private mode) reject.
+    return "prompt";
+  }
+}
+
+function promptBrowserLocationPermission(): Promise<LocationPermissionState> {
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      () => resolve("granted"),
+      (error) => {
+        resolve(error.code === error.PERMISSION_DENIED ? "denied" : "undetermined");
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     );

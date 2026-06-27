@@ -3,14 +3,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import {
-  ActivityIndicator,
   Button,
   Card,
-  Dialog,
-  HelperText,
-  List,
-  Portal,
-  Switch,
   Text,
   useTheme,
 } from "react-native-paper";
@@ -36,7 +30,6 @@ import {
   saveRememberContextPreference,
 } from "../../shared/lib/lastContextPreference";
 import {
-  buildParticipantsForFriend,
   createClientId,
   moneyValue,
 } from "../../shared/lib/money";
@@ -50,13 +43,9 @@ import {
   Participant,
   SplitMethod,
 } from "../../shared/types/models";
-import { DatePickerSheet } from "../../shared/ui/DatePickerSheet";
 import { negativeColor } from "../../shared/ui/colors";
-import { CurrencySelectionSheet } from "../../shared/ui/CurrencySelectionSheet";
-import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
-import { ContextPickerSheet } from "./ContextPickerSheet";
 import {
   applyPaymentsToForm,
   buildExpenseLocationPayload,
@@ -66,26 +55,43 @@ import {
   expenseLocationDescriptionKey,
   hydrateSplit,
   normalizeExpenseAmountInput,
-  perMemberShare,
-  splitTabValue,
 } from "./expenseFormLogic";
 import { useExpenseValidation } from "./useExpenseValidation";
-import { PayerSheet } from "./PayerSheet";
-import { SplitSheet } from "./SplitSheet";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
 import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
-import { ExpenseOptionsCard } from "./ExpenseOptionsCard";
 import {
   activeExpenseContexts,
   eligibleExpenseMoveGroups,
   hasAlternativeExpenseMoveGroup,
 } from "./expenseContexts";
 import { expenseEditViewState } from "./expenseLoading";
-import { ReceiptsCard } from "./ReceiptsCard";
 import { useReceiptUpload } from "./useReceiptUpload";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
-
-type ActiveSheet = "context" | "currency" | "date" | "payer" | "split" | null;
+import {
+  EditExpensePlaceholder,
+  ExpenseFormHeader,
+  ExpenseFormMessages,
+  ExpenseRevealSection,
+} from "./AddScreenSections";
+import { AddScreenSheets } from "./AddScreenSheets";
+import {
+  activeContextOptions,
+  allParticipantsSelected,
+  loadedFriendContext,
+  loadedGroupContext,
+  nextPayerId,
+  selectedExpenseContext,
+  shouldApplyContextDefaults,
+  type LoadedExpenseContext,
+} from "./addScreenContextModel";
+import {
+  pendingExpenseMutation,
+  persistExpenseSave,
+  shouldQueueOfflineCreate,
+  type ExpenseSaveExpense,
+  type ExpenseSavePayload,
+} from "./addScreenSaveModel";
+import type { ActiveSheet } from "./addScreenTypes";
 
 type AddScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "AddExpense">
@@ -203,38 +209,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setIncludeLocation(locationTrackingEnabled);
   }
 
-  const contextOptions = useMemo<ContextOption[]>(() => {
-    const options = [
-      ...groups.map((group) => ({
-        type: "group" as const,
-        id: group.id,
-        name: group.name,
-        currency: group.default_currency,
-        image_url: group.icon_url,
-        last_expense_date: group.last_expense_date,
-      })),
-      ...friends.map((friend) => ({
-        type: "friendship" as const,
-        id: friend.id,
-        name: friend.display_name,
-        currency: friend.default_currency,
-        image_url: friend.avatar_url,
-        last_expense_date: friend.last_expense_date,
-      })),
-    ];
-
-    // Sort by recently used (most recent expense first), then by name for those without expenses
-    return options.sort((a, b) => {
-      const aDate = a.last_expense_date
-        ? new Date(a.last_expense_date).getTime()
-        : 0;
-      const bDate = b.last_expense_date
-        ? new Date(b.last_expense_date).getTime()
-        : 0;
-      if (aDate !== bDate) return bDate - aDate;
-      return a.name.localeCompare(b.name);
-    });
-  }, [groups, friends]);
+  const contextOptions = useMemo<ContextOption[]>(
+    () => activeContextOptions(groups, friends),
+    [groups, friends],
+  );
 
   const eligibleMoveGroups = useMemo(
     () => eligibleExpenseMoveGroups(moveGroupDetails, loadedExpense),
@@ -250,22 +228,18 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     editing && loadedExpense?.group_id != null ? eligibleMoveGroups : groups;
   const pickerFriends = editing ? [] : friends;
 
-  const selectedContext =
-    contextOptions.find(
-      (option) => option.type === contextType && option.id === contextId,
-    ) ??
-    (archivedContextOption?.type === contextType &&
-    archivedContextOption.id === contextId
-      ? archivedContextOption
-      : undefined);
+  const selectedContext = selectedExpenseContext({
+    options: contextOptions,
+    archivedOption: archivedContextOption,
+    contextType,
+    contextId,
+  });
   const canRevealOptions =
     description.trim().length > 0 && amount.trim().length > 0;
-  const selectedAllParticipants =
-    participants.length > 0 &&
-    selectedParticipantIds.length === participants.length &&
-    participants.every((participant) =>
-      selectedParticipantIds.includes(participant.id),
-    );
+  const selectedAllParticipants = allParticipantsSelected(
+    participants,
+    selectedParticipantIds,
+  );
   const {
     totalAmount,
     tabValue,
@@ -463,59 +437,29 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     async function loadContext() {
       const activeContextId = contextId;
       if (activeContextId == null) return;
+      const applyDefaults = shouldApplyContextDefaults({
+        hasLoadedExpense: Boolean(loadedExpense),
+        pendingMutationId,
+      });
 
       if (contextType === "group") {
         const group = await cachedGet<Group>(
           api,
           `/api/groups/${activeContextId}/`,
         );
-        const archived = isGroupArchived(group);
-        setContextArchived(archived);
-        setArchivedContextOption(
-          archived
-            ? {
-                type: "group",
-                id: group.id,
-                name: group.name,
-                currency: group.default_currency,
-                image_url: group.icon_url,
-                last_expense_date: group.last_expense_date,
-              }
-            : null,
-        );
-        const rows = group.participants ?? [];
-        setParticipants(rows);
-        setCurrentParticipantId(group.current_participant_id ?? null);
-        setPayerId(
-          (current) =>
-            current ?? group.current_participant_id ?? rows[0]?.id ?? null,
-        );
-        if (!loadedExpense && !pendingMutationId)
-          setCurrency(currencyCodeOrFallback(group.default_currency));
-        if (!loadedExpense && !pendingMutationId && group.default_split_method)
-          setSplitMethod(group.default_split_method);
-        if (!loadedExpense && !pendingMutationId)
-          setSelectedParticipantIds(rows.map((participant) => participant.id));
+        const loadedContext = loadedGroupContext(group);
+        applyLoadedContext(loadedContext, applyDefaults);
+        if (applyDefaults && loadedContext.defaultSplitMethod) {
+          setSplitMethod(loadedContext.defaultSplitMethod);
+        }
       } else {
-        setContextArchived(false);
-        setArchivedContextOption(null);
         const friend = await cachedGet<Friend>(
           api,
           `/api/friends/${activeContextId}/`,
         );
-        const rows = buildParticipantsForFriend(friend);
-        setParticipants(rows);
-        setCurrentParticipantId(friend.current_participant_id ?? null);
-        setPayerId(
-          (current) =>
-            current ?? friend.current_participant_id ?? rows[0]?.id ?? null,
-        );
-        if (!loadedExpense && !pendingMutationId)
-          setCurrency(currencyCodeOrFallback(friend.default_currency));
-        if (!loadedExpense && !pendingMutationId)
-          setSelectedParticipantIds(rows.map((participant) => participant.id));
+        applyLoadedContext(loadedFriendContext(friend), applyDefaults);
       }
-      if (!loadedExpense && !pendingMutationId) {
+      if (applyDefaults) {
         setSplitValues({});
         setPaymentValues({});
       }
@@ -540,6 +484,23 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     pendingMutationId,
     t,
   ]);
+
+  function applyLoadedContext(
+    loadedContext: LoadedExpenseContext,
+    applyDefaults: boolean,
+  ) {
+    setContextArchived(loadedContext.archived);
+    setArchivedContextOption(loadedContext.archivedContextOption);
+    setParticipants(loadedContext.participants);
+    setCurrentParticipantId(loadedContext.currentParticipantId);
+    setPayerId((current) => nextPayerId(current, loadedContext));
+    if (applyDefaults) {
+      setCurrency(currencyCodeOrFallback(loadedContext.defaultCurrency));
+      setSelectedParticipantIds(
+        loadedContext.participants.map((participant) => participant.id),
+      );
+    }
+  }
 
   useEffect(() => {
     if (!loadedExpense || !participants.length) return;
@@ -639,7 +600,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     }
     if (splitConfigInvalid || paymentConfigInvalid) return;
     setSaving(true);
-    const expense = {
+    const expense: ExpenseSaveExpense = {
       client_id: draftClientId,
       description: description.trim(),
       amount: moneyValue(amount),
@@ -672,29 +633,22 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           }
         : {}),
     };
-    const payload = {
+    const payload: ExpenseSavePayload = {
       context_type: contextType,
       context_id: contextId,
       expense,
     };
     try {
-      const path =
-        contextType === "group"
-          ? `/api/groups/${contextId}/expenses/`
-          : `/api/friends/${contextId}/expenses/`;
-      if (expenseId) {
-        await api.patch(`/api/expenses/${expenseId}/`, expense);
-      } else if (pendingMutationId) {
-        await syncPendingMutations.enqueue({
-          id: pendingMutationId,
-          type: "create_expense",
-          payload,
-          createdAt: new Date().toISOString(),
-          status: "pending",
-        });
-      } else {
-        await api.post(path, expense);
-      }
+      await persistExpenseSave({
+        api,
+        expenseId,
+        pendingMutationId,
+        contextType,
+        contextId,
+        expense,
+        payload,
+        createdAt: new Date().toISOString(),
+      });
       setMessage(t("expense.saved"));
       showSuccess({ icon: "check" });
       navigation.setParams?.({
@@ -711,21 +665,23 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setPaymentValues({});
       }
     } catch (error) {
-      if (error instanceof ApiError && error.offline && !expenseId) {
-        await syncPendingMutations.enqueue({
-          id: expense.client_id,
-          type: "create_expense",
-          payload,
-          createdAt: new Date().toISOString(),
-          status: "pending",
-        });
+      if (shouldQueueOfflineCreate(error, expenseId)) {
+        await syncPendingMutations.enqueue(
+          pendingExpenseMutation({
+            id: expense.client_id,
+            payload,
+            createdAt: new Date().toISOString(),
+          }),
+        );
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
         navigateAfterSave();
-      } else if (error instanceof ApiError) {
-        setMessage(apiWriteErrorMessage(error, t));
       } else {
-        setMessage(t("expense.saveFailed"));
+        const errorMessage =
+          error instanceof ApiError
+            ? apiWriteErrorMessage(error, t)
+            : t("expense.saveFailed");
+        setMessage(errorMessage);
       }
     } finally {
       setSaving(false);
@@ -793,66 +749,24 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
   if (editViewState !== "content") {
     return (
-      <View style={styles.flex}>
-        <Screen>
-          <View style={styles.rowBetween}>
-            <Text variant="headlineSmall">
-              {editing ? t("expense.edit") : t("expense.add")}
-            </Text>
-            {editing && (
-              <Button mode="text" onPress={navigateAfterSave}>
-                {t("common.cancel")}
-              </Button>
-            )}
-          </View>
-          <View style={styles.emptyStateContent}>
-            {editViewState === "loading" ? (
-              <ActivityIndicator />
-            ) : (
-              <Text variant="bodyMedium">{t("common.error")}</Text>
-            )}
-          </View>
-        </Screen>
-      </View>
+      <EditExpensePlaceholder
+        editing={editing}
+        viewState={editViewState}
+        onCancel={navigateAfterSave}
+      />
     );
   }
 
   return (
     <View style={styles.flex}>
       <Screen>
-        <View style={styles.rowBetween}>
-          <View style={[styles.flex, styles.inline]}>
-            {selectedContext ? (
-              <PersonAvatar
-                name={selectedContext.name}
-                imageUrl={selectedContext.image_url}
-              />
-            ) : null}
-            <View>
-              <Text variant="headlineSmall">
-                {editing ? t("expense.edit") : t("expense.add")}
-              </Text>
-              {selectedContext ? (
-                <Text variant="bodyMedium">{selectedContext.name}</Text>
-              ) : null}
-            </View>
-          </View>
-          {editing && (
-            <Button mode="text" onPress={navigateAfterSave}>
-              {t("common.cancel")}
-            </Button>
-          )}
-          {!editing && selectedContext && (
-            <Button
-              mode="text"
-              icon="swap-horizontal"
-              disabled={contextArchived}
-              onPress={() => setActiveSheet("context")}
-            >
-              {t("expense.changeContext")}
-            </Button>
-          )}
-        </View>
+        <ExpenseFormHeader
+          editing={editing}
+          selectedContext={selectedContext}
+          contextArchived={contextArchived}
+          onCancel={navigateAfterSave}
+          onChangeContext={() => setActiveSheet("context")}
+        />
 
         <Card mode="elevated" style={styles.card}>
           <Card.Content style={styles.gap}>
@@ -889,105 +803,47 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
           </Card.Content>
         </Card>
 
-        {canRevealOptions ? (
-          <>
-            <ExpenseOptionsCard
-              contextName={selectedContext?.name}
-              hasContext={!!selectedContext}
-              date={date}
-              payerLabel={paymentSummary()}
-              splitLabel={splitSummary()}
-              onOpen={setActiveSheet}
-              contextEditable={contextEditable}
-              showContextInfo={editing && loadedExpense?.group_id != null}
-              onShowContextInfo={() => setContextMoveInfoVisible(true)}
-              disabled={contextArchived}
-            />
-
-            {locationTrackingEnabled ? (
-              <Card mode="elevated" style={styles.card}>
-                <List.Item
-                  title={t("expense.location")}
-                  description={locationDescription}
-                  onPress={() => {
-                    if (!contextArchived) {
-                      setIncludeLocation((current) => !current);
-                    }
-                  }}
-                  left={(props) => (
-                    <List.Icon {...props} icon="map-marker-outline" />
-                  )}
-                  right={() => (
-                    <Switch
-                      value={includeLocation}
-                      disabled={contextArchived}
-                      onValueChange={setIncludeLocation}
-                    />
-                  )}
-                />
-              </Card>
-            ) : null}
-
-            {selectedContext ? (
-              <ReceiptsCard
-                receipts={receipts}
-                canUpload={canUploadReceipts}
-                uploading={uploadingReceipt}
-                onAdd={handleAddReceipt}
-                onRemove={handleReceiptRemoved}
-                disabled={contextArchived}
-              />
-            ) : null}
-
-            <Button
-              mode="contained"
-              icon="check"
-              loading={saving}
-              disabled={!valid || saving || contextArchived}
-              onPress={save}
-            >
-              {t("expense.save")}
-            </Button>
-            {pendingMutationId ? (
-              <Button
-                mode="text"
-                icon="delete-outline"
-                textColor={dangerColor}
-                loading={deletingPendingExpense}
-                disabled={saving || deletingPendingExpense}
-                onPress={deletePendingExpense}
-              >
-                {t("expense.deletePending")}
-              </Button>
-            ) : null}
-          </>
-        ) : (
-          <HelperText type="info">{t("expense.fastEntryHint")}</HelperText>
-        )}
-        {contextArchived ? (
-          <HelperText type="info">{t("group.archivedReadOnly")}</HelperText>
-        ) : null}
-        {message ? (
-          <Text style={{ color: theme.colors.secondary }}>{message}</Text>
-        ) : null}
+        <ExpenseRevealSection
+          canRevealOptions={canRevealOptions}
+          selectedContext={selectedContext}
+          date={date}
+          payerLabel={paymentSummary()}
+          splitLabel={splitSummary()}
+          contextEditable={contextEditable}
+          contextArchived={contextArchived}
+          showContextInfo={editing && loadedExpense?.group_id != null}
+          locationTrackingEnabled={locationTrackingEnabled}
+          locationDescription={locationDescription}
+          includeLocation={includeLocation}
+          receipts={receipts}
+          canUploadReceipts={canUploadReceipts}
+          uploadingReceipt={uploadingReceipt}
+          saving={saving}
+          valid={valid}
+          pendingMutationId={pendingMutationId}
+          deletingPendingExpense={deletingPendingExpense}
+          deleteColor={dangerColor}
+          onOpen={setActiveSheet}
+          onShowContextInfo={() => setContextMoveInfoVisible(true)}
+          onToggleLocation={() => setIncludeLocation((current) => !current)}
+          onSetIncludeLocation={setIncludeLocation}
+          onAddReceipt={handleAddReceipt}
+          onRemoveReceipt={handleReceiptRemoved}
+          onSave={save}
+          onDeletePendingExpense={deletePendingExpense}
+        />
+        <ExpenseFormMessages
+          contextArchived={contextArchived}
+          message={message}
+          messageColor={theme.colors.secondary}
+        />
       </Screen>
 
-      <CurrencySelectionSheet
-        visible={activeSheet === "currency" && !contextArchived}
-        title={t("expense.currency")}
-        value={currency}
-        onSelect={setCurrency}
-        onDismiss={() => setActiveSheet(null)}
-      />
-      <DatePickerSheet
-        visible={activeSheet === "date" && !contextArchived}
-        value={date}
-        title={t("expense.date")}
-        onSelect={setDate}
-        onDismiss={() => setActiveSheet(null)}
-      />
-      <PayerSheet
-        visible={activeSheet === "payer" && !contextArchived}
+      <AddScreenSheets
+        activeSheet={activeSheet}
+        contextArchived={contextArchived}
+        currency={currency}
+        date={date}
         participants={participants}
         currentParticipantId={currentParticipantId}
         multiPayer={multiPayer}
@@ -996,39 +852,28 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         paymentLeft={paymentLeft}
         paymentConfigInvalid={paymentConfigInvalid}
         totalAmount={totalAmount}
-        currency={currency}
-        onDismiss={() => setActiveSheet(null)}
-        onMultiPayerChange={setMultiPayer}
-        onPayerChange={setPayerId}
-        onPaymentValueChange={setPaymentValue}
-      />
-      <SplitSheet
-        visible={activeSheet === "split" && !contextArchived}
-        participants={participants}
-        currentParticipantId={currentParticipantId}
         selectedParticipantIds={selectedParticipantIds}
+        selectedEqualShares={selectedEqualShares}
         splitValues={splitValues}
         tabValue={tabValue}
         splitConfigInvalid={splitConfigInvalid}
         exactLeft={exactLeft}
         percentageLeft={percentageLeft}
         adjustedHasNegativeShare={adjustedHasNegativeShare}
-        currency={currency}
-        perMemberShare={(participantId) =>
-          perMemberShare({
-            participantId,
-            tabValue,
-            selectedParticipantIds,
-            selectedEqualShares,
-            splitValues,
-            totalAmount,
-          })
-        }
-        onDismiss={() => setActiveSheet(null)}
-        onSplitMethodChange={(method) => {
-          if (splitTabValue(method) !== tabValue) setSplitValues({});
-          setSplitMethod(method);
-        }}
+        contextEditable={contextEditable}
+        pickerGroups={pickerGroups}
+        pickerFriends={pickerFriends}
+        calledFromNavigation={calledFromNavigation}
+        rememberContext={rememberContext}
+        contextMoveInfoVisible={contextMoveInfoVisible}
+        onActiveSheetChange={setActiveSheet}
+        onCurrencyChange={setCurrency}
+        onDateChange={setDate}
+        onMultiPayerChange={setMultiPayer}
+        onPayerChange={setPayerId}
+        onPaymentValueChange={setPaymentValue}
+        onSplitMethodChange={setSplitMethod}
+        onSplitValuesChange={setSplitValues}
         onEnsureParticipants={() => {
           if (!selectedParticipantIds.length) {
             setSelectedParticipantIds(
@@ -1038,35 +883,10 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         }}
         onToggleParticipant={toggleParticipant}
         onSplitValueChange={setSplitValue}
-      />
-      <ContextPickerSheet
-        visible={
-          activeSheet === "context" && !contextArchived && contextEditable
-        }
-        groups={pickerGroups}
-        friends={pickerFriends}
-        onSelect={selectContext}
-        onDismiss={() => setActiveSheet(null)}
-        showRemember={calledFromNavigation}
-        remember={rememberContext}
+        onSelectContext={selectContext}
         onToggleRemember={toggleRememberContext}
+        onContextMoveInfoVisibleChange={setContextMoveInfoVisible}
       />
-      <Portal>
-        <Dialog
-          visible={contextMoveInfoVisible}
-          onDismiss={() => setContextMoveInfoVisible(false)}
-        >
-          <Dialog.Title>{t("expense.contextMoveInfoTitle")}</Dialog.Title>
-          <Dialog.Content>
-            <Text>{t("expense.contextMoveInfoBody")}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setContextMoveInfoVisible(false)}>
-              {t("common.ok")}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </View>
   );
 

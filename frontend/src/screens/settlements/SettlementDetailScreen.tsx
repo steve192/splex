@@ -1,6 +1,7 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useCallback, useEffect, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { View } from "react-native";
 import {
   Button,
@@ -35,12 +36,14 @@ import { negativeColor } from "../../shared/ui/colors";
 import { ClickableAvatar } from "../../shared/ui/ClickableAvatar";
 import { MoneyAmountInput } from "../../shared/ui/MoneyAmountInput";
 import { Screen } from "../../shared/ui/Screen";
-import {
-  SelectionOption,
-  SelectionSheet,
-} from "../../shared/ui/SelectionSheet";
+import { SelectionSheet } from "../../shared/ui/SelectionSheet";
 import { styles } from "../../shared/ui/styles";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
+import {
+  canSaveSettlementEdit,
+  settlementParticipantName,
+  settlementParticipantOptions,
+} from "./settlementDetailModel";
 
 type SettlementDetailScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "SettlementDetail">
@@ -144,87 +147,51 @@ export function SettlementDetailScreen({
     });
   }
 
-  function participantName(participantId: number | null): string {
-    return (
-      participants.find((participant) => participant.id === participantId)
-        ?.display_name ?? ""
+  const participantOptions = settlementParticipantOptions(participants);
+  const saveEnabled = canSaveSettlementEdit({
+    hasPending,
+    amount,
+    payerId,
+    receiverId,
+    groupArchived,
+  });
+  let actionContent = (
+    <View style={styles.rowActions}>
+      <Button
+        mode="contained-tonal"
+        icon="pencil-outline"
+        onPress={() => setEditing(true)}
+      >
+        {t("common.edit")}
+      </Button>
+      <Button
+        mode="elevated"
+        icon="delete-outline"
+        textColor={dangerColor}
+        disabled={hasPending}
+        onPress={() => setConfirmDelete(true)}
+      >
+        {t("settlement.delete")}
+      </Button>
+    </View>
+  );
+  if (actionState === "deleted") {
+    actionContent = (
+      <Text variant="bodyMedium">{t("settlement.deleted")}</Text>
+    );
+  } else if (actionState === "archived") {
+    actionContent = (
+      <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
     );
   }
-
-  const participantOptions: SelectionOption<number>[] = participants.map(
-    (participant) => ({
-      value: participant.id,
-      label: participant.display_name,
-    }),
-  );
 
   return (
     <View style={styles.flex}>
       <Screen>
         {settlement ? (
           <>
-            <Card mode="elevated">
-              <Card.Content style={styles.gap}>
-                <Text variant="headlineMedium">
-                  {settlement.amount} {settlement.currency}
-                </Text>
-                <Text variant="bodyMedium">
-                  {formatDeviceDate(settlement.created_at)}
-                </Text>
-              </Card.Content>
-            </Card>
-
-            <Card mode="elevated">
-              <Card.Content>
-                <List.Item
-                  title={settlement.payer_display_name ?? t("settlement.payer")}
-                  description={t("settlement.paid")}
-                  left={() => (
-                    <ClickableAvatar
-                      name={settlement.payer_display_name}
-                      imageUrl={settlement.payer_avatar_url}
-                    />
-                  )}
-                />
-                <List.Item
-                  title={
-                    settlement.receiver_display_name ?? t("settlement.receiver")
-                  }
-                  description={t("settlement.received")}
-                  left={() => (
-                    <ClickableAvatar
-                      name={settlement.receiver_display_name}
-                      imageUrl={settlement.receiver_avatar_url}
-                    />
-                  )}
-                />
-              </Card.Content>
-            </Card>
-
-            {actionState === "deleted" ? (
-              <Text variant="bodyMedium">{t("settlement.deleted")}</Text>
-            ) : actionState === "archived" ? (
-              <Text variant="bodyMedium">{t("group.archivedReadOnly")}</Text>
-            ) : (
-              <View style={styles.rowActions}>
-                <Button
-                  mode="contained-tonal"
-                  icon="pencil-outline"
-                  onPress={() => setEditing(true)}
-                >
-                  {t("common.edit")}
-                </Button>
-                <Button
-                  mode="elevated"
-                  icon="delete-outline"
-                  textColor={dangerColor}
-                  disabled={hasPending}
-                  onPress={() => setConfirmDelete(true)}
-                >
-                  {t("settlement.delete")}
-                </Button>
-              </View>
-            )}
+            <SettlementContent settlement={settlement} />
+            {actionContent}
           </>
         ) : null}
       </Screen>
@@ -256,58 +223,21 @@ export function SettlementDetailScreen({
             </Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog
+        <SettlementEditDialog
           visible={editing}
-          onDismiss={hasPending ? () => undefined : () => setEditing(false)}
-        >
-          <Dialog.Title>{t("common.edit")}</Dialog.Title>
-          <Dialog.Content>
-            <View style={styles.gap}>
-              <MoneyAmountInput
-                mode="outlined"
-                label={t("expense.amount")}
-                value={amount}
-                disabled={groupArchived}
-                onChangeText={setAmount}
-              />
-              <List.Item
-                title={t("settlement.payer")}
-                description={participantName(payerId)}
-                disabled={groupArchived}
-                onPress={
-                  groupArchived ? undefined : () => setActiveSheet("payer")
-                }
-              />
-              <List.Item
-                title={t("settlement.receiver")}
-                description={participantName(receiverId)}
-                disabled={groupArchived}
-                onPress={
-                  groupArchived ? undefined : () => setActiveSheet("receiver")
-                }
-              />
-            </View>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button disabled={hasPending} onPress={() => setEditing(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              loading={isPending("save")}
-              disabled={
-                hasPending ||
-                !amount ||
-                !payerId ||
-                !receiverId ||
-                payerId === receiverId ||
-                groupArchived
-              }
-              onPress={saveEdit}
-            >
-              {t("common.save")}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
+          hasPending={hasPending}
+          saving={isPending("save")}
+          amount={amount}
+          payerId={payerId}
+          receiverId={receiverId}
+          participants={participants}
+          groupArchived={groupArchived}
+          saveEnabled={saveEnabled}
+          onDismiss={() => setEditing(false)}
+          onAmountChange={setAmount}
+          onOpenSheet={setActiveSheet}
+          onSave={saveEdit}
+        />
       </Portal>
       <SelectionSheet
         visible={activeSheet === "payer" && !groupArchived}
@@ -326,5 +256,148 @@ export function SettlementDetailScreen({
         onDismiss={() => setActiveSheet(null)}
       />
     </View>
+  );
+}
+
+function SettlementContent({
+  settlement,
+}: Readonly<{ settlement: Settlement }>) {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <Card mode="elevated">
+        <Card.Content style={styles.gap}>
+          <Text variant="headlineMedium">
+            {settlement.amount} {settlement.currency}
+          </Text>
+          <Text variant="bodyMedium">
+            {formatDeviceDate(settlement.created_at)}
+          </Text>
+        </Card.Content>
+      </Card>
+
+      <Card mode="elevated">
+        <Card.Content>
+          <SettlementParticipantRow
+            title={settlement.payer_display_name ?? t("settlement.payer")}
+            description={t("settlement.paid")}
+            imageUrl={settlement.payer_avatar_url}
+          />
+          <SettlementParticipantRow
+            title={settlement.receiver_display_name ?? t("settlement.receiver")}
+            description={t("settlement.received")}
+            imageUrl={settlement.receiver_avatar_url}
+          />
+        </Card.Content>
+      </Card>
+    </>
+  );
+}
+
+function SettlementParticipantRow({
+  title,
+  description,
+  imageUrl,
+}: Readonly<{ title: string; description: string; imageUrl?: string }>) {
+  return (
+    <List.Item
+      title={title}
+      description={description}
+      left={() => <ClickableAvatar name={title} imageUrl={imageUrl} />}
+    />
+  );
+}
+
+function SettlementEditDialog({
+  visible,
+  hasPending,
+  saving,
+  amount,
+  payerId,
+  receiverId,
+  participants,
+  groupArchived,
+  saveEnabled,
+  onDismiss,
+  onAmountChange,
+  onOpenSheet,
+  onSave,
+}: Readonly<{
+  visible: boolean;
+  hasPending: boolean;
+  saving: boolean;
+  amount: string;
+  payerId: number | null;
+  receiverId: number | null;
+  participants: Participant[];
+  groupArchived: boolean;
+  saveEnabled: boolean;
+  onDismiss: () => void;
+  onAmountChange: Dispatch<SetStateAction<string>>;
+  onOpenSheet: Dispatch<SetStateAction<"payer" | "receiver" | null>>;
+  onSave: () => void;
+}>) {
+  const { t } = useI18n();
+
+  return (
+    <Dialog
+      visible={visible}
+      onDismiss={hasPending ? () => undefined : onDismiss}
+    >
+      <Dialog.Title>{t("common.edit")}</Dialog.Title>
+      <Dialog.Content>
+        <View style={styles.gap}>
+          <MoneyAmountInput
+            mode="outlined"
+            label={t("expense.amount")}
+            value={amount}
+            disabled={groupArchived}
+            onChangeText={onAmountChange}
+          />
+          <SettlementEditParticipantRow
+            title={t("settlement.payer")}
+            description={settlementParticipantName(participants, payerId)}
+            disabled={groupArchived}
+            onPress={() => onOpenSheet("payer")}
+          />
+          <SettlementEditParticipantRow
+            title={t("settlement.receiver")}
+            description={settlementParticipantName(participants, receiverId)}
+            disabled={groupArchived}
+            onPress={() => onOpenSheet("receiver")}
+          />
+        </View>
+      </Dialog.Content>
+      <Dialog.Actions>
+        <Button disabled={hasPending} onPress={onDismiss}>
+          {t("common.cancel")}
+        </Button>
+        <Button loading={saving} disabled={!saveEnabled} onPress={onSave}>
+          {t("common.save")}
+        </Button>
+      </Dialog.Actions>
+    </Dialog>
+  );
+}
+
+function SettlementEditParticipantRow({
+  title,
+  description,
+  disabled,
+  onPress,
+}: Readonly<{
+  title: string;
+  description: string;
+  disabled: boolean;
+  onPress: () => void;
+}>) {
+  return (
+    <List.Item
+      title={title}
+      description={description}
+      disabled={disabled}
+      onPress={disabled ? undefined : onPress}
+    />
   );
 }

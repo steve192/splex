@@ -74,7 +74,7 @@ export function ImageUploadField({
       allowsEditing: Platform.OS !== "web",
       aspect: [1, 1],
       base64: true,
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.9
     });
     if (result.canceled || !result.assets[0]) return;

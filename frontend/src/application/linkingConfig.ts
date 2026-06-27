@@ -4,14 +4,13 @@ type ScreenConfig = NonNullable<
   NonNullable<import("@react-navigation/native").LinkingOptions<RootStackParamList>["config"]>["screens"]
 >;
 
-const numberParam = (value: string) => Number(value);
 const booleanParam = (value: string) => value === "true";
 
-const detailParams = { id: numberParam };
+const detailParams = { id: Number };
 const expenseFormParams = {
-  contextId: numberParam,
-  expenseId: numberParam,
-  resetKey: numberParam,
+  contextId: Number,
+  expenseId: Number,
+  resetKey: Number,
   returnToPrevious: booleanParam,
 };
 

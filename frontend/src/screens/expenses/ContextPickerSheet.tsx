@@ -9,6 +9,11 @@ import { ContentWidth } from "../../shared/ui/ContentWidth";
 import { PersonAvatar } from "../../shared/ui/PersonAvatar";
 import { styles } from "../../shared/ui/styles";
 
+type PersonAvatarImageSource = Exclude<
+  Parameters<typeof PersonAvatar>[0]["imageSource"],
+  undefined
+>;
+
 type ContextPickerSheetProps = {
   visible: boolean;
   groups: Group[];
@@ -164,7 +169,7 @@ function ContextRow({
   title: string;
   description: string;
   imageUrl?: string;
-  imageSource?: Parameters<typeof PersonAvatar>[0]["imageSource"];
+  imageSource?: PersonAvatarImageSource;
   onPress: () => void;
 }>) {
   return (

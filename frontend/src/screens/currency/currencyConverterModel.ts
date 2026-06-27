@@ -1,5 +1,7 @@
 import type { CurrencyCode } from "../../shared/lib/currencies";
 
+export type ActiveCurrencyPicker = "from" | "to" | null;
+
 function numericRate(
   currency: CurrencyCode,
   rates: Record<string, string>,
@@ -52,4 +54,44 @@ export function commonConversionRows(
     sourceAmount,
     targetAmount: sourceAmount * rate,
   }));
+}
+
+export function currencyPickerTitleKey(
+  activePicker: ActiveCurrencyPicker,
+): string {
+  return activePicker === "from"
+    ? "currencyConverter.fromCurrency"
+    : "currencyConverter.toCurrency";
+}
+
+export function currencyForActivePicker({
+  activePicker,
+  fromCurrency,
+  toCurrency,
+}: Readonly<{
+  activePicker: ActiveCurrencyPicker;
+  fromCurrency: CurrencyCode;
+  toCurrency: CurrencyCode;
+}>): CurrencyCode {
+  return activePicker === "from" ? fromCurrency : toCurrency;
+}
+
+export function currencyPairAfterSelection({
+  activePicker,
+  selectedCurrency,
+  fromCurrency,
+  toCurrency,
+}: Readonly<{
+  activePicker: ActiveCurrencyPicker;
+  selectedCurrency: CurrencyCode;
+  fromCurrency: CurrencyCode;
+  toCurrency: CurrencyCode;
+}>): { fromCurrency: CurrencyCode; toCurrency: CurrencyCode } {
+  if (activePicker === "from") {
+    return { fromCurrency: selectedCurrency, toCurrency };
+  }
+  if (activePicker === "to") {
+    return { fromCurrency, toCurrency: selectedCurrency };
+  }
+  return { fromCurrency, toCurrency };
 }

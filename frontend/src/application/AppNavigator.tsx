@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { CommonActions } from "@react-navigation/native";
 import NetInfo from "@react-native-community/netinfo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -144,13 +145,15 @@ function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (event) => {
             event.preventDefault();
-            navigation.navigate({
-              name: "Overview",
-              params: {
-                screen: "OverviewHome"
-              },
-              merge: false
-            } as never);
+            navigation.dispatch(
+              CommonActions.navigate(
+                "Overview",
+                {
+                  screen: "OverviewHome"
+                },
+                { merge: false },
+              )
+            );
           }
         })}
         options={{ title: t("tabs.overview"), tabBarIcon: ({ color }) => <MaterialCommunityIcons name="view-dashboard-outline" size={22} color={color} /> }}
@@ -161,14 +164,16 @@ function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (event) => {
             event.preventDefault();
-            navigation.navigate({
-              name: "Add",
-              params: {
-                screen: "AddHome",
-                params: { resetKey: Date.now() }
-              },
-              merge: false
-            } as never);
+            navigation.dispatch(
+              CommonActions.navigate(
+                "Add",
+                {
+                  screen: "AddHome",
+                  params: { resetKey: Date.now() }
+                },
+                { merge: false },
+              )
+            );
           }
         })}
         options={{ title: t("tabs.add"), tabBarIcon: ({ color }) => <MaterialCommunityIcons name="plus-circle-outline" size={22} color={color} /> }}
@@ -184,11 +189,13 @@ function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: (event) => {
             event.preventDefault();
-            navigation.navigate({
-              name: "Account",
-              params: { screen: "AccountHome" },
-              merge: false
-            } as never);
+            navigation.dispatch(
+              CommonActions.navigate(
+                "Account",
+                { screen: "AccountHome" },
+                { merge: false },
+              )
+            );
           }
         })}
         options={{ title: t("tabs.account"), tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-cog-outline" size={22} color={color} /> }}

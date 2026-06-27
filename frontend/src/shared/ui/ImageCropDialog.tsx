@@ -359,14 +359,17 @@ async function cropSquare(
   const maxOriginY = Math.max(0, height - cropSize);
   const originX = maxOriginX * (panX / 100);
   const originY = maxOriginY * (panY / 100);
-  const result = await ImageManipulator.manipulateAsync(
-    source,
-    [
-      { crop: { originX, originY, width: cropSize, height: cropSize } },
-      { resize: { width: OUTPUT_SIZE, height: OUTPUT_SIZE } }
-    ],
-    { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-  );
+  const context = ImageManipulator.ImageManipulator.manipulate(source)
+    .crop({ originX, originY, width: cropSize, height: cropSize })
+    .resize({ width: OUTPUT_SIZE, height: OUTPUT_SIZE });
+  const image = await context.renderAsync();
+  const result = await image.saveAsync({
+    compress: 0.9,
+    format: ImageManipulator.SaveFormat.JPEG,
+    base64: true
+  });
+  context.release();
+  image.release();
   if (!result.base64) throw new Error("crop produced no base64 output");
   return `data:image/jpeg;base64,${result.base64}`;
 }
