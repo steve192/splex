@@ -54,6 +54,17 @@ describe("loadCurrencyRates", () => {
     expect(refreshCachedGet).toHaveBeenCalledWith(api, CURRENCY_RATES_PATH);
   });
 
+  it("returns an empty offline state when no snapshot has ever been cached", async () => {
+    const api = {};
+    readCachedResponse.mockResolvedValueOnce(null);
+    refreshCachedGet.mockRejectedValueOnce(new Error("offline"));
+
+    const result = await loadCurrencyRates(api as never);
+
+    expect(result).toEqual({ snapshot: null, refreshFailed: true });
+    expect(refreshCachedGet).toHaveBeenCalledWith(api, CURRENCY_RATES_PATH);
+  });
+
   it("forces a backend fetch even while the cached snapshot is fresh", async () => {
     const api = {};
     readCachedResponse.mockResolvedValueOnce(freshSnapshot);

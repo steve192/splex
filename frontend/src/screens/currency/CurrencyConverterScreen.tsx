@@ -58,13 +58,18 @@ export function CurrencyConverterScreen({}: Readonly<Props>) {
     async (force = false) => {
       setLoading(true);
       setRefreshFailed(false);
-      const result = await loadCurrencyRates(api, {
-        force,
-        onCached: setSnapshot,
-      });
-      setSnapshot(result.snapshot);
-      setRefreshFailed(result.refreshFailed);
-      setLoading(false);
+      try {
+        const result = await loadCurrencyRates(api, {
+          force,
+          onCached: setSnapshot,
+        });
+        setSnapshot(result.snapshot);
+        setRefreshFailed(result.refreshFailed);
+      } catch {
+        setRefreshFailed(true);
+      } finally {
+        setLoading(false);
+      }
     },
     [api],
   );
