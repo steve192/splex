@@ -6,6 +6,7 @@ import {
   disableDemoMode as persistDisabledDemoMode,
   enableDemoMode as persistEnabledDemoMode
 } from "../demo/demoMode";
+import { isAuthenticationFailureStatus } from "./authSession";
 
 export type Tokens = {
   access: string;
@@ -346,6 +347,9 @@ export class ApiClient {
       throw new ApiError("Network unavailable", { offline: true });
     }
     if (!response.ok) {
+      if (!isAuthenticationFailureStatus(response.status)) {
+        throw new ApiError("Authentication refresh failed", { status: response.status });
+      }
       this.setTokens(null);
       await tokenStorage.set(null);
       throw new ApiError("Authentication expired", { status: response.status });

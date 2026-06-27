@@ -9,6 +9,7 @@ import {
   deregisterPushOnLogout,
   resetPushPreferenceOnLogin
 } from "../../shared/notifications/registration";
+import { startupAuthErrorAction } from "./authStartupModel";
 import { runPostLoginBootstrap } from "./postLoginBootstrap";
 
 type User = {
@@ -93,6 +94,10 @@ export function AuthProvider({ api, children }: Readonly<{ api: ApiClient; child
         await setStoredUser(freshUser);
       } catch (error) {
         if (error instanceof ApiError && error.offline) {
+          setInitialized(true);
+          return;
+        }
+        if (startupAuthErrorAction(error) === "preserve-auth") {
           setInitialized(true);
           return;
         }

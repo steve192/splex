@@ -231,6 +231,23 @@ describe("ApiClient token refresh", () => {
     await expect(api.get("/api/x/")).rejects.toMatchObject({ offline: true });
   });
 
+  it("preserves tokens when refresh reaches a temporarily broken server", async () => {
+    const api = new ApiClient();
+    const onChange = vi.fn();
+    api.setTokenChangeHandler(onChange);
+    api.setTokens({ access: "old", refresh: "r" });
+    await tokenStorage.set({ access: "old", refresh: "r" });
+    fetchMock
+      .mockResolvedValueOnce(new Response("{}", { status: 401, headers: { "content-type": "application/json" } }))
+      .mockResolvedValueOnce(jsonResponse({ error: "down" }, 503));
+
+    await expect(api.get("/api/x/")).rejects.toMatchObject({ status: 503 });
+
+    expect(api.getAccessToken()).toBe("old");
+    expect(onChange).not.toHaveBeenLastCalledWith(null);
+    expect(await tokenStorage.get()).toEqual({ access: "old", refresh: "r" });
+  });
+
   it("does not retry a second time if the retried request also 401s", async () => {
     const api = new ApiClient();
     api.setTokens({ access: "old", refresh: "r" });
