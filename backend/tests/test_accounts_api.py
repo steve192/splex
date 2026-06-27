@@ -1,6 +1,10 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from splex.groups.models import GroupMembership
 from splex.groups.services import create_group
@@ -74,6 +78,51 @@ def test_me_patch_updates_push_enabled():
     _auth_client(user).patch("/api/me/", {"push_enabled": False}, format="json")
     user.refresh_from_db()
     assert user.push_enabled is False
+
+
+@pytest.mark.django_db
+def test_token_refresh_records_activity_and_clears_retention_warnings():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
+    stale = timezone.now() - timedelta(days=170)
+    user_model.objects.filter(pk=user.pk).update(
+        last_login=stale,
+        retention_first_notice_sent_at=stale,
+        retention_second_notice_sent_at=stale,
+    )
+    refresh = str(RefreshToken.for_user(user))
+
+    response = APIClient().post(
+        "/api/auth/token/refresh/",
+        {"refresh": refresh},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert "access" in response.data
+    user.refresh_from_db()
+    assert user.last_login > stale
+    assert user.retention_first_notice_sent_at is None
+    assert user.retention_second_notice_sent_at is None
+
+
+@pytest.mark.django_db
+def test_token_refresh_keeps_recent_clean_activity_throttled():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(email="u@example.com", display_name="U")
+    recent = timezone.now() - timedelta(hours=1)
+    user_model.objects.filter(pk=user.pk).update(last_login=recent)
+    refresh = str(RefreshToken.for_user(user))
+
+    response = APIClient().post(
+        "/api/auth/token/refresh/",
+        {"refresh": refresh},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.last_login == recent
 
 
 # ---------------------------------------------------------------------------

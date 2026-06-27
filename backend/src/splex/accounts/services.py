@@ -153,7 +153,7 @@ def authenticate_magic_token(token: str):
     return consume_challenge(challenge)
 
 
-def _record_login(user) -> None:
+def record_login_activity(user) -> None:
     """Update last_login and clear any pending retention warning flags."""
     now = timezone.now()
     user.last_login = now
@@ -227,7 +227,7 @@ def authenticate_with_google(*, id_token: str):
             defaults={"display_name": payload.get("name", email.split("@")[0])},
         )
     get_or_create_user_participant(user)
-    _record_login(user)
+    record_login_activity(user)
     refresh = RefreshToken.for_user(user)
     return user, {"access": str(refresh.access_token), "refresh": str(refresh), "created": created}
 
@@ -251,7 +251,7 @@ def consume_challenge(challenge):
     get_or_create_user_participant(user)
     challenge.consumed_at = timezone.now()
     challenge.save(update_fields=["consumed_at"])
-    _record_login(user)
+    record_login_activity(user)
     refresh = RefreshToken.for_user(user)
     return user, {"access": str(refresh.access_token), "refresh": str(refresh), "created": created}
 

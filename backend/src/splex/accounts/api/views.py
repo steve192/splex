@@ -25,6 +25,7 @@ from splex.accounts.services import (
     authenticate_magic_token,
     authenticate_with_google,
     delete_account,
+    record_login_activity,
     request_magic_login,
 )
 from splex.shared.errors import DomainError, ErrorCode
@@ -66,13 +67,19 @@ class UpdateLastLoginTokenRefreshView(TokenRefreshView):
             try:
                 user_model = get_user_model()
                 cutoff = timezone.now() - _LAST_LOGIN_UPDATE_INTERVAL
-                # Only update if last_login is stale (or never set), to keep DB writes minimal.
-                updated = (
+                # Keep DB writes minimal, but clear pending retention warnings immediately.
+                user = (
                     user_model.objects.filter(pk=user_id)
-                    .filter(Q(last_login__lt=cutoff) | Q(last_login__isnull=True))
-                    .update(last_login=timezone.now())
+                    .filter(
+                        Q(last_login__lt=cutoff)
+                        | Q(last_login__isnull=True)
+                        | Q(retention_first_notice_sent_at__isnull=False)
+                        | Q(retention_second_notice_sent_at__isnull=False)
+                    )
+                    .first()
                 )
-                if updated:
+                if user:
+                    record_login_activity(user)
                     logger.debug("Updated last_login via token refresh for user_id=%s", user_id)
             except Exception:
                 logger.warning("Failed to update last_login on token refresh", exc_info=True)
