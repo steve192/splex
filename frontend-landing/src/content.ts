@@ -85,6 +85,28 @@ const en: Content = {
         ]
       },
       {
+        shot: "calculator",
+        eyebrow: "Quick calculations",
+        title: "Do the math where you enter the amount",
+        body: "Most money fields include a small calculator, so you can add things up without leaving Splex.",
+        points: [
+          "Calculate totals before saving an expense or settlement",
+          "Useful for receipts, partial payments, and quick ad-hoc sums",
+          "No switching to another app just to check a number"
+        ]
+      },
+      {
+        shot: "currency-converter",
+        eyebrow: "Currency converter",
+        title: "Convert currencies when you need a quick check",
+        body: "Expenses are converted automatically, but the same currency data also powers a small converter for quick checks on a trip.",
+        points: [
+          "Convert between supported currencies in the app",
+          "Cached rates stay available when you are offline",
+          "Useful when you want to get a better feel for local prices"
+        ]
+      },
+      {
         shot: "group-balances",
         eyebrow: "Balances & settlements",
         title: "Always know who owes whom",
@@ -126,6 +148,8 @@ const en: Content = {
       { shot: "overview", label: "Overview" },
       { shot: "group", label: "Group expenses" },
       { shot: "add-expense", label: "Add expense" },
+      { shot: "calculator", label: "Calculator" },
+      { shot: "currency-converter", label: "Currency converter" },
       { shot: "group-balances", label: "Balances" },
       { shot: "group-statistics", label: "Statistics" },
       { shot: "activity", label: "Activity" }
@@ -218,6 +242,28 @@ const de: Content = {
         ]
       },
       {
+        shot: "calculator",
+        eyebrow: "Schnelle Zwischenrechnungen",
+        title: "Rechne direkt dort, wo du Geldbeträge eingibst",
+        body: "Die meisten Zahlenfelder haben einen kleinen Rechner. So kannst du etwas ausrechnen, ohne Splex zu verlassen.",
+        points: [
+          "Summen vor dem Speichern einer Ausgabe oder Ausgleichszahlung berechnen",
+          "Praktisch für Belege, Teilbeträge und kurze Rechnungen zwischendurch",
+          "Kein Wechsel in eine andere App, nur um eine Zahl zu prüfen"
+        ]
+      },
+      {
+        shot: "currency-converter",
+        eyebrow: "Währungsrechner",
+        title: "Preise unterwegs schnell umrechnen",
+        body: "Ausgaben werden automatisch umgerechnet. Mit denselben Kursdaten gibt es zusätzlich einen kleinen Rechner für kurze Checks auf Reisen.",
+        points: [
+          "Zwischen den unterstützten Währungen in der App umrechnen",
+          "Zwischengespeicherte Kurse bleiben auch offline verfügbar",
+          "Praktisch, wenn du ein besseres Gefühl für lokale Preise bekommen willst"
+        ]
+      },
+      {
         shot: "group-balances",
         eyebrow: "Salden & Ausgleich",
         title: "Immer wissen, wer wem etwas schuldet",
@@ -259,6 +305,8 @@ const de: Content = {
       { shot: "overview", label: "Übersicht" },
       { shot: "group", label: "Gruppenausgaben" },
       { shot: "add-expense", label: "Ausgabe hinzufügen" },
+      { shot: "calculator", label: "Rechner" },
+      { shot: "currency-converter", label: "Währungsrechner" },
       { shot: "group-balances", label: "Salden" },
       { shot: "group-statistics", label: "Statistiken" },
       { shot: "activity", label: "Aktivität" }
