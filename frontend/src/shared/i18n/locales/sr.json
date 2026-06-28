@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} је платио/платила {amount}",
   "expense.owedBy": "Дугује",
   "expense.originalAmount": "Оригинални износ",
+  "expense.exchangeRate": "Курс",
+  "expense.exchangeRateDate": "Курс од {date}",
   "expense.yourBalance": "Ваше стање",
   "expense.paymentsPayload": "JSON уплата за више платиша",
   "expense.pendingSync": "Чека синхронизацију",

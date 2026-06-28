@@ -1,4 +1,4 @@
-import { Participant, SplitMethod } from "../../shared/types/models";
+import { Expense, ExpenseShare, Participant, SplitMethod } from "../../shared/types/models";
 import { asNumber, formatMoney, moneyValue } from "../../shared/lib/money";
 
 export const SPLIT_TOLERANCE = 0.005;
@@ -20,6 +20,53 @@ export function splitEvenly(total: number, ids: number[]): Record<number, number
 
 export function currencyAmount(value: number, currency: string): string {
   return `${formatMoney(value)} ${currency}`;
+}
+
+export function expenseShareRowsForForm(
+  shares: ExpenseShare[],
+  expense: Pick<Expense, "converted_amount" | "converted_currency" | "original_amount" | "original_currency">
+): ExpenseShare[] {
+  if (expense.original_currency === expense.converted_currency) return shares;
+  const convertedTotal = asNumber(expense.converted_amount);
+  const originalTotal = asNumber(expense.original_amount);
+  if (!convertedTotal || !originalTotal) return shares;
+  const ratio = originalTotal / convertedTotal;
+  return shares.map((share) => ({
+    ...share,
+    amount: formatMoney(asNumber(share.amount) * ratio)
+  }));
+}
+
+export function splitPayloadForForm(
+  expense: Pick<
+    Expense,
+    | "converted_amount"
+    | "converted_currency"
+    | "original_amount"
+    | "original_currency"
+    | "owed"
+    | "split_method"
+    | "split_payload"
+  >
+): Record<string, unknown> | undefined {
+  if (expense.split_method !== "exact") return expense.split_payload;
+  const fallbackPayload = {
+    shares: expenseShareRowsForForm(expense.owed, expense)
+  };
+  const payload = expense.split_payload ?? fallbackPayload;
+  const shares = (payload.shares as ExpenseShare[] | undefined) ?? [];
+  if (expense.original_currency === expense.converted_currency || !shares.length) {
+    return payload;
+  }
+  const payloadTotal = shares.reduce((sum, share) => sum + asNumber(share.amount), 0);
+  const convertedTotal = asNumber(expense.converted_amount);
+  const originalTotal = asNumber(expense.original_amount);
+  const looksLikeConvertedPayload =
+    Math.abs(payloadTotal - convertedTotal) <= SPLIT_TOLERANCE &&
+    Math.abs(payloadTotal - originalTotal) > SPLIT_TOLERANCE;
+  return looksLikeConvertedPayload
+    ? { shares: expenseShareRowsForForm(shares, expense) }
+    : payload;
 }
 
 export function normalizeExpenseAmountInput(value: string): string {

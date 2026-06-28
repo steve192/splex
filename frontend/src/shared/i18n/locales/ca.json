@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} ha pagat {amount}",
   "expense.owedBy": "Degut per",
   "expense.originalAmount": "Import original",
+  "expense.exchangeRate": "Tipus de canvi",
+  "expense.exchangeRateDate": "Tipus del {date}",
   "expense.yourBalance": "El teu saldo",
   "expense.paymentsPayload": "JSON de pagaments per a diversos pagadors",
   "expense.pendingSync": "Sincronització pendent",

@@ -36,7 +36,11 @@ import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { expenseDetailViewState } from "./expenseLoading";
-import { expensePersonalNet, isConvertedExpense } from "./expenseDetailModel";
+import {
+  expenseExchangeRateText,
+  expensePersonalNet,
+  isConvertedExpense,
+} from "./expenseDetailModel";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
 
 type ExpenseDetailNavigation = NativeStackNavigationProp<
@@ -267,6 +271,7 @@ function ExpenseMetrics({
   personalNet,
 }: Readonly<{ expense: Expense; personalNet: number | null }>) {
   const { t } = useI18n();
+  const exchangeRateText = expenseExchangeRateText(expense);
 
   return (
     <View style={styles.metricGrid}>
@@ -300,6 +305,23 @@ function ExpenseMetrics({
             <Text variant="headlineSmall">
               {expense.original_amount} {expense.original_currency}
             </Text>
+          </Card.Content>
+        </Card>
+      ) : null}
+      {exchangeRateText ? (
+        <Card mode="elevated" style={styles.metricTile}>
+          <Card.Content>
+            <Text variant="labelLarge">{t("expense.exchangeRate")}</Text>
+            <Text variant="titleMedium">{exchangeRateText}</Text>
+            {/* This is the provider/snapshot date for the displayed rate, not
+                just the purchase date. They differ when the backend falls back. */}
+            {expense.exchange_rate_date ? (
+              <Text variant="bodySmall">
+                {t("expense.exchangeRateDate", {
+                  date: formatDeviceDate(expense.exchange_rate_date),
+                })}
+              </Text>
+            ) : null}
           </Card.Content>
         </Card>
       ) : null}

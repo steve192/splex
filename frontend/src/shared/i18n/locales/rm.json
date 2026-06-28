@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} ha pajà {amount}",
   "expense.owedBy": "Stoss da",
   "expense.originalAmount": "Import original",
+  "expense.exchangeRate": "Curs da barat",
+  "expense.exchangeRateDate": "Curs dal {date}",
   "expense.yourBalance": "Tes bilantsch",
   "expense.paymentsPayload": "Payments JSON per plirs pajaders",
   "expense.pendingSync": "Spetga sync",

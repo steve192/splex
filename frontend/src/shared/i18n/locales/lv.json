@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} samaksāja {amount}",
   "expense.owedBy": "Parādā",
   "expense.originalAmount": "Sākotnējā summa",
+  "expense.exchangeRate": "Valūtas kurss",
+  "expense.exchangeRateDate": "Kurss {date}",
   "expense.yourBalance": "Jūsu bilance",
   "expense.paymentsPayload": "Maksājumu JSON vairākiem maksātājiem",
   "expense.pendingSync": "Gaida sinhronizāciju",

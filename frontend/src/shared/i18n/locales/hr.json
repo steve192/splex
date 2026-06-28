@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} je platio/la {amount}",
   "expense.owedBy": "Duguje",
   "expense.originalAmount": "Izvorni iznos",
+  "expense.exchangeRate": "Tečaj",
+  "expense.exchangeRateDate": "Tečaj od {date}",
   "expense.yourBalance": "Vaše stanje",
   "expense.paymentsPayload": "JSON uplata za više platitelja",
   "expense.pendingSync": "Sinkronizacija na čekanju",

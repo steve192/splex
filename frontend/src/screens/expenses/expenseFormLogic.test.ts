@@ -9,11 +9,13 @@ import {
   computeExpenseValidation,
   currencyAmount,
   effectiveSplitMethod,
+  expenseShareRowsForForm,
   expenseLocationDescriptionKey,
   hydrateSplit,
   normalizeExpenseAmountInput,
   perMemberShare,
   splitEvenly,
+  splitPayloadForForm,
   splitTabValue
 } from "./expenseFormLogic";
 
@@ -251,6 +253,70 @@ describe("expense form logic", () => {
   it("currencyAmount formats absolute amount with currency", () => {
     expect(currencyAmount(12.5, "EUR")).toBe("12.50 EUR");
     expect(currencyAmount(-3, "USD")).toBe("3.00 USD");
+  });
+
+  it("converts stored context-currency shares back to original currency for editing", () => {
+    expect(
+      expenseShareRowsForForm(
+        [
+          { participant_id: 1, amount: "250.00" },
+          { participant_id: 2, amount: "125.00" },
+        ],
+        {
+          original_amount: "5000.00",
+          original_currency: "NOK",
+          converted_amount: "500.00",
+          converted_currency: "EUR",
+        }
+      )
+    ).toEqual([
+      { participant_id: 1, amount: "2500.00" },
+      { participant_id: 2, amount: "1250.00" },
+    ]);
+  });
+
+  it("converts legacy exact split payloads from context currency for editing", () => {
+    expect(
+      splitPayloadForForm({
+        split_method: "exact",
+        original_amount: "5000.00",
+        original_currency: "NOK",
+        converted_amount: "500.00",
+        converted_currency: "EUR",
+        owed: [],
+        split_payload: {
+          shares: [
+            { participant_id: 1, amount: "250.00" },
+            { participant_id: 2, amount: "250.00" },
+          ],
+        },
+      })
+    ).toEqual({
+      shares: [
+        { participant_id: 1, amount: "2500.00" },
+        { participant_id: 2, amount: "2500.00" },
+      ],
+    });
+  });
+
+  it("keeps exact split payloads that are already in original currency", () => {
+    const payload = {
+      shares: [
+        { participant_id: 1, amount: "2500.00" },
+        { participant_id: 2, amount: "2500.00" },
+      ],
+    };
+    expect(
+      splitPayloadForForm({
+        split_method: "exact",
+        original_amount: "5000.00",
+        original_currency: "NOK",
+        converted_amount: "500.00",
+        converted_currency: "EUR",
+        owed: [],
+        split_payload: payload,
+      })
+    ).toBe(payload);
   });
 
   it("splitEvenly returns nothing for an empty participant list", () => {

@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} huet {amount} bezuelt",
   "expense.owedBy": "Geschëllt vun",
   "expense.originalAmount": "Originalbetrag",
+  "expense.exchangeRate": "Wiesselcours",
+  "expense.exchangeRateDate": "Cours vum {date}",
   "expense.yourBalance": "Däi Bilan",
   "expense.paymentsPayload": "Payments JSON fir méi Bezueler",
   "expense.pendingSync": "Waart op d'Synchronisatioun",

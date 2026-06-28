@@ -21,6 +21,8 @@ class Expense(TimeStampedModel):
         "friends.Friendship", null=True, blank=True, on_delete=models.CASCADE
     )
     description = models.CharField(max_length=240)
+    # User-facing purchase/expense date. This drives historical conversion
+    # lookup, but it is not always the date of the rate actually used.
     date = models.DateField()
     original_amount = models.DecimalField(max_digits=12, decimal_places=2)
     original_currency = models.CharField(max_length=3)
@@ -28,6 +30,9 @@ class Expense(TimeStampedModel):
     converted_currency = models.CharField(max_length=3)
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=8, default=1)
     exchange_rate_source = models.CharField(max_length=80, default="identity")
+    # Date represented by exchange_rate. Usually equals date; differs when the
+    # requested historical rate is unavailable and conversion falls back.
+    exchange_rate_date = models.DateField(null=True, blank=True)
     split_method = models.CharField(max_length=32, choices=SplitMethod.choices)
     split_metadata = models.JSONField(default=dict, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -128,4 +133,3 @@ class Receipt(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Receipt({self.original_filename}, expense_id={self.expense_id})"
-

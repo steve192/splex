@@ -52,9 +52,11 @@ import {
   buildPayments,
   buildSplitPayload,
   effectiveSplitMethod,
+  expenseShareRowsForForm,
   expenseLocationDescriptionKey,
   hydrateSplit,
   normalizeExpenseAmountInput,
+  splitPayloadForForm,
 } from "./expenseFormLogic";
 import { useExpenseValidation } from "./useExpenseValidation";
 import { LocationSuggestionsInput } from "../../shared/ui/LocationSuggestionsInput";
@@ -352,7 +354,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
         setContextId(expense.group_id ?? expense.friendship_id ?? null);
-        applyPaymentsToForm(expense.payments, {
+        applyPaymentsToForm(expenseShareRowsForForm(expense.payments, expense), {
           setMultiPayer,
           setPaymentValues,
           setPayerId,
@@ -507,14 +509,9 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setSelectedParticipantIds(
       loadedExpense.owed.map((share) => share.participant_id),
     );
-    // For "exact", the rendered amounts live on owed shares, not in split_payload.
-    const payloadForHydrate =
-      loadedExpense.split_method === "exact"
-        ? { shares: loadedExpense.owed }
-        : loadedExpense.split_payload;
     const hydrated = hydrateSplit(
       loadedExpense.split_method,
-      payloadForHydrate,
+      splitPayloadForForm(loadedExpense),
     );
     setSplitValues(hydrated.splitValues ?? {});
     setLoadingEditExpense(false);

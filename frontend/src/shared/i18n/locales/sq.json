@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} pagoi {amount}",
   "expense.owedBy": "Detyrohet nga",
   "expense.originalAmount": "Shuma origjinale",
+  "expense.exchangeRate": "Kursi i këmbimit",
+  "expense.exchangeRateDate": "Kursi nga {date}",
   "expense.yourBalance": "Bilanci juaj",
   "expense.paymentsPayload": "JSON i pagesave për disa pagues",
   "expense.pendingSync": "Në pritje të sinkronizimit",

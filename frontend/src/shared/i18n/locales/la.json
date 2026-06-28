@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} solvit {amount}",
   "expense.owedBy": "Debitum a",
   "expense.originalAmount": "Summa originalis",
+  "expense.exchangeRate": "Rata permutationis",
+  "expense.exchangeRateDate": "Rata diei {date}",
   "expense.yourBalance": "Ratio tua",
   "expense.paymentsPayload": "JSON solutionum pro pluribus solutoribus",
   "expense.pendingSync": "Synchronizationem exspectat",

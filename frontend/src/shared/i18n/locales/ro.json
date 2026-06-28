@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} a plătit {amount}",
   "expense.owedBy": "Datorat de",
   "expense.originalAmount": "Suma originală",
+  "expense.exchangeRate": "Curs valutar",
+  "expense.exchangeRateDate": "Curs din {date}",
   "expense.yourBalance": "Soldul tău",
   "expense.paymentsPayload": "JSON plăți pentru mai mulți plătitori",
   "expense.pendingSync": "Sincronizare în așteptare",

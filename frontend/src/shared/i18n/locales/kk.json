@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} {amount} төледі",
   "expense.owedBy": "Қарыздар",
   "expense.originalAmount": "Бастапқы сома",
+  "expense.exchangeRate": "Айырбас бағамы",
+  "expense.exchangeRateDate": "{date} күнгі бағам",
   "expense.yourBalance": "Сіздің балансыңыз",
   "expense.paymentsPayload": "Бірнеше төлеушіге арналған Payments JSON",
   "expense.pendingSync": "Синхрондауды күтіп тұр",

@@ -6,12 +6,15 @@ responses, so no network traffic is involved.
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework.test import APIClient
 
+from splex.currency.models import CurrencyRateSnapshot
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.models import Group, GroupMembership
 from splex.imports.splitwise_client import SplitwiseAuthError, SplitwiseError
@@ -364,6 +367,137 @@ def test_import_payment_expense_creates_settlement():
     settlement = Settlement.objects.get()
     assert settlement.amount == Decimal("25.00")
     assert settlement.kind == Settlement.Kind.MANUAL
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_import_uses_snapshot_for_expense_date_when_converting():
+    user = _make_user()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2025, 1, 15),
+        rates={"EUR": "1", "USD": "2"},
+        source="historic",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "4"},
+        source="current",
+    )
+    client = FakeSplitwiseClient(
+        current_user={"id": SELF_SW_ID},
+        groups=[
+            {
+                "id": 11,
+                "name": "Trip",
+                "members": [_sw_user(SELF_SW_ID, "Me"), _sw_user(ALICE_SW_ID, "Alice")],
+            }
+        ],
+        friends=[],
+        group_expenses={
+            11: [
+                {
+                    "id": 1,
+                    "description": "Anchor",
+                    "cost": "1.00",
+                    "currency_code": "EUR",
+                    "date": "2025-01-14",
+                    "payment": False,
+                    "users": [_share(SELF_SW_ID, "Me", "1.00", "1.00")],
+                },
+                {
+                    "id": 2,
+                    "description": "Dinner",
+                    "cost": "10.00",
+                    "currency_code": "USD",
+                    "date": "2025-01-15T12:00:00Z",
+                    "payment": False,
+                    "users": [
+                        _share(SELF_SW_ID, "Me", "10.00", "5.00"),
+                        _share(ALICE_SW_ID, "Alice", "0", "5.00"),
+                    ],
+                },
+            ]
+        },
+        friend_expenses={},
+    )
+
+    import_from_splitwise(actor=user, api_key="ignored", client=client)
+
+    expense = Expense.objects.get(description="Dinner")
+    assert expense.converted_amount == Decimal("5.00")
+    assert expense.exchange_rate == Decimal("0.50000000")
+    assert expense.exchange_rate_source == "historic"
+    assert sorted(share["amount"] for share in expense.split_metadata["shares"]) == [
+        "5.00",
+        "5.00",
+    ]
+    assert sum(
+        (share.amount for share in expense.owed_shares.all()), Decimal("0.00")
+    ) == Decimal("5.00")
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_import_payment_uses_snapshot_for_expense_date_when_converting():
+    user = _make_user()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2025, 1, 15),
+        rates={"EUR": "1", "USD": "2"},
+        source="historic",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "4"},
+        source="current",
+    )
+    client = FakeSplitwiseClient(
+        current_user={"id": SELF_SW_ID},
+        groups=[
+            {
+                "id": 11,
+                "name": "Trip",
+                "members": [_sw_user(SELF_SW_ID, "Me"), _sw_user(ALICE_SW_ID, "Alice")],
+            }
+        ],
+        friends=[],
+        group_expenses={
+            11: [
+                {
+                    "id": 1,
+                    "description": "Anchor",
+                    "cost": "1.00",
+                    "currency_code": "EUR",
+                    "date": "2025-01-14",
+                    "payment": False,
+                    "users": [_share(SELF_SW_ID, "Me", "1.00", "1.00")],
+                },
+                {
+                    "id": 2,
+                    "description": "Payment",
+                    "cost": "10.00",
+                    "currency_code": "USD",
+                    "date": "2025-01-15T12:00:00Z",
+                    "payment": True,
+                    "users": [
+                        _share(SELF_SW_ID, "Me", "10.00", "0"),
+                        _share(ALICE_SW_ID, "Alice", "0", "10.00"),
+                    ],
+                },
+            ]
+        },
+        friend_expenses={},
+    )
+
+    import_from_splitwise(actor=user, api_key="ignored", client=client)
+
+    settlement = Settlement.objects.get()
+    assert settlement.original_amount == Decimal("10.00")
+    assert settlement.original_currency == "USD"
+    assert settlement.amount == Decimal("5.00")
+    assert settlement.exchange_rate == Decimal("0.50000000")
+    assert settlement.exchange_rate_source == "historic"
 
 
 @pytest.mark.django_db

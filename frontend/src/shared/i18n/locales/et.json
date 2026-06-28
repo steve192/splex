@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} maksis {amount}",
   "expense.owedBy": "Võlgu",
   "expense.originalAmount": "Algsumma",
+  "expense.exchangeRate": "Vahetuskurss",
+  "expense.exchangeRateDate": "Kurss kuupäeval {date}",
   "expense.yourBalance": "Sinu saldo",
   "expense.paymentsPayload": "Mitme maksja maksete JSON",
   "expense.pendingSync": "Sünkroonimist ootel",

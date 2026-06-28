@@ -14,8 +14,7 @@ def serialize_expense(expense):
         participant.id: participant.effective_display_name for participant in participants
     }
     participant_avatars = {
-        participant.id: participant_avatar_url(participant)
-        for participant in participants
+        participant.id: participant_avatar_url(participant) for participant in participants
     }
     receipts = [serialize_receipt(r) for r in expense.receipts.all().order_by("id")]
     return {
@@ -29,6 +28,9 @@ def serialize_expense(expense):
         "original_currency": expense.original_currency,
         "converted_amount": str(expense.converted_amount),
         "converted_currency": expense.converted_currency,
+        "exchange_rate": str(expense.exchange_rate),
+        "exchange_rate_source": expense.exchange_rate_source,
+        "exchange_rate_date": expense.exchange_rate_date,
         "split_method": expense.split_method,
         "split_payload": expense.split_metadata,
         "latitude": float(expense.latitude) if expense.latitude else None,
@@ -68,8 +70,12 @@ def serialize_settlement(settlement):
         "receiver_display_name": settlement.receiver_participant.effective_display_name,
         "payer_avatar_url": participant_avatar_url(settlement.payer_participant),
         "receiver_avatar_url": participant_avatar_url(settlement.receiver_participant),
+        "original_amount": str(settlement.original_amount),
+        "original_currency": settlement.original_currency,
         "amount": str(settlement.amount),
         "currency": settlement.currency,
+        "exchange_rate": str(settlement.exchange_rate),
+        "exchange_rate_source": settlement.exchange_rate_source,
         "kind": settlement.kind,
         "created_at": settlement.created_at,
         "deleted_at": settlement.deleted_at,

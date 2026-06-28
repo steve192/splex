@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
-from splex.currency.services import convert
+from splex.currency.services import convert_for_rate_date
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.services import assert_group_member
 from splex.notifications.services import create_notifications_for_activity
@@ -122,6 +122,36 @@ def _parse_payer_shares(payments: list) -> dict:
     return {int(item["participant_id"]): money(item["amount"]) for item in payments}
 
 
+def scale_shares_to_total(shares: dict, target_total: Decimal) -> dict:
+    """Scale already-validated shares onto a converted total.
+
+    Incoming expense forms express payer/exact-split amounts in the expense's
+    original currency. Ledger rows store shares in the context currency, so we
+    preserve each participant's proportion and absorb cent rounding into the
+    largest share.
+    """
+    if not shares:
+        return {}
+    source_total = money(sum(shares.values(), Decimal("0")))
+    target_total = money(target_total)
+    if source_total <= 0:
+        raise DomainError(
+            ErrorCode.EXPENSE_SHARES_INVALID,
+            "Shares must sum to a positive amount.",
+        )
+    if source_total == target_total:
+        return {participant_id: money(amount) for participant_id, amount in shares.items()}
+    scaled = {
+        participant_id: money(money(amount) * target_total / source_total)
+        for participant_id, amount in shares.items()
+    }
+    drift = money(target_total - sum(scaled.values(), Decimal("0")))
+    if drift:
+        recipient_id = max(scaled, key=lambda participant_id: abs(scaled[participant_id]))
+        scaled[recipient_id] = money(scaled[recipient_id] + drift)
+    return scaled
+
+
 def _replace_expense_shares(expense, *, payer_shares, owed_shares, currency):
     """Replace an expense's payment & owed share rows with the supplied values."""
     expense.payment_shares.all().delete()
@@ -157,32 +187,45 @@ def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense
         if existing is not None:
             return existing
     currency = context_currency(group, friendship)
-    converted_amount, rate = convert(data["amount"], data["currency"], currency)
+    expense_date = data.get("date") or timezone.localdate()
+    # Look up rates for the user-facing expense date. The returned rate keeps
+    # the actual provider date so we can show when a fallback rate was used.
+    converted_amount, rate = convert_for_rate_date(
+        data["amount"],
+        data["currency"],
+        currency,
+        expense_date,
+    )
     method = data.get("split_method") or Expense.SplitMethod.EQUAL_ALL
     participants = context_participants(group, friendship)
     payer_shares = _parse_payer_shares(data.get("payments") or [])
     if not payer_shares:
-        payer_shares[get_or_create_user_participant(actor).id] = converted_amount
-    assert_sum("Payment shares", payer_shares.values(), converted_amount)
+        payer_shares[get_or_create_user_participant(actor).id] = money(data["amount"])
+    # API payload shares are entered in the expense currency. Ledger shares are
+    # stored in the context currency, so validate first and then scale.
+    assert_sum("Payment shares", payer_shares.values(), money(data["amount"]))
+    payer_shares = scale_shares_to_total(payer_shares, converted_amount)
     owed_shares = normalize_owed_shares(
-        converted_amount,
+        money(data["amount"]),
         method,
         data.get("split_payload") or {},
         participants,
     )
-    assert_sum("Owed shares", owed_shares.values(), converted_amount)
+    assert_sum("Owed shares", owed_shares.values(), money(data["amount"]))
+    owed_shares = scale_shares_to_total(owed_shares, converted_amount)
     expense = Expense.objects.create(
         client_id=data.get("client_id", ""),
         group=group,
         friendship=friendship,
         description=data["description"],
-        date=data.get("date") or timezone.localdate(),
+        date=expense_date,
         original_amount=money(data["amount"]),
         original_currency=data["currency"].upper(),
         converted_amount=converted_amount,
         converted_currency=currency,
         exchange_rate=rate.rate,
         exchange_rate_source=rate.source,
+        exchange_rate_date=rate.rate_date,
         split_method=method,
         split_metadata=data.get("split_payload") or {},
         latitude=data.get("latitude") if actor.location_tracking_enabled else None,

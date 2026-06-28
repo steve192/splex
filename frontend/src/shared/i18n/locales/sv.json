@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} betalade {amount}",
   "expense.owedBy": "Skyldig av",
   "expense.originalAmount": "Ursprungligt belopp",
+  "expense.exchangeRate": "Växelkurs",
+  "expense.exchangeRateDate": "Kurs från {date}",
   "expense.yourBalance": "Ditt saldo",
   "expense.paymentsPayload": "Betalnings-JSON för flera betalare",
   "expense.pendingSync": "Väntar på synk",

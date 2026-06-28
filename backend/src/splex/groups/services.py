@@ -293,8 +293,12 @@ def _settle_and_soft_delete(*, group: Group, participant: Participant) -> int:
             group=group,
             payer_participant_id=debtor_id,
             receiver_participant_id=creditor_id,
+            original_amount=amount,
+            original_currency=group.default_currency,
             amount=amount,
             currency=group.default_currency,
+            exchange_rate=1,
+            exchange_rate_source="identity",
             kind=Settlement.Kind.AUTO_WRITE_OFF,
         )
 

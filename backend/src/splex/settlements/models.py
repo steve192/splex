@@ -28,8 +28,12 @@ class Settlement(TimeStampedModel):
     receiver_participant = models.ForeignKey(
         "participants.Participant", on_delete=models.PROTECT, related_name="settlements_received"
     )
+    original_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    original_currency = models.CharField(max_length=3, default="EUR")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3)
+    exchange_rate = models.DecimalField(max_digits=18, decimal_places=8, default=1)
+    exchange_rate_source = models.CharField(max_length=80, default="identity")
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.MANUAL)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
@@ -37,4 +41,3 @@ class Settlement(TimeStampedModel):
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     objects = SoftDeletableManager()
-

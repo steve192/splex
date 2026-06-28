@@ -11,7 +11,9 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 
+from splex.currency.models import CurrencyRateSnapshot
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.models import Group, GroupMembership
 from splex.imports.split_pro_client import SplitProConnection
@@ -219,6 +221,128 @@ def test_import_settlement_creates_settlement_row():
     settlement = Settlement.objects.get()
     assert settlement.amount == Decimal("25.00")
     assert settlement.kind == Settlement.Kind.MANUAL
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_import_uses_snapshot_for_expense_date_when_converting():
+    actor = _make_user()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=datetime(2025, 1, 15, tzinfo=UTC).date(),
+        rates={"EUR": "1", "USD": "2"},
+        source="historic",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "4"},
+        source="current",
+    )
+    fake = FakeSplitProClient(
+        users=[
+            _user(SELF_ID, "Me", "me@example.com"),
+            _user(ALICE_ID, "Alice"),
+        ],
+        groups=[{"id": 10, "name": "Trip", "defaultCurrency": "EUR", "archivedAt": None}],
+        group_members={10: [SELF_ID, ALICE_ID]},
+        group_expenses={
+            10: [
+                _expense(
+                    id="e1",
+                    name="Dinner",
+                    paid_by=SELF_ID,
+                    amount=1000,
+                    currency="USD",
+                    group_id=10,
+                    expense_date=datetime(2025, 1, 15, tzinfo=UTC),
+                ),
+            ],
+        },
+        friend_expenses=[],
+        participants={
+            "e1": [
+                {"userId": SELF_ID, "amount": 500},
+                {"userId": ALICE_ID, "amount": -500},
+            ],
+        },
+    )
+
+    import_from_split_pro(
+        actor=actor,
+        connection=SplitProConnection(host="x", port=5432, dbname="d", user="u", password="p"),
+        actor_user_id=SELF_ID,
+        client=fake,
+    )
+
+    expense = Expense.objects.get()
+    assert expense.converted_amount == Decimal("5.00")
+    assert expense.exchange_rate == Decimal("0.50000000")
+    assert expense.exchange_rate_source == "historic"
+    assert sorted(share["amount"] for share in expense.split_metadata["shares"]) == [
+        "5.00",
+        "5.00",
+    ]
+    assert sum(
+        (share.amount for share in expense.owed_shares.all()), Decimal("0.00")
+    ) == Decimal("5.00")
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_import_settlement_uses_snapshot_for_expense_date_when_converting():
+    actor = _make_user()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=datetime(2025, 1, 15, tzinfo=UTC).date(),
+        rates={"EUR": "1", "USD": "2"},
+        source="historic",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "4"},
+        source="current",
+    )
+    fake = FakeSplitProClient(
+        users=[
+            _user(SELF_ID, "Me", "me@example.com"),
+            _user(ALICE_ID, "Alice"),
+        ],
+        groups=[{"id": 10, "name": "Trip", "defaultCurrency": "EUR", "archivedAt": None}],
+        group_members={10: [SELF_ID, ALICE_ID]},
+        group_expenses={
+            10: [
+                _expense(
+                    id="s1",
+                    name="Settle",
+                    paid_by=SELF_ID,
+                    amount=1000,
+                    currency="USD",
+                    group_id=10,
+                    split_type="SETTLEMENT",
+                    expense_date=datetime(2025, 1, 15, tzinfo=UTC),
+                ),
+            ],
+        },
+        friend_expenses=[],
+        participants={
+            "s1": [
+                {"userId": SELF_ID, "amount": 1000},
+                {"userId": ALICE_ID, "amount": -1000},
+            ],
+        },
+    )
+
+    import_from_split_pro(
+        actor=actor,
+        connection=SplitProConnection(host="x", port=5432, dbname="d", user="u", password="p"),
+        actor_user_id=SELF_ID,
+        client=fake,
+    )
+
+    settlement = Settlement.objects.get()
+    assert settlement.amount == Decimal("5.00")
+    assert settlement.exchange_rate == Decimal("0.50000000")
+    assert settlement.exchange_rate_source == "historic"
 
 
 @pytest.mark.django_db

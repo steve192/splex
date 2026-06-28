@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} {amount} ödədi",
   "expense.owedBy": "Borclu olanlar",
   "expense.originalAmount": "Orijinal məbləğ",
+  "expense.exchangeRate": "Məzənnə",
+  "expense.exchangeRateDate": "{date} tarixli məzənnə",
   "expense.yourBalance": "Sizin balansınız",
   "expense.paymentsPayload": "Birdən çox ödəyən üçün Payments JSON",
   "expense.pendingSync": "Sinxronizasiya gözləyir",

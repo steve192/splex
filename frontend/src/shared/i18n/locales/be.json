@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} заплаціў(ла) {amount}",
   "expense.owedBy": "Павінны",
   "expense.originalAmount": "Першапачатковая сума",
+  "expense.exchangeRate": "Абменны курс",
+  "expense.exchangeRateDate": "Курс на {date}",
   "expense.yourBalance": "Ваш баланс",
   "expense.paymentsPayload": "Payments JSON для некалькіх плацельшчыкаў",
   "expense.pendingSync": "Чакае сінхранізацыі",

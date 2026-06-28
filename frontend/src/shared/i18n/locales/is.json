@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} greiddi {amount}",
   "expense.owedBy": "Skuldast af",
   "expense.originalAmount": "Upprunaleg upphæð",
+  "expense.exchangeRate": "Gengi",
+  "expense.exchangeRateDate": "Gengi frá {date}",
   "expense.yourBalance": "Þín staða",
   "expense.paymentsPayload": "Payments JSON fyrir marga greiðendur",
   "expense.pendingSync": "Bíður samstillingar",

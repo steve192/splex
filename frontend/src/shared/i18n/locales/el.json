@@ -233,6 +233,8 @@
   "expense.payerLine": "Ο/Η {payer} πλήρωσε {amount}",
   "expense.owedBy": "Οφείλεται από",
   "expense.originalAmount": "Αρχικό ποσό",
+  "expense.exchangeRate": "Συναλλαγματική ισοτιμία",
+  "expense.exchangeRateDate": "Ισοτιμία από {date}",
   "expense.yourBalance": "Το υπόλοιπό σας",
   "expense.paymentsPayload": "JSON πληρωμών για πολλαπλούς πληρωτές",
   "expense.pendingSync": "Εκκρεμεί συγχρονισμός",

@@ -1,17 +1,20 @@
+from datetime import date
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 from django.test import override_settings
+from django.utils import timezone
 
 from splex.currency.constants import CURRENCY_SNAPSHOT_BASE, SUPPORTED_CURRENCIES
-from splex.currency.models import CurrencyRateSnapshot, ExchangeRate
+from splex.currency.models import CurrencyRateSnapshot
 from splex.currency.services import (
     convert,
-    fetch_frankfurter_rate,
     get_latest_rate,
     get_latest_rates_snapshot,
+    get_rate_for_date,
+    rate_from_snapshot,
 )
 
 
@@ -26,14 +29,15 @@ def test_same_currency_returns_identity_rate_without_db():
 @pytest.mark.django_db
 @override_settings(CURRENCY_RATE_PROVIDER="placeholder")
 def test_placeholder_provider_uses_cached_rate_when_available():
-    cached = ExchangeRate.objects.create(
-        base_currency="USD",
-        quote_currency="EUR",
-        rate=Decimal("0.90000000"),
+    cached = CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "2"},
         source="seed",
     )
     rate = get_latest_rate("usd", "eur")
-    assert rate.id == cached.id
+    assert rate.rate == Decimal("0.50000000")
+    assert rate.source == cached.source
+    assert rate.fetched_at == cached.fetched_at
 
 
 @pytest.mark.django_db
@@ -46,10 +50,9 @@ def test_placeholder_provider_raises_without_cache():
 @pytest.mark.django_db
 @override_settings(CURRENCY_RATE_PROVIDER="placeholder")
 def test_convert_uses_latest_rate():
-    ExchangeRate.objects.create(
-        base_currency="USD",
-        quote_currency="EUR",
-        rate=Decimal("0.50000000"),
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "2"},
         source="seed",
     )
     amount, rate = convert("10", "USD", "EUR")
@@ -57,18 +60,11 @@ def test_convert_uses_latest_rate():
     assert rate.rate == Decimal("0.50000000")
 
 
-def _fake_response(rate_value):
-    response = MagicMock()
-    response.raise_for_status.return_value = None
-    response.json.return_value = {"rate": rate_value}
-    return response
-
-
-def _fake_rates_snapshot_response():
+def _fake_rates_snapshot_response(rate_value="1.25"):
     response = MagicMock()
     response.raise_for_status.return_value = None
     response.json.return_value = [
-        {"base": CURRENCY_SNAPSHOT_BASE, "quote": currency, "rate": "1.25"}
+        {"base": CURRENCY_SNAPSHOT_BASE, "quote": currency, "rate": rate_value}
         for currency in SUPPORTED_CURRENCIES
         if currency != CURRENCY_SNAPSHOT_BASE
     ]
@@ -82,16 +78,20 @@ def test_supported_currencies_match_frankfurter_active_catalog():
 
 @pytest.mark.django_db
 @override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
-def test_frankfurter_fetch_stores_and_returns_rate():
+def test_frankfurter_fetch_stores_snapshot_and_returns_derived_rate():
     with patch(
-        "splex.currency.services.requests.get", return_value=_fake_response("0.9")
+        "splex.currency.services.requests.get",
+        return_value=_fake_rates_snapshot_response(),
     ) as mock_get:
         rate = get_latest_rate("USD", "EUR")
-    assert mock_get.called
+    mock_get.assert_called_once_with(
+        "https://api.frankfurter.dev/v2/rates",
+        params={"base": "EUR"},
+        timeout=10,
+    )
     assert rate.source == "frankfurter"
-    assert rate.rate == Decimal("0.9")
-    # The fetched rate is persisted for later cache hits.
-    assert ExchangeRate.objects.filter(base_currency="USD", quote_currency="EUR").exists()
+    assert rate.rate == Decimal("0.80000000")
+    assert CurrencyRateSnapshot.objects.filter(source="frankfurter").exists()
 
 
 @pytest.mark.django_db
@@ -106,10 +106,9 @@ def test_frankfurter_fetches_one_complete_daily_snapshot():
 
     assert cached_snapshot.id == snapshot.id
     assert snapshot.base_currency == CURRENCY_SNAPSHOT_BASE
+    assert snapshot.rate_date == timezone.localdate()
     expected_rates = {
-        currency: "1.25"
-        for currency in SUPPORTED_CURRENCIES
-        if currency != CURRENCY_SNAPSHOT_BASE
+        currency: "1.25" for currency in SUPPORTED_CURRENCIES if currency != CURRENCY_SNAPSHOT_BASE
     } | {CURRENCY_SNAPSHOT_BASE: "1"}
     assert snapshot.rates == expected_rates
     mock_get.assert_called_once_with(
@@ -162,14 +161,13 @@ def test_incomplete_snapshot_is_refreshed_even_when_fetched_today():
 @pytest.mark.django_db
 @override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
 def test_frankfurter_failure_falls_back_to_cached_rate():
-    cached = ExchangeRate.objects.create(
-        base_currency="USD",
-        quote_currency="EUR",
-        rate=Decimal("0.80000000"),
+    cached = CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "1.25"},
         source="seed",
     )
     # Force a stale cache (yesterday) so the service tries to fetch, then fails.
-    ExchangeRate.objects.filter(id=cached.id).update(
+    CurrencyRateSnapshot.objects.filter(id=cached.id).update(
         fetched_at=cached.fetched_at.replace(year=2000)
     )
     with patch(
@@ -177,7 +175,8 @@ def test_frankfurter_failure_falls_back_to_cached_rate():
         side_effect=requests.RequestException("boom"),
     ):
         rate = get_latest_rate("USD", "EUR")
-    assert rate.id == cached.id
+    assert rate.rate == Decimal("0.80000000")
+    assert rate.source == "seed"
 
 
 @pytest.mark.django_db
@@ -187,7 +186,7 @@ def test_frankfurter_failure_without_cache_raises():
         "splex.currency.services.requests.get",
         side_effect=requests.RequestException("boom"),
     ):
-        with pytest.raises(ValueError, match="could not be fetched"):
+        with pytest.raises(ValueError, match="rates could not be fetched"):
             get_latest_rate("USD", "EUR")
 
 
@@ -199,9 +198,108 @@ def test_unsupported_provider_raises():
 
 
 @pytest.mark.django_db
-def test_fetch_frankfurter_rate_parses_payload():
-    with patch("splex.currency.services.requests.get", return_value=_fake_response("1.25")):
-        rate = fetch_frankfurter_rate("EUR", "USD")
-    assert rate.rate == Decimal("1.25")
-    assert rate.base_currency == "EUR"
-    assert rate.quote_currency == "USD"
+def test_rate_from_snapshot_derives_cross_currency_rate():
+    snapshot = CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "1.25", "JPY": "200"},
+        source="seed",
+    )
+    rate = rate_from_snapshot(snapshot, "USD", "JPY")
+    assert rate.rate == Decimal("160.00000000")
+    assert rate.base_currency == "USD"
+    assert rate.quote_currency == "JPY"
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
+def test_historical_rate_uses_cached_snapshot_for_requested_date():
+    rate_date = date(2025, 1, 15)
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=rate_date,
+        rates={"EUR": "1", "USD": "2"},
+        source="seed",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rates={"EUR": "1", "USD": "4"},
+        source="current",
+    )
+
+    rate = get_rate_for_date("USD", "EUR", rate_date)
+
+    assert rate.rate == Decimal("0.50000000")
+    assert rate.source == "seed"
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
+def test_historical_rate_fetches_requested_date_when_not_cached():
+    rate_date = date(2025, 1, 15)
+    with patch(
+        "splex.currency.services.requests.get",
+        return_value=_fake_rates_snapshot_response("2"),
+    ) as mock_get:
+        rate = get_rate_for_date("USD", "EUR", rate_date)
+
+    assert rate.rate == Decimal("0.50000000")
+    mock_get.assert_called_once_with(
+        "https://api.frankfurter.dev/v2/rates",
+        params={"base": "EUR", "date": "2025-01-15"},
+        timeout=10,
+    )
+    assert CurrencyRateSnapshot.objects.filter(rate_date=rate_date).exists()
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
+def test_historical_rate_falls_back_to_closest_cached_rate_when_history_unavailable():
+    rate_date = date(2025, 1, 15)
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2025, 1, 10),
+        rates={"EUR": "1", "USD": "2"},
+        source="closest",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2025, 6, 1),
+        rates={"EUR": "1", "USD": "4"},
+        source="farther",
+    )
+    with patch(
+        "splex.currency.services.requests.get",
+        side_effect=requests.RequestException("boom"),
+    ):
+        rate = get_rate_for_date("USD", "EUR", rate_date)
+
+    assert rate.rate == Decimal("0.50000000")
+    assert rate.source == "closest"
+    assert rate.rate_date == date(2025, 1, 10)
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="frankfurter")
+def test_historical_rate_can_fall_back_to_closest_later_cached_rate():
+    rate_date = date(2025, 1, 15)
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2024, 12, 1),
+        rates={"EUR": "1", "USD": "2"},
+        source="before",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=date(2025, 1, 20),
+        rates={"EUR": "1", "USD": "4"},
+        source="closest-after",
+    )
+    with patch(
+        "splex.currency.services.requests.get",
+        side_effect=requests.RequestException("boom"),
+    ):
+        rate = get_rate_for_date("USD", "EUR", rate_date)
+
+    assert rate.rate == Decimal("0.25000000")
+    assert rate.source == "closest-after"
+    assert rate.rate_date == date(2025, 1, 20)

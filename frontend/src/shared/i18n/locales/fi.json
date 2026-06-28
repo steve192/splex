@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} maksoi {amount}",
   "expense.owedBy": "Velallinen",
   "expense.originalAmount": "Alkuperäinen summa",
+  "expense.exchangeRate": "Vaihtokurssi",
+  "expense.exchangeRateDate": "Kurssi päivältä {date}",
   "expense.yourBalance": "Saldosi",
   "expense.paymentsPayload": "Usean maksajan maksut JSON-muodossa",
   "expense.pendingSync": "Odottaa synkronointia",

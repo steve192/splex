@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} fizette: {amount}",
   "expense.owedBy": "Tartozik",
   "expense.originalAmount": "Eredeti összeg",
+  "expense.exchangeRate": "Árfolyam",
+  "expense.exchangeRateDate": "Árfolyam dátuma: {date}",
   "expense.yourBalance": "Saját egyenleged",
   "expense.paymentsPayload": "Fizetések JSON több fizetőhöz",
   "expense.pendingSync": "Szinkronizálásra vár",

@@ -233,6 +233,8 @@
   "expense.payerLine": "D'íoc {payer} {amount}",
   "expense.owedBy": "Faoi chomaoin ag",
   "expense.originalAmount": "Bunmhéid",
+  "expense.exchangeRate": "Ráta malairte",
+  "expense.exchangeRateDate": "Ráta ó {date}",
   "expense.yourBalance": "Do iarmhéid",
   "expense.paymentsPayload": "JSON íocaíochtaí d'ilíocóirí",
   "expense.pendingSync": "Sioncronú ar feitheamh",

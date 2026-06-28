@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} sumokėjo {amount}",
   "expense.owedBy": "Skolinga",
   "expense.originalAmount": "Pradinė suma",
+  "expense.exchangeRate": "Valiutos kursas",
+  "expense.exchangeRateDate": "{date} kursas",
   "expense.yourBalance": "Jūsų balansas",
   "expense.paymentsPayload": "Kelių mokėtojų mokėjimų JSON",
   "expense.pendingSync": "Laukiama sinchronizavimo",

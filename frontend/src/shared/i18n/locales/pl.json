@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} zapłacił(a) {amount}",
   "expense.owedBy": "Winni są",
   "expense.originalAmount": "Kwota oryginalna",
+  "expense.exchangeRate": "Kurs wymiany",
+  "expense.exchangeRateDate": "Kurs z {date}",
   "expense.yourBalance": "Twoje saldo",
   "expense.paymentsPayload": "JSON płatności dla wielu płatników",
   "expense.pendingSync": "Oczekuje na synchronizację",

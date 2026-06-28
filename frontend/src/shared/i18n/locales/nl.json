@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} betaalde {amount}",
   "expense.owedBy": "Verschuldigd door",
   "expense.originalAmount": "Oorspronkelijk bedrag",
+  "expense.exchangeRate": "Wisselkoers",
+  "expense.exchangeRateDate": "Koers van {date}",
   "expense.yourBalance": "Jouw saldo",
   "expense.paymentsPayload": "Payments-JSON voor meerdere betalers",
   "expense.pendingSync": "Wachten op synchronisatie",

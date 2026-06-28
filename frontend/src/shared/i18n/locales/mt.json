@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} ħallas {amount}",
   "expense.owedBy": "Dovut minn",
   "expense.originalAmount": "Ammont oriġinali",
+  "expense.exchangeRate": "Rata tal-kambju",
+  "expense.exchangeRateDate": "Rata minn {date}",
   "expense.yourBalance": "Il-bilanċ tiegħek",
   "expense.paymentsPayload": "Payments JSON għal diversi pagaturi",
   "expense.pendingSync": "Qed jistenna sync",

@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} заплатил(а) {amount}",
   "expense.owedBy": "Должны",
   "expense.originalAmount": "Исходная сумма",
+  "expense.exchangeRate": "Обменный курс",
+  "expense.exchangeRateDate": "Курс от {date}",
   "expense.yourBalance": "Ваш баланс",
   "expense.paymentsPayload": "JSON платежей для нескольких плательщиков",
   "expense.pendingSync": "Ожидает синхронизации",

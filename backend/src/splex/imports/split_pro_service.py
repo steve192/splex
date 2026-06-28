@@ -20,7 +20,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
-from splex.currency.services import convert
+from splex.currency.services import convert_for_rate_date
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.models import Group
 from splex.groups.services import add_unregistered_participant, create_group
@@ -351,7 +351,15 @@ def _import_expense(*, actor, group: Group, sp_expense: dict,
         summary.skipped_expenses += 1
         return
 
-    converted_total, rate = convert(total, currency, group.default_currency)
+    expense_date = _coerce_date(sp_expense.get("expenseDate"))
+    # Imported expense rows bypass create_expense, so resolve the same
+    # expense-date rate here and persist the actual rate date used.
+    converted_total, rate = convert_for_rate_date(
+        total,
+        currency,
+        group.default_currency,
+        expense_date,
+    )
     paid_shares = _scale_shares(
         native_shares=payer_shares_native, target_total=converted_total,
         sp_to_participant=sp_to_participant,
@@ -364,7 +372,6 @@ def _import_expense(*, actor, group: Group, sp_expense: dict,
         summary.skipped_expenses += 1
         return
 
-    expense_date = _coerce_date(sp_expense.get("expenseDate"))
     description = (sp_expense.get("name") or "Imported expense")[:240]
 
     expense = Expense.objects.create(
@@ -377,11 +384,15 @@ def _import_expense(*, actor, group: Group, sp_expense: dict,
         converted_currency=group.default_currency,
         exchange_rate=rate.rate,
         exchange_rate_source=rate.source,
+        exchange_rate_date=rate.rate_date,
         split_method=Expense.SplitMethod.EXACT,
         split_metadata={
             "shares": [
                 {"participant_id": pid, "amount": str(amount)}
-                for pid, amount in owed_shares.items()
+                for pid, amount in _native_shares_by_participant(
+                    native_shares=owed_shares_native,
+                    sp_to_participant=sp_to_participant,
+                ).items()
             ]
         },
         created_by=actor,
@@ -415,13 +426,23 @@ def _import_settlement(*, actor, group: Group, sp_expense: dict,
         summary.skipped_expenses += 1
         return
     receiver_sp_id = receivers[0]
-    converted_total, _ = convert(total, currency, group.default_currency)
+    settlement_date = _coerce_date(sp_expense.get("expenseDate"))
+    converted_total, rate = convert_for_rate_date(
+        total,
+        currency,
+        group.default_currency,
+        settlement_date,
+    )
     Settlement.objects.create(
         group=group,
         payer_participant_id=sp_to_participant[payer_id].id,
         receiver_participant_id=sp_to_participant[receiver_sp_id].id,
+        original_amount=total,
+        original_currency=currency,
         amount=converted_total,
         currency=group.default_currency,
+        exchange_rate=rate.rate,
+        exchange_rate_source=rate.source,
         kind=Settlement.Kind.MANUAL,
         created_by=actor,
     )
@@ -485,6 +506,16 @@ def _scale_shares(*, native_shares: dict[int, Decimal], target_total: Decimal,
         largest_pid = max(scaled, key=lambda pid: scaled[pid])
         scaled[largest_pid] = money(scaled[largest_pid] + drift)
     return scaled
+
+
+def _native_shares_by_participant(*, native_shares: dict[int, Decimal],
+                                  sp_to_participant: dict[int, Participant]
+                                  ) -> dict[int, Decimal]:
+    return {
+        sp_to_participant[sp_user_id].id: money(amount)
+        for sp_user_id, amount in native_shares.items()
+        if amount > 0
+    }
 
 
 # ---------------------------------------------------------------------------

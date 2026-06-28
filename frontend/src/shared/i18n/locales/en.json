@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} paid {amount}",
   "expense.owedBy": "Owed by",
   "expense.originalAmount": "Original amount",
+  "expense.exchangeRate": "Exchange rate",
+  "expense.exchangeRateDate": "Rate from {date}",
   "expense.yourBalance": "Your balance",
   "expense.paymentsPayload": "Payments JSON for multiple payers",
   "expense.pendingSync": "Pending sync",

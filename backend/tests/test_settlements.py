@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -5,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from splex.currency.models import ExchangeRate
+from splex.currency.models import CurrencyRateSnapshot
 from splex.friends.services import create_friendship
 from splex.groups.services import add_unregistered_participant, create_group
 from splex.participants.services import get_or_create_user_participant
@@ -101,8 +102,8 @@ def test_create_settlement_rejects_same_payer_and_receiver():
 @override_settings(CURRENCY_RATE_PROVIDER="placeholder")
 def test_create_settlement_converts_foreign_currency_into_context_currency():
     owner, group, owner_p, other = _group_with_two()
-    ExchangeRate.objects.create(
-        base_currency="USD", quote_currency="EUR", rate=Decimal("0.50000000"), source="seed"
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR", rates={"EUR": "1", "USD": "2"}, source="seed"
     )
     settlement = create_settlement(
         actor=owner,
@@ -117,6 +118,10 @@ def test_create_settlement_converts_foreign_currency_into_context_currency():
     # 10 USD * 0.5 = 5 EUR, stored in the context currency.
     assert settlement.amount == Decimal("5.00")
     assert settlement.currency == "EUR"
+    assert settlement.original_amount == Decimal("10.00")
+    assert settlement.original_currency == "USD"
+    assert settlement.exchange_rate == Decimal("0.50000000")
+    assert settlement.exchange_rate_source == "seed"
 
 
 @pytest.mark.django_db
@@ -165,6 +170,79 @@ def test_update_settlement_changes_amount_and_participants():
 
 
 @pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_update_settlement_amount_reuses_saved_exchange_rate():
+    owner, group, owner_p, other = _group_with_two()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR", rates={"EUR": "1", "USD": "2"}, source="seed"
+    )
+    settlement = create_settlement(
+        actor=owner,
+        group=group,
+        data={
+            "payer_participant_id": owner_p.id,
+            "receiver_participant_id": other.id,
+            "amount": Decimal("10.00"),
+            "currency": "USD",
+        },
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR", rates={"EUR": "1", "USD": "4"}, source="current"
+    )
+
+    updated = update_settlement(
+        actor=owner,
+        settlement=settlement,
+        data={"amount": Decimal("20.00")},
+    )
+
+    assert updated.original_amount == Decimal("20.00")
+    assert updated.original_currency == "USD"
+    assert updated.amount == Decimal("10.00")
+    assert updated.currency == "EUR"
+    assert updated.exchange_rate == Decimal("0.50000000")
+    assert updated.exchange_rate_source == "seed"
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_update_settlement_currency_uses_snapshot_for_creation_date():
+    owner, group, owner_p, other = _group_with_two()
+    settlement = create_settlement(
+        actor=owner,
+        group=group,
+        data={
+            "payer_participant_id": owner_p.id,
+            "receiver_participant_id": other.id,
+            "amount": Decimal("10.00"),
+        },
+    )
+    Settlement.objects.filter(id=settlement.id).update(created_at=datetime(2025, 1, 15, tzinfo=UTC))
+    settlement.refresh_from_db()
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=settlement.created_at.date(),
+        rates={"EUR": "1", "USD": "2"},
+        source="historic",
+    )
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR", rates={"EUR": "1", "USD": "4"}, source="current"
+    )
+
+    updated = update_settlement(
+        actor=owner,
+        settlement=settlement,
+        data={"amount": Decimal("10.00"), "currency": "USD"},
+    )
+
+    assert updated.original_amount == Decimal("10.00")
+    assert updated.original_currency == "USD"
+    assert updated.amount == Decimal("5.00")
+    assert updated.exchange_rate == Decimal("0.50000000")
+    assert updated.exchange_rate_source == "historic"
+
+
+@pytest.mark.django_db
 def test_update_rejects_deleted_settlement():
     owner, group, owner_p, other = _group_with_two()
     settlement = create_settlement(
@@ -178,9 +256,7 @@ def test_update_rejects_deleted_settlement():
     )
     soft_delete_settlement(actor=owner, settlement=settlement)
     with pytest.raises(ValueError, match="Deleted settlements cannot be edited"):
-        update_settlement(
-            actor=owner, settlement=settlement, data={"amount": Decimal("1.00")}
-        )
+        update_settlement(actor=owner, settlement=settlement, data={"amount": Decimal("1.00")})
 
 
 @pytest.mark.django_db
@@ -273,9 +349,7 @@ def test_settlement_detail_patch_and_delete_endpoints():
     client = APIClient()
     client.force_authenticate(owner)
 
-    patch = client.patch(
-        f"/api/settlements/{settlement.id}/", {"amount": "4.00"}, format="json"
-    )
+    patch = client.patch(f"/api/settlements/{settlement.id}/", {"amount": "4.00"}, format="json")
     assert patch.status_code == 200
 
     delete = client.delete(f"/api/settlements/{settlement.id}/")

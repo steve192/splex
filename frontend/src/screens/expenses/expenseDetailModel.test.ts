@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { Expense } from "../../shared/types/models";
-import { expensePersonalNet, isConvertedExpense } from "./expenseDetailModel";
+import {
+  expenseExchangeRateText,
+  expensePersonalNet,
+  isConvertedExpense,
+} from "./expenseDetailModel";
 
 const baseExpense: Expense = {
   id: 1,
@@ -31,6 +35,25 @@ describe("isConvertedExpense", () => {
         converted_currency: "USD",
       }),
     ).toBe(true);
+  });
+});
+
+describe("expenseExchangeRateText", () => {
+  it("shows the stored conversion rate for converted expenses", () => {
+    expect(
+      expenseExchangeRateText({
+        ...baseExpense,
+        original_currency: "NOK",
+        converted_currency: "EUR",
+        original_amount: "5000.00",
+        converted_amount: "430.00",
+        exchange_rate: "0.08600000",
+      }),
+    ).toBe("1 NOK = 0.08600000 EUR");
+  });
+
+  it("omits exchange-rate text when no conversion happened", () => {
+    expect(expenseExchangeRateText(baseExpense)).toBeNull();
   });
 });
 

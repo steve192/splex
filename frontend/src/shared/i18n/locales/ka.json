@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer}-მა გადაიხადა {amount}",
   "expense.owedBy": "ვალდებულია",
   "expense.originalAmount": "საწყისი თანხა",
+  "expense.exchangeRate": "გაცვლითი კურსი",
+  "expense.exchangeRateDate": "კურსი {date}-დან",
   "expense.yourBalance": "თქვენი ბალანსი",
   "expense.paymentsPayload": "გადახდების JSON რამდენიმე გადამხდელისთვის",
   "expense.pendingSync": "სინქრონიზაციას ელოდება",

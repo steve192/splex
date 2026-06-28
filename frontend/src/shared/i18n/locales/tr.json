@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} {amount} ödedi",
   "expense.owedBy": "Borçlu olanlar",
   "expense.originalAmount": "Orijinal tutar",
+  "expense.exchangeRate": "Döviz kuru",
+  "expense.exchangeRateDate": "{date} tarihli kur",
   "expense.yourBalance": "Bakiyeniz",
   "expense.paymentsPayload": "Birden fazla ödeyen için ödemeler JSON'u",
   "expense.pendingSync": "Eşitleme bekliyor",

@@ -22,3 +22,8 @@ export function expensePersonalNet(
     .reduce((sum, share) => sum + asNumber(share.amount), 0);
   return paid - owed;
 }
+
+export function expenseExchangeRateText(expense: Expense): string | null {
+  if (!isConvertedExpense(expense) || !expense.exchange_rate) return null;
+  return `1 ${expense.original_currency} = ${expense.exchange_rate} ${expense.converted_currency}`;
+}

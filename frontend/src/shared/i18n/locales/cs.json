@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} zaplatil(a) {amount}",
   "expense.owedBy": "Dluží",
   "expense.originalAmount": "Původní částka",
+  "expense.exchangeRate": "Směnný kurz",
+  "expense.exchangeRateDate": "Kurz z {date}",
   "expense.yourBalance": "Váš zůstatek",
   "expense.paymentsPayload": "Payments JSON pro více plátců",
   "expense.pendingSync": "Čeká na synchronizaci",

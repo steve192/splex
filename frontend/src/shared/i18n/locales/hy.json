@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer}-ը վճարել է {amount}",
   "expense.owedBy": "Պարտք է",
   "expense.originalAmount": "Սկզբնական գումար",
+  "expense.exchangeRate": "Փոխարժեք",
+  "expense.exchangeRateDate": "Փոխարժեքը՝ {date}",
   "expense.yourBalance": "Ձեր մնացորդը",
   "expense.paymentsPayload": "Payments JSON մի քանի վճարողների համար",
   "expense.pendingSync": "Սպասող համաժամացում",

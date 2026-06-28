@@ -233,6 +233,8 @@
   "expense.payerLine": "{payer} betalte {amount}",
   "expense.owedBy": "Skyldes af",
   "expense.originalAmount": "Oprindeligt beløb",
+  "expense.exchangeRate": "Valutakurs",
+  "expense.exchangeRateDate": "Kurs fra {date}",
   "expense.yourBalance": "Din saldo",
   "expense.paymentsPayload": "Payments JSON for flere betalere",
   "expense.pendingSync": "Afventer synkronisering",

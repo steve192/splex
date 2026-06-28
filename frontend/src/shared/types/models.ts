@@ -97,11 +97,18 @@ export type Expense = {
   group_id?: number | null;
   friendship_id?: number | null;
   description: string;
+  // User-facing expense date. The backend uses it to request historical rates,
+  // but the actual stored rate can come from another date if that lookup falls back.
   date: string;
   original_amount: string;
   original_currency: string;
   converted_amount: string;
   converted_currency: string;
+  exchange_rate?: string;
+  exchange_rate_source?: string;
+  // Date represented by exchange_rate. Usually equals date; kept separate so
+  // detail views can be honest when a fallback/latest rate was used.
+  exchange_rate_date?: string | null;
   split_method: SplitMethod;
   split_payload?: Record<string, unknown>;
   latitude?: number | null;
@@ -123,8 +130,12 @@ export type Settlement = {
   receiver_display_name?: string;
   payer_avatar_url?: string;
   receiver_avatar_url?: string;
+  original_amount?: string;
+  original_currency?: string;
   amount: string;
   currency: string;
+  exchange_rate?: string;
+  exchange_rate_source?: string;
   kind?: "manual" | "auto_write_off";
   created_at: string;
   deleted_at?: string | null;

@@ -1,12 +1,13 @@
 import { View } from "react-native";
 import { Card, Text, TouchableRipple } from "react-native-paper";
 
-import { useI18n, TranslateFn } from "../i18n/I18nContext";
+import { useI18n } from "../i18n/I18nContext";
 import { formatDeviceDateParts } from "../lib/dates";
-import { asNumber, formatMoney } from "../lib/money";
+import { asNumber } from "../lib/money";
 import { Expense } from "../types/models";
 import { AvatarStack } from "./AvatarStack";
 import { BalanceStack } from "./BalanceStack";
+import { payerLine } from "./expenseLedgerRowModel";
 import { styles } from "./styles";
 
 type ExpenseLedgerRowProps = {
@@ -14,19 +15,6 @@ type ExpenseLedgerRowProps = {
   currentParticipantId?: number | null;
   onPress: () => void;
 };
-
-function payerLine(expense: Expense, t: TranslateFn): string {
-  if (!expense.payments.length) return "";
-  const names = expense.payments.map((share) => share.display_name).filter(Boolean);
-  const payerNames =
-    names.length <= 2
-      ? names.join(", ")
-      : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-  return t("expense.payerLine", {
-    payer: payerNames,
-    amount: `${formatMoney(expense.converted_amount)} ${expense.converted_currency}`
-  });
-}
 
 export function ExpenseLedgerRow({ expense, currentParticipantId, onPress }: Readonly<ExpenseLedgerRowProps>) {
   const { t } = useI18n();
