@@ -865,7 +865,8 @@ function buildContributions(expenses: ExpenseFixture[], participants: BalancePar
       participant_id: participant.id,
       display_name: participant.display_name,
       paid: (paidById.get(participant.id) ?? 0).toFixed(2),
-      share: (shareById.get(participant.id) ?? 0).toFixed(2)
+      share: (shareById.get(participant.id) ?? 0).toFixed(2),
+      net: round2((paidById.get(participant.id) ?? 0) - (shareById.get(participant.id) ?? 0)).toFixed(2)
     }))
     .sort((left, right) => Number(right.paid) - Number(left.paid));
 }
@@ -985,13 +986,115 @@ function buildPairStats(expenses: ExpenseFixture[], nameById: Map<number, string
     }));
 }
 
+function buildPersonalSummary(
+  contributions: ReturnType<typeof buildContributions>,
+  currentParticipantId: number
+) {
+  const row = contributions.find((entry) => entry.participant_id === currentParticipantId);
+  if (!row) return null;
+  const net = Number(row.net);
+  return {
+    participant_id: row.participant_id,
+    display_name: row.display_name,
+    paid: row.paid,
+    share: row.share,
+    net: row.net,
+    covered_for_others: Math.max(net, 0).toFixed(2),
+    covered_by_others: Math.max(-net, 0).toFixed(2)
+  };
+}
+
+function buildTopLocations(expenses: ExpenseFixture[]) {
+  const buckets = new Map<string, { count: number; total: number }>();
+  for (const expenseRow of expenses) {
+    const location = expenseRow.approximate_location?.trim();
+    if (!location) continue;
+    const row = buckets.get(location) ?? { count: 0, total: 0 };
+    row.count += 1;
+    row.total = round2(row.total + Number(expenseRow.converted_amount));
+    buckets.set(location, row);
+  }
+  return [...buckets.entries()]
+    .sort((left, right) => right[1].total - left[1].total || right[1].count - left[1].count)
+    .slice(0, 8)
+    .map(([location, row]) => ({
+      location,
+      count: row.count,
+      total: row.total.toFixed(2)
+    }));
+}
+
+function buildMonthlyComparison(expenses: ExpenseFixture[], latestMonth: string) {
+  const byMonth = new Map<string, { total: number; count: number }>();
+  for (const expenseRow of expenses) {
+    const key = expenseRow.date.slice(0, 7);
+    const row = byMonth.get(key) ?? { total: 0, count: 0 };
+    row.total = round2(row.total + Number(expenseRow.converted_amount));
+    row.count += 1;
+    byMonth.set(key, row);
+  }
+  const [year, month] = latestMonth.split("-").map(Number);
+  const previousDate = new Date(year, month - 2, 1);
+  const previousMonth = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
+  const current = byMonth.get(latestMonth) ?? { total: 0, count: 0 };
+  const previous = byMonth.get(previousMonth) ?? { total: 0, count: 0 };
+  const activeTotals = [...byMonth.values()].map((row) => row.total).filter((total) => total > 0);
+  const average = activeTotals.length
+    ? round2(activeTotals.reduce((sum, total) => sum + total, 0) / activeTotals.length)
+    : 0;
+  const highest = [...byMonth.entries()].sort((left, right) => right[1].total - left[1].total)[0];
+  const changeAmount = round2(current.total - previous.total);
+  return {
+    current_month: `${latestMonth}-01`,
+    current_total: current.total.toFixed(2),
+    current_count: current.count,
+    previous_month: `${previousMonth}-01`,
+    previous_total: previous.total.toFixed(2),
+    previous_count: previous.count,
+    change_amount: changeAmount.toFixed(2),
+    change_percent: previous.total > 0 ? round2((changeAmount / previous.total) * 100).toFixed(2) : null,
+    average_active_month: average.toFixed(2),
+    highest_month: highest ? `${highest[0]}-01` : null,
+    highest_month_total: (highest?.[1].total ?? 0).toFixed(2)
+  };
+}
+
+function buildParticipantActivity(expenses: ExpenseFixture[], participants: BalanceParticipant[]) {
+  const paidById = new Map<number, number>();
+  const includedById = new Map<number, number>();
+  for (const expenseRow of expenses) {
+    for (const payment of expenseRow.payments) {
+      paidById.set(payment.participant_id, (paidById.get(payment.participant_id) ?? 0) + 1);
+    }
+    for (const owed of expenseRow.owed) {
+      includedById.set(owed.participant_id, (includedById.get(owed.participant_id) ?? 0) + 1);
+    }
+  }
+  return participants
+    .map((participant) => ({
+      participant_id: participant.id,
+      display_name: participant.display_name,
+      paid_expense_count: paidById.get(participant.id) ?? 0,
+      included_expense_count: includedById.get(participant.id) ?? 0,
+      created_expense_count: participant.id === PARTICIPANT_ME.id ? expenses.length : 0
+    }))
+    .sort((left, right) => {
+      return (
+        right.created_expense_count - left.created_expense_count ||
+        right.paid_expense_count - left.paid_expense_count ||
+        right.included_expense_count - left.included_expense_count
+      );
+    });
+}
+
 // Mirror of the backend's statistics aggregation, so the figures always agree
 // with the expense fixtures they're built from.
 function computeStatistics(
   expenses: ExpenseFixture[],
   participants: BalanceParticipant[],
   currency: string,
-  latestMonth: string
+  latestMonth: string,
+  currentParticipantId = PARTICIPANT_ME.id
 ) {
   const nameById = new Map(participants.map((p) => [p.id, p.display_name]));
   const total = round2(expenses.reduce((sum, e) => sum + Number(e.converted_amount), 0));
@@ -1002,13 +1105,18 @@ function computeStatistics(
   const currencyBreakdown = buildCurrencyBreakdown(expenses);
   const monthly = buildMonthlyTotals(expenses, latestMonth);
   const contributions = buildContributions(expenses, participants);
+  const personalSummary = buildPersonalSummary(contributions, currentParticipantId);
   const topDescriptions = buildTopDescriptions(expenses);
   const biggestExpenses = buildBiggestExpenses(expenses);
   const locations = buildLocations(expenses);
+  const topLocations = buildTopLocations(expenses);
   const dayOfWeek = buildDayOfWeek(expenses);
   const pairStats = buildPairStats(expenses, nameById);
+  const monthlyComparison = buildMonthlyComparison(expenses, latestMonth);
+  const participantActivity = buildParticipantActivity(expenses, participants);
 
   return {
+    date_filter: { date_from: null, date_to: null },
     summary: {
       currency,
       total_amount: total.toFixed(2),
@@ -1021,16 +1129,25 @@ function computeStatistics(
     },
     monthly,
     contributions,
+    personal_summary: personalSummary,
     top_descriptions: topDescriptions,
     biggest_expenses: biggestExpenses,
     locations,
+    top_locations: topLocations,
     day_of_week: dayOfWeek,
-    pair_stats: pairStats
+    pair_stats: pairStats,
+    monthly_comparison: monthlyComparison,
+    participant_activity: participantActivity
   };
 }
 
 const CURRENT_MONTH = TODAY.slice(0, 7);
-const STATS_TRIP = computeStatistics(TRIP_EXPENSES, TRIP_PARTICIPANTS, "EUR", CURRENT_MONTH);
+const STATS_TRIP = computeStatistics(
+  TRIP_EXPENSES,
+  TRIP_PARTICIPANTS,
+  "EUR",
+  CURRENT_MONTH
+);
 const STATS_FLAT = computeStatistics(FLAT_EXPENSES, FLAT_PARTICIPANTS, "EUR", CURRENT_MONTH);
 const STATS_FRIEND = computeStatistics(
   FRIEND_EXPENSES,
@@ -1296,7 +1413,49 @@ export function groupDetail(groupId: number) {
   };
 }
 
-export function statisticsForGroup(groupId: number) {
-  if (groupId === FLAT_GROUP.id) return STATS_FLAT;
-  return STATS_TRIP;
+function dateRangeFromQuery(query: string) {
+  const params = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
+  return {
+    date_from: params.get("date_from") ?? null,
+    date_to: params.get("date_to") ?? null
+  };
+}
+
+function filterExpensesByQuery(expenses: ExpenseFixture[], query: string) {
+  const range = dateRangeFromQuery(query);
+  return expenses.filter((expenseRow) => {
+    if (range.date_from && expenseRow.date < range.date_from) return false;
+    if (range.date_to && expenseRow.date > range.date_to) return false;
+    return true;
+  });
+}
+
+function withDateFilter<T extends { date_filter: { date_from: string | null; date_to: string | null } }>(
+  stats: T,
+  query: string
+) {
+  return { ...stats, date_filter: dateRangeFromQuery(query) };
+}
+
+export function statisticsForGroup(groupId: number, query = "") {
+  const expenses = filterExpensesByQuery(EXPENSES_BY_GROUP[groupId] ?? TRIP_EXPENSES, query);
+  const participants = GROUP_PARTICIPANTS[groupId] ?? TRIP_PARTICIPANTS;
+  const currency = GROUPS_BY_ID[groupId]?.default_currency ?? "EUR";
+  return withDateFilter(
+    computeStatistics(expenses, participants, currency, CURRENT_MONTH),
+    query
+  );
+}
+
+export function statisticsForFriend(friendId: number, query = "") {
+  const expenses = filterExpensesByQuery(EXPENSES_BY_FRIEND[friendId] ?? FRIEND_EXPENSES, query);
+  const isDana = friendId === FRIENDSHIP_DANA.id;
+  const participants = isDana
+    ? [PARTICIPANT_ME, PARTICIPANT_DANA]
+    : [PARTICIPANT_ME, PARTICIPANT_ALEX];
+  const currency = isDana ? "USD" : "EUR";
+  return withDateFilter(
+    computeStatistics(expenses, participants, currency, CURRENT_MONTH),
+    query
+  );
 }

@@ -5,7 +5,7 @@
  * of harmless metadata writes like /api/me/, throw DemoWriteBlockedError so a
  * snackbar can surface the read-only nature of demo mode.
  */
-import { demoFixtures, groupDetail, statisticsForGroup } from "./demoFixtures";
+import { demoFixtures, groupDetail, statisticsForFriend, statisticsForGroup } from "./demoFixtures";
 import { DemoWriteBlockedError, notifyDemoWriteBlocked } from "./demoMode";
 import { CURRENCIES } from "../lib/currencies";
 
@@ -87,7 +87,7 @@ function handleGroupSubpath(groupId: number, segments: string[], query: string):
     const source = simplified ? demoFixtures.balancesByGroupSimplified : demoFixtures.balancesByGroup;
     return source[groupId] ?? [];
   }
-  if (tail === "statistics") return statisticsForGroup(groupId);
+  if (tail === "statistics") return statisticsForGroup(groupId, query);
   if (tail === "expenses") return demoFixtures.expensesByGroup[groupId] ?? [];
   if (tail === "ledger") {
     return { results: demoFixtures.ledgerByGroup[groupId] ?? [], next_offset: null };
@@ -98,7 +98,7 @@ function handleGroupSubpath(groupId: number, segments: string[], query: string):
   return undefined;
 }
 
-function handleFriendSubpath(friendId: number, segments: string[]): unknown {
+function handleFriendSubpath(friendId: number, segments: string[], query: string): unknown {
   if (segments.length === 3) return demoFixtures.friendshipById[friendId] ?? demoFixtures.friendship;
   const tail = segments.slice(3).join("/");
   if (tail === "expenses") return demoFixtures.expensesByFriend[friendId] ?? [];
@@ -106,7 +106,7 @@ function handleFriendSubpath(friendId: number, segments: string[]): unknown {
     return { results: demoFixtures.ledgerByFriend[friendId] ?? [], next_offset: null };
   }
   if (tail === "statistics") {
-    return demoFixtures.statisticsByFriend[friendId] ?? demoFixtures.statisticsFriend;
+    return statisticsForFriend(friendId, query);
   }
   return undefined;
 }
@@ -121,7 +121,7 @@ function handleGet(path: string, query: string): unknown {
   const id = matchInt(segments[2] ?? "");
 
   if (resource === "groups" && id !== null) return handleGroupSubpath(id, segments, query);
-  if (resource === "friends" && id !== null) return handleFriendSubpath(id, segments);
+  if (resource === "friends" && id !== null) return handleFriendSubpath(id, segments, query);
   if (resource === "expenses" && id !== null) return demoFixtures.expensesById[id];
   if (resource === "settlements" && id !== null) return demoFixtures.settlementsById[id];
   if (resource === "participants" && id !== null && segments[3] === "preferred-payment-method") {

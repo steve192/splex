@@ -237,7 +237,14 @@ class GroupStatisticsView(APIView):
 
         group = get_active_group(group_id)
         assert_group_member(request.user, group)
-        return Response(group_statistics(group))
+        return Response(
+            group_statistics(
+                group,
+                current_participant=get_or_create_user_participant(request.user),
+                date_from=request.query_params.get("date_from"),
+                date_to=request.query_params.get("date_to"),
+            )
+        )
 
 
 class GroupParticipantOutstandingView(APIView):

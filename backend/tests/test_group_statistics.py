@@ -141,8 +141,111 @@ def test_contributions_show_paid_versus_share_per_member():
     rows = {row["display_name"]: row for row in stats["contributions"]}
     assert rows["Owner"]["paid"] == "30.00"
     assert rows["Owner"]["share"] == "15.00"
+    assert rows["Owner"]["net"] == "15.00"
     assert rows["Bob"]["paid"] == "0.00"
     assert rows["Bob"]["share"] == "15.00"
+    assert rows["Bob"]["net"] == "-15.00"
+
+
+@pytest.mark.django_db
+def test_statistics_reports_personal_cashflow_activity_and_locations():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    bob = add_unregistered_participant(actor=owner, group=group, display_name="Bob")
+    owner_p = get_or_create_user_participant(owner)
+
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Hotel",
+            "amount": "100.00",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": owner_p.id, "amount": "100.00"}],
+            "date": "2025-04-01",
+            "latitude": "48.137154",
+            "longitude": "11.576124",
+            "approximate_location": "Munich",
+        },
+    )
+    create_expense(
+        actor=owner,
+        group=group,
+        data={
+            "description": "Snacks",
+            "amount": "20.00",
+            "currency": "EUR",
+            "split_method": "equal_all",
+            "payments": [{"participant_id": bob.id, "amount": "20.00"}],
+            "date": "2025-04-02",
+            "approximate_location": "Munich",
+        },
+    )
+    stats = group_statistics(group, current_participant=owner_p)
+
+    assert stats["personal_summary"] == {
+        "participant_id": owner_p.id,
+        "display_name": "Owner",
+        "paid": "100.00",
+        "share": "60.00",
+        "net": "40.00",
+        "covered_for_others": "40.00",
+        "covered_by_others": "0.00",
+    }
+    assert stats["top_locations"] == [{"location": "Munich", "count": 2, "total": "120.00"}]
+    activity = {row["display_name"]: row for row in stats["participant_activity"]}
+    assert activity["Owner"]["created_expense_count"] == 2
+    assert activity["Owner"]["paid_expense_count"] == 1
+    assert activity["Owner"]["included_expense_count"] == 2
+    assert activity["Bob"]["paid_expense_count"] == 1
+
+
+@pytest.mark.django_db
+def test_statistics_date_filter_limits_expense_reports():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+
+    _make_expense(owner, group, description="Old", amount="10.00", expense_date="2025-04-01")
+    _make_expense(owner, group, description="Current", amount="25.00", expense_date="2025-05-01")
+
+    stats = group_statistics(
+        group,
+        current_participant=get_or_create_user_participant(owner),
+        date_from="2025-05-01",
+        date_to="2025-05-31",
+    )
+
+    assert stats["date_filter"] == {"date_from": "2025-05-01", "date_to": "2025-05-31"}
+    assert stats["summary"]["expense_count"] == 1
+    assert stats["summary"]["total_amount"] == "25.00"
+    assert [row["description"] for row in stats["biggest_expenses"]] == ["Current"]
+
+
+@pytest.mark.django_db
+def test_monthly_comparison_uses_current_and_previous_calendar_month():
+    user_model = get_user_model()
+    owner = user_model.objects.create_user(email="owner@example.com", display_name="Owner")
+    group = create_group(actor=owner, name="Trip", default_currency="EUR")
+    today = date.today().replace(day=15)
+    previous = (
+        today.replace(year=today.year - 1, month=12)
+        if today.month == 1
+        else today.replace(month=today.month - 1)
+    )
+
+    _make_expense(owner, group, description="This month", amount="30.00", expense_date=today)
+    _make_expense(owner, group, description="Previous month", amount="20.00", expense_date=previous)
+
+    stats = group_statistics(group)
+
+    comparison = stats["monthly_comparison"]
+    assert comparison["current_total"] == "30.00"
+    assert comparison["previous_total"] == "20.00"
+    assert comparison["change_amount"] == "10.00"
+    assert comparison["change_percent"] == "50.00"
 
 
 @pytest.mark.django_db

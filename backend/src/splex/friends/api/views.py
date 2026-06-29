@@ -64,8 +64,15 @@ class FriendDetailView(APIView):
 
 class FriendStatisticsView(APIView):
     def get(self, request, friendship_id):
-        friendship, _ = ensure_friendship_member(request.user, friendship_id)
-        return Response(friendship_statistics(friendship))
+        friendship, participant = ensure_friendship_member(request.user, friendship_id)
+        return Response(
+            friendship_statistics(
+                friendship,
+                current_participant=participant,
+                date_from=request.query_params.get("date_from"),
+                date_to=request.query_params.get("date_to"),
+            )
+        )
 
 
 class FriendInvitationsView(APIView):
