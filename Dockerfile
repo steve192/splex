@@ -1,4 +1,4 @@
-FROM node:24.17.0-bookworm AS frontend-build
+FROM node:24.18.0-bookworm AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 COPY frontend/scripts ./scripts
@@ -9,7 +9,7 @@ RUN npm run build:web
 
 # Static marketing landing page (Astro). Built separately and served by Django
 # at the site root; the app build above is served under /app.
-FROM node:24.17.0-bookworm AS landing-build
+FROM node:24.18.0-bookworm AS landing-build
 WORKDIR /app/frontend-landing
 COPY frontend-landing/package*.json ./
 RUN npm ci
