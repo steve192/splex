@@ -15,6 +15,17 @@ export type ExpenseSavePayload = Readonly<{
   expense: ExpenseSaveExpense;
 }>;
 
+export function draftClientIdForExpenseForm({
+  pendingMutationId,
+  createId,
+}: Readonly<{
+  pendingMutationId?: string;
+  createId: () => string;
+}>): string {
+  const normalizedPendingId = pendingMutationId?.trim();
+  return normalizedPendingId || createId();
+}
+
 export function expenseCollectionPath(
   contextType: ContextType,
   contextId: number,

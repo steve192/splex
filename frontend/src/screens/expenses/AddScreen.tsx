@@ -87,6 +87,7 @@ import {
   type LoadedExpenseContext,
 } from "./addScreenContextModel";
 import {
+  draftClientIdForExpenseForm,
   pendingExpenseMutation,
   persistExpenseSave,
   shouldQueueOfflineCreate,
@@ -156,10 +157,12 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [includeLocation, setIncludeLocation] = useState(
     locationTrackingEnabled,
   );
-  // client_id is generated once and stays stable for the lifetime of the form.
+  // client_id is stable for one create draft, then refreshed for the next draft.
   // It links any draft receipts the user uploads before save to the eventual
   // expense (see uploadReceipt + backend attach_drafts_to_expense).
-  const [draftClientId] = useState(() => pendingMutationId ?? createClientId());
+  const [draftClientId, setDraftClientId] = useState(() =>
+    draftClientIdForExpenseForm({ pendingMutationId, createId: createClientId }),
+  );
   const [rememberContext, setRememberContext] = useState(false);
 
   const {
@@ -180,9 +183,24 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
 
   const locationForm = useLocationForm(locationTrackingEnabled);
 
+  function setDraftClientIdForParams(params = route?.params ?? {}) {
+    setDraftClientId(
+      draftClientIdForExpenseForm({
+        pendingMutationId: params.pendingMutationId,
+        createId: createClientId,
+      }),
+    );
+  }
+
+  function prepareNextCreateDraft() {
+    setDraftClientIdForParams({});
+    setReceipts([]);
+  }
+
   function resetForm(params = route?.params ?? {}) {
     const nextContextType = params.contextType ?? "group";
     const nextContextId = params.contextId ?? null;
+    setDraftClientIdForParams(params);
     setContextType(nextContextType);
     setContextId(nextContextId);
     setParticipants([]);
@@ -209,6 +227,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     );
     setEditLoadFailed(false);
     setIncludeLocation(locationTrackingEnabled);
+    setReceipts([]);
   }
 
   const contextOptions = useMemo<ContextOption[]>(
@@ -650,11 +669,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       showSuccess({ icon: "check" });
       navigation.setParams?.({
         expenseId: undefined,
+        pendingMutationId: undefined,
         contextType: undefined,
         contextId: undefined,
       });
       navigateAfterSave();
-      if (!expenseId) {
+      if (!expenseId && !pendingMutationId) {
+        prepareNextCreateDraft();
         setDescription("");
         setAmount("");
         setDate("");
@@ -672,6 +693,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         );
         setMessage(t("expense.queued"));
         showSuccess({ icon: "cloud-check-outline" });
+        prepareNextCreateDraft();
         navigateAfterSave();
       } else {
         const errorMessage =

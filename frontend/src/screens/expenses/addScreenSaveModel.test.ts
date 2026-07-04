@@ -14,6 +14,7 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 
 import { ApiError } from "../../shared/api/client";
 import {
+  draftClientIdForExpenseForm,
   expenseCollectionPath,
   pendingExpenseMutation,
   shouldQueueOfflineCreate,
@@ -35,6 +36,25 @@ describe("expenseCollectionPath", () => {
     expect(expenseCollectionPath("friendship", 9)).toBe(
       "/api/friends/9/expenses/",
     );
+  });
+});
+
+describe("draftClientIdForExpenseForm", () => {
+  it("keeps pending mutation ids but creates a fresh id for each create draft", () => {
+    let nextId = 1;
+    const createId = vi.fn(() => `new-${nextId++}`);
+
+    expect(
+      draftClientIdForExpenseForm({
+        pendingMutationId: "pending-1",
+        createId,
+      }),
+    ).toBe("pending-1");
+    expect(draftClientIdForExpenseForm({ createId })).toBe("new-1");
+    expect(
+      draftClientIdForExpenseForm({ pendingMutationId: " ", createId }),
+    ).toBe("new-2");
+    expect(createId).toHaveBeenCalledTimes(2);
   });
 });
 
