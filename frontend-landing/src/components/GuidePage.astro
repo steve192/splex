@@ -1,0 +1,22 @@
+---
+import ArticlePage from "./ArticlePage.astro";
+import { type Lang } from "../content";
+import {
+  localizedGuidePage,
+  relatedGuidePages,
+  guidePagePaths,
+  type GuidePageKey
+} from "../guidePages";
+
+interface Props {
+  lang: Lang;
+  pageKey: GuidePageKey;
+}
+
+const { lang, pageKey } = Astro.props;
+const current = localizedGuidePage(pageKey, lang);
+const paths = guidePagePaths(pageKey);
+const related = relatedGuidePages(pageKey).map((page) => localizedGuidePage(page.key, lang));
+---
+
+<ArticlePage lang={lang} current={current} paths={paths} related={related} />

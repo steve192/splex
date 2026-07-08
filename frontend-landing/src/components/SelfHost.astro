@@ -1,6 +1,7 @@
 ---
 import { links } from "../site";
 import { getContent, type Lang } from "../content";
+import { localizedGuidePage } from "../guidePages";
 import GithubIcon from "./icons/GithubIcon.astro";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 const { lang } = Astro.props;
 const t = getContent(lang).selfhost;
+const selfHostingPage = localizedGuidePage("selfHosting", lang);
 ---
 
 <section id="self-host" class="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
@@ -29,6 +31,12 @@ const t = getContent(lang).selfhost;
         >
           <GithubIcon class="h-4.5 w-4.5" />
           {t.ctaGithub}
+        </a>
+        <a
+          href={selfHostingPage.path}
+          class="inline-flex items-center rounded-xl border border-line bg-surface px-5 py-2.5 text-sm font-semibold transition hover:border-brand"
+        >
+          {t.ctaGuide}
         </a>
         <a
           href={links.app}

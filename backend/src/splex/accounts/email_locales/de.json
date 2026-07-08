@@ -1,6 +1,6 @@
 {
   "account_deleted.body": "Das Splex-Konto für {email} wurde dauerhaft gelöscht. Dein Profil, deine Zugangsdaten und deine Geräte wurden entfernt.",
-  "account_deleted.history": "Deine bisherigen gemeinsamen Ausgaben bleiben sichtbar, damit die Salden für andere lesbar bleiben.",
+  "account_deleted.history": "Deine bisherigen gemeinsamen Ausgaben bleiben sichtbar, damit andere weiterhin nachvollziehen können, wer wem etwas schuldet.",
   "account_deleted.recreate": "Du kannst jederzeit unter {frontend_url} ein neues Konto erstellen. Es wird nicht mit deinen alten Daten verknüpft.",
   "account_deleted.subject": "Dein Splex-Konto wurde gelöscht",
   "account_deleted.unexpected": "Wenn du diese Löschung nicht angefordert hast, kontaktiere sofort den Administrator deiner Splex-Instanz.",

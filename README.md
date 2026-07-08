@@ -19,6 +19,13 @@ A public instance is available at **https://splex.sterul.com/**
 
 You can try Splex without creating an account using the anonymous **demo mode**
 
+More detail:
+
+- [Splex as an open-source Splitwise alternative](https://splex.sterul.com/splitwise-alternative/)
+- [Self-hosting Splex](https://splex.sterul.com/self-hosting/)
+- [Group travel expense tracking](https://splex.sterul.com/use-cases/travel-expenses/)
+- [Shared household expense tracking](https://splex.sterul.com/use-cases/shared-household-expenses/)
+
 ## Motivation
 Splitwise is a strong product for tracking shared expenses, whether you are traveling with friends or managing day-to-day costs in a shared household.
 

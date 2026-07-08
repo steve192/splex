@@ -1,0 +1,42 @@
+---
+import { getContent, type Lang } from "../content";
+import { featuredGuidePages, localizedGuidePage } from "../guidePages";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const pages = featuredGuidePages().map((page) => localizedGuidePage(page.key, lang));
+const heading = lang === "de" ? "Wenn du genauer hinschauen willst" : "If you want the details";
+const subheading =
+  lang === "de"
+    ? "Diese Seiten erklären die wichtigsten Entscheidungen, bevor du Splex ausprobierst oder selbst hostest."
+    : "These pages explain the tradeoffs before you try Splex or run it yourself.";
+const t = getContent(lang).footer.links;
+---
+
+<section id="guides" class="border-y border-line bg-bg-soft py-20 sm:py-24">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <div class="mx-auto max-w-2xl text-center">
+      <p class="text-sm font-semibold uppercase tracking-wider text-brand">{t.guides}</p>
+      <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{heading}</h2>
+      <p class="mt-4 text-muted">{subheading}</p>
+    </div>
+
+    <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        pages.map((page) => (
+          <a
+            href={page.path}
+            class="rounded-xl border border-line bg-surface p-5 transition hover:border-brand"
+          >
+            <p class="text-sm font-semibold text-brand">{page.eyebrow}</p>
+            <h3 class="mt-2 text-lg font-semibold text-text">{page.title}</h3>
+            <p class="mt-3 text-sm leading-6 text-muted">{page.description}</p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

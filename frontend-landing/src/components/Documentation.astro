@@ -1,0 +1,54 @@
+---
+import { getContent, type Lang } from "../content";
+import { featuredDocumentationPages, localizedDocumentationPage } from "../documentationPages";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const pages = featuredDocumentationPages().map((page) => localizedDocumentationPage(page.key, lang));
+const heading =
+  lang === "de" ? "So funktionieren die Details in Splex" : "How the details work in Splex";
+const subheading =
+  lang === "de"
+    ? "Hier steht, was beim Archivieren, Entfernen von Mitgliedern, Einladen von Platzhaltern und beim Speichern von Wechselkursen wirklich passiert."
+    : "Start here when you want to know what happens when you archive a group, remove members, invite placeholders, or use cached exchange rates.";
+const t = getContent(lang).footer.links;
+---
+
+<section id="documentation" class="border-b border-line bg-bg py-20 sm:py-24">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <div class="mx-auto max-w-2xl text-center">
+      <p class="text-sm font-semibold uppercase tracking-wider text-brand">{t.documentation}</p>
+      <h2 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{heading}</h2>
+      <p class="mt-4 text-muted">{subheading}</p>
+    </div>
+
+    <div class="mt-12 grid gap-4 sm:grid-cols-2">
+      {
+        pages.map((page, index) => (
+          <a
+            href={page.path}
+            class="group grid min-h-48 grid-rows-[auto_1fr_auto] rounded-xl border border-line bg-surface p-5 transition hover:-translate-y-0.5 hover:border-brand hover:shadow-xl hover:shadow-black/20"
+          >
+            <div class="flex items-center justify-between gap-4">
+              <p class="text-sm font-semibold text-brand">{page.eyebrow}</p>
+              <span class="font-mono text-xs text-muted" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
+            <div>
+              <h3 class="mt-4 text-lg font-semibold text-text">{page.title}</h3>
+              <p class="mt-3 text-sm leading-6 text-muted">{page.description}</p>
+            </div>
+            <span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand">
+              {lang === "de" ? "Details lesen" : "Read details"}
+              <span class="transition group-hover:translate-x-1" aria-hidden="true">→</span>
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

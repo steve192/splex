@@ -5,27 +5,39 @@ import GithubIcon from "./icons/GithubIcon.astro";
 
 interface Props {
   lang: Lang;
+  paths?: Partial<Record<Lang, string>>;
 }
-const { lang } = Astro.props;
+const { lang, paths } = Astro.props;
 const t = getContent(lang).header;
 const locales = Object.keys(languages) as Lang[];
+const homePath = localePath(lang);
 ---
 
 <header class="sticky top-0 z-50 border-b border-line/70 bg-bg/80 backdrop-blur">
   <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-    <a href="#top" class="flex items-center gap-2.5 font-bold tracking-tight">
+    <a href={homePath} class="flex items-center gap-2.5 font-bold tracking-tight">
       <img src="/favicon.png" alt="" width="32" height="32" class="h-8 w-8 rounded-lg" />
       <span class="text-lg">{site.name}</span>
     </a>
 
     <div class="flex items-center gap-1 sm:gap-2">
       <a
-        href="#features"
+        href={`${homePath}#features`}
         class="hidden rounded-lg px-3 py-2 text-sm text-muted transition hover:text-text sm:block"
         >{t.features}</a
       >
       <a
-        href="#self-host"
+        href={`${homePath}#guides`}
+        class="hidden rounded-lg px-3 py-2 text-sm text-muted transition hover:text-text sm:block"
+        >{t.guides}</a
+      >
+      <a
+        href={`${homePath}#documentation`}
+        class="hidden rounded-lg px-3 py-2 text-sm text-muted transition hover:text-text sm:block"
+        >{t.documentation}</a
+      >
+      <a
+        href={`${homePath}#self-host`}
         class="hidden rounded-lg px-3 py-2 text-sm text-muted transition hover:text-text sm:block"
         >{t.selfhost}</a
       >
@@ -34,7 +46,7 @@ const locales = Object.keys(languages) as Lang[];
         {
           locales.map((code) => (
             <a
-              href={localePath(code)}
+              href={paths?.[code] ?? localePath(code)}
               data-set-lang={code}
               hreflang={code}
               aria-current={code === lang ? "true" : undefined}

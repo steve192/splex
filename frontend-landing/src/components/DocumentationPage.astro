@@ -1,0 +1,24 @@
+---
+import ArticlePage from "./ArticlePage.astro";
+import { type Lang } from "../content";
+import {
+  localizedDocumentationPage,
+  relatedDocumentationPages,
+  documentationPagePaths,
+  type DocumentationPageKey
+} from "../documentationPages";
+
+interface Props {
+  lang: Lang;
+  pageKey: DocumentationPageKey;
+}
+
+const { lang, pageKey } = Astro.props;
+const current = localizedDocumentationPage(pageKey, lang);
+const paths = documentationPagePaths(pageKey);
+const related = relatedDocumentationPages(pageKey).map((page) =>
+  localizedDocumentationPage(page.key, lang)
+);
+---
+
+<ArticlePage lang={lang} current={current} paths={paths} related={related} />

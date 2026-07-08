@@ -12,6 +12,7 @@
     "dev": "npm run sync-assets && astro dev",
     "build": "npm run sync-assets && astro build",
     "preview": "astro preview",
+    "test": "node scripts/check-built-pages.mjs",
     "check": "astro check"
   },
   "dependencies": {

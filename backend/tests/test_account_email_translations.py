@@ -38,6 +38,20 @@ def test_build_email_content_uses_requested_locale_for_account_deleted_copy():
     assert content['footer_ignore'] == 'Si no fuiste tú, puedes ignorar este correo.'
 
 
+def test_build_email_content_uses_plain_german_account_deleted_history_copy():
+    content = build_email_content(
+        'account_deleted',
+        'de',
+        {
+            'email': 'max@example.com',
+            'frontend_url': 'https://example.com',
+        },
+    )
+
+    assert 'wer wem etwas schuldet' in content['history']
+    assert 'Salden' not in content['history']
+
+
 def test_build_email_content_falls_back_to_english_for_unknown_locale():
     content = build_email_content(
         'retention_warning',

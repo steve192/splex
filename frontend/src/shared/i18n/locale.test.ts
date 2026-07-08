@@ -49,6 +49,12 @@ describe("locale files", () => {
     });
   });
 
+  it("keeps German app copy away from accounting-style saldo wording", () => {
+    const german = readTranslations("de.json");
+
+    expect(Object.values(german).join("\n")).not.toMatch(/\bSald(?:o|en|os)\b/i);
+  });
+
 });
 
 describe("interpolate", () => {
