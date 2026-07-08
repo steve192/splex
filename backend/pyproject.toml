@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splex-backend"
-version = "2.6.4"
+version = "2.6.5"
 description = "Self-hosted expense splitter backend"
 requires-python = ">=3.12"
 authors = [
