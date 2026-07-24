@@ -85,7 +85,7 @@
     "@types/leaflet": "1.9.21",
     "@types/react": "19.2.15",
     "@vitest/coverage-v8": "4.1.10",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.10"
   }
 }
