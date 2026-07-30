@@ -2,7 +2,7 @@
   "expo": {
     "name": "Splex",
     "slug": "splex",
-    "version": "2.6.23",
+    "version": "2.6.24",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/pwa-maskable-icon.png",
@@ -23,9 +23,9 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/0d659c26-1818-4c2b-b878-3e2b1d46dcaf"
     },
-    "runtimeVersion": "19.0.0",
+    "runtimeVersion": "20.0.0",
     "android": {
-      "versionCode": 19,
+      "versionCode": 20,
       "package": "com.sterul.splex",
       "permissions": [
         "VIBRATE"
