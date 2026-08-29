@@ -7,6 +7,8 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
+from splex.shared.upload_limits import max_request_body_bytes
+
 BASE_DIR = Path(__file__).resolve().parents[3]
 load_dotenv(BASE_DIR.parent / ".env")
 
@@ -95,6 +97,11 @@ APP_PUBLIC_URL = FRONTEND_PUBLIC_URL.rstrip("/") + APP_BASE_PATH
 # still has a working root URL.
 SERVE_LANDING = env_bool("SERVE_LANDING", True)
 LANDING_ROOT = BASE_DIR / "static_landing"
+
+# Avatar and group images are posted as base64 data URLs inside the JSON body,
+# so the request-body cap has to track the image limit rather than Django's
+# 2.5 MiB default. Derived so the two can never drift apart.
+DATA_UPLOAD_MAX_MEMORY_SIZE = max_request_body_bytes()
 
 APP_BEHIND_PROXY = env_bool("APP_BEHIND_PROXY", False)
 PROXY_USES_TLS = env_bool("PROXY_USES_TLS", False)

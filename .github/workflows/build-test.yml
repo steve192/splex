@@ -1,7 +1,7 @@
 name: Build & Test
 
-# Reusable validation suite: frontend checks, backend tests, and a no-push
-# Docker build. Called by ci.yml (for pushes / PRs) and by expo-sdk-update.yml
+# Reusable validation suite: frontend checks, backend tests, landing page
+# checks, and a no-push Docker build. Called by ci.yml (for pushes / PRs) and by expo-sdk-update.yml
 # (against its update branch) so the validation logic lives in one place.
 
 on:
@@ -59,9 +59,39 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
+  landing:
+    name: Landing
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-landing
+    env:
+      # Never send Astro's anonymous build telemetry from CI (mirrors the Dockerfile).
+      ASTRO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup landing
+        uses: ./.github/actions/setup-landing
+
+      - name: Typecheck
+        run: npm run check
+
+      # Builds into dist/, which the page checks below read. sync-assets pulls
+      # the screenshots from docs/ and the favicon from the app's maskable icon,
+      # so this needs the full repo checkout, not just frontend-landing.
+      - name: Build
+        run: npm run build
+
+      - name: Check built pages
+        run: npm test
+
   docker:
     name: Build Docker
-    needs: [frontend, backend]
+    needs: [frontend, backend, landing]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

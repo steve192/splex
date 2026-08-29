@@ -9,14 +9,16 @@ from django.core.files.storage import default_storage
 from PIL import Image, ImageOps
 
 from splex.shared.errors import DomainError, ErrorCode
+from splex.shared.upload_limits import (
+    MAX_SOURCE_IMAGE_UPLOAD_BYTES,
+    MAX_STORED_IMAGE_BYTES,
+)
 
 logger = logging.getLogger(__name__)
 
 JPEG_CONTENT_TYPE = "image/jpeg"
 PNG_CONTENT_TYPE = "image/png"
 WEBP_CONTENT_TYPE = "image/webp"
-MAX_SOURCE_IMAGE_UPLOAD_BYTES = 15 * 1024 * 1024
-MAX_STORED_IMAGE_BYTES = 3 * 1024 * 1024
 MAX_IMAGE_PIXELS = 40_000_000
 MAX_IMAGE_DIMENSION = 1600
 JPEG_QUALITY_STEPS = (88, 80, 72, 64)
