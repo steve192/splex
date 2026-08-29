@@ -4,6 +4,7 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
 from django.test import override_settings
@@ -11,6 +12,7 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from splex.groups.services import create_group
+from splex.shared.upload_limits import max_request_body_bytes
 from splex.shared.uploads import (
     MAX_SOURCE_IMAGE_UPLOAD_BYTES,
     MAX_STORED_IMAGE_BYTES,
@@ -80,3 +82,22 @@ def test_save_data_url_image_rejects_source_payload_above_limit():
             data_url=f"data:image/jpeg;base64,{oversized_payload}",
             folder="profile-images",
         )
+
+
+def test_max_request_body_bytes_covers_base64_expansion():
+    """The cap must clear the *encoded* size, not the decoded payload size.
+
+    base64 rounds up to whole 4-character blocks, so a payload that is not a
+    multiple of 3 expands slightly further than 4/3. Getting this wrong lets
+    Django reject a legal upload with an opaque 400 before
+    save_data_url_image can raise IMAGE_TOO_LARGE.
+    """
+    assert max_request_body_bytes(3) > 4
+    assert max_request_body_bytes(4) > 8  # 4 bytes -> 8 base64 chars, not 6
+    assert max_request_body_bytes(MAX_SOURCE_IMAGE_UPLOAD_BYTES) > (
+        -(-MAX_SOURCE_IMAGE_UPLOAD_BYTES // 3) * 4
+    )
+
+
+def test_configured_request_body_cap_admits_a_max_size_image():
+    assert settings.DATA_UPLOAD_MAX_MEMORY_SIZE == max_request_body_bytes()
