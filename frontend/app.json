@@ -89,7 +89,11 @@
         "./plugins/withGradleJvmArgs",
         "-Xmx4g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font",
+      "expo-localization",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
