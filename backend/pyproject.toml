@@ -14,7 +14,7 @@ license = { text = "Splex Non-Commercial Source License 1.0" }
 urls = { Homepage = "https://github.com/steve192/splex", Repository = "https://github.com/steve192/splex" }
 dependencies = [
   "Django==6.1.1",
-  "djangorestframework==3.18.0",
+  "djangorestframework==3.18.1",
   "djangorestframework-simplejwt==5.5.1",
   "django-cors-headers==4.9.0",
   "dj-database-url==3.1.2",
