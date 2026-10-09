@@ -41,6 +41,14 @@ jobs:
       - name: Build web
         run: npm run build:web
 
+      # Loads the exported bundle in a real browser. Catches dependencies that
+      # crash on react-native-web at import time and leave a blank page.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Web smoke test
+        run: npm run test:web
+
   backend:
     name: Backend
     runs-on: ubuntu-latest
