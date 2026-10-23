@@ -57,7 +57,7 @@ jobs:
 
       - name: Run semantic-release dry run
         id: semantic
-        uses: cycjimmy/semantic-release-action@v6.0.0
+        uses: cycjimmy/semantic-release-action@v8.1.2
         with:
           dry_run: true
           semantic_version: 23
@@ -231,7 +231,7 @@ jobs:
           python-version-file: backend/.python-version
 
       - name: Run semantic-release
-        uses: cycjimmy/semantic-release-action@v6.0.0
+        uses: cycjimmy/semantic-release-action@v8.1.2
         with:
           semantic_version: 23
           branches: main
