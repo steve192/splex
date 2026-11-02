@@ -36,7 +36,7 @@ Debug::Acquire::https "true";\
 ' > /etc/apt/apt.conf.d/99custom && \
     apt-get update && \
     apt-get install -y openjdk-17-jdk curl git unzip && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_26.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean
 
@@ -53,10 +53,12 @@ RUN mkdir -p $ANDROID_HOME/cmdline-tools && \
     sdkmanager --install \
         "build-tools;35.0.0" \
         "build-tools;36.0.0" \
+        "build-tools;37.0.0" \
         "ndk;27.0.12077973" \
         "ndk;27.1.12297006" \
         "cmake;3.22.1" \
         "platforms;android-36" \
+        "platforms;android-37" \
         "platform-tools" \
         "cmdline-tools;latest" && \
     git config --global --add safe.directory /builder && \
