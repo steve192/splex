@@ -15,6 +15,13 @@
   ],
   "packageRules": [
     {
+      "description": "package.json engines declare the minimum supported Node.js range; keep them as ranges instead of pinning them to a single release",
+      "matchDepTypes": [
+        "engines"
+      ],
+      "rangeStrategy": "replace"
+    },
+    {
       "description": "Safely automerge patch and digest updates",
       "matchUpdateTypes": [
         "patch",

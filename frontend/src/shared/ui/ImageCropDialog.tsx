@@ -1,7 +1,12 @@
 import * as ImageManipulator from "expo-image-manipulator";
 import { useEffect, useRef, useState } from "react";
 import { Image, Platform, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  GestureDetector,
+  usePanGesture,
+  usePinchGesture,
+  useSimultaneousGestures
+} from "react-native-gesture-handler";
 import { Button, Dialog, IconButton, Portal, Text } from "react-native-paper";
 
 import { useI18n } from "../i18n/I18nContext";
@@ -64,29 +69,31 @@ export function ImageCropDialog({ visible, source, onDismiss, onComplete }: Read
     setError("");
   }, [visible, source]);
 
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
+  const panGesture = usePanGesture({
+    runOnJS: true,
+    onActivate: () => {
       stateRef.current.startPanX = stateRef.current.panX;
       stateRef.current.startPanY = stateRef.current.panY;
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       const { viewportSize: vs, zoom: z, startPanX, startPanY } = stateRef.current;
       if (!vs) return;
       setPanX(clamp(startPanX - (event.translationX / vs) * (100 / z), 0, 100));
       setPanY(clamp(startPanY - (event.translationY / vs) * (100 / z), 0, 100));
-    })
-    .runOnJS(true);
+    }
+  });
 
-  const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
+  const pinchGesture = usePinchGesture({
+    runOnJS: true,
+    onActivate: () => {
       stateRef.current.startZoom = stateRef.current.zoom;
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       setZoom(clamp(stateRef.current.startZoom * event.scale, MIN_ZOOM, MAX_ZOOM));
-    })
-    .runOnJS(true);
+    }
+  });
 
-  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  const composedGesture = useSimultaneousGestures(panGesture, pinchGesture);
 
   async function apply() {
     setBusy(true);

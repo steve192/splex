@@ -5,7 +5,10 @@ import { asNumber, balanceText, plainAmountText } from "../lib/money";
 import { negativeColor, positiveColor } from "./colors";
 import { styles } from "./styles";
 
-type MoneyTextProps = Omit<TextProps<never>, "children"> & {
+// `ref` is omitted because MoneyText does not forward refs, and under React
+// Native's strict TypeScript API the native Text `ref` type no longer matches
+// the one react-native-paper's Text accepts.
+type MoneyTextProps = Omit<TextProps<never>, "children" | "ref"> & {
   amount: string | number | undefined;
   currency: string;
   /**

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Image, ImageSourcePropType, Modal, Platform, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  GestureDetector,
+  usePanGesture,
+  usePinchGesture,
+  useSimultaneousGestures
+} from "react-native-gesture-handler";
 import { IconButton, Text } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -69,27 +74,29 @@ export function ImageViewerModal({
     return () => { cancelled = true; };
   }, [visible, imageUrl, api]);
 
-  const panGesture = Gesture.Pan()
-    .onStart(() => {
+  const panGesture = usePanGesture({
+    runOnJS: true,
+    onActivate: () => {
       stateRef.current.startTx = stateRef.current.tx;
       stateRef.current.startTy = stateRef.current.ty;
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       setTx(stateRef.current.startTx + event.translationX);
       setTy(stateRef.current.startTy + event.translationY);
-    })
-    .runOnJS(true);
+    }
+  });
 
-  const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
+  const pinchGesture = usePinchGesture({
+    runOnJS: true,
+    onActivate: () => {
       stateRef.current.startZoom = stateRef.current.zoom;
-    })
-    .onUpdate((event) => {
+    },
+    onUpdate: (event) => {
       setZoom(clamp(stateRef.current.startZoom * event.scale, MIN_ZOOM, MAX_ZOOM));
-    })
-    .runOnJS(true);
+    }
+  });
 
-  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  const composedGesture = useSimultaneousGestures(panGesture, pinchGesture);
 
   const source = imageUrl ? { uri: imageUrl } : imageSource;
   const hasCaption = Boolean(title || attribution);
