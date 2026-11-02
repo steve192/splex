@@ -69,6 +69,14 @@
       }
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true
+          }
+        }
+      ],
       "expo-notifications",
       "expo-updates",
       [
