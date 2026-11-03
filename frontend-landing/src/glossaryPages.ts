@@ -112,6 +112,16 @@ export const glossaryPage: GlossaryPageEntry = {
         link: { href: "/docs/balances-and-settlements/#simplified-debt-4", label: "Simplified debt" }
       },
       {
+        term: "Amount paid",
+        synonyms: ["Card charge", "bank amount", "Tatsächlich bezahlt"],
+        description:
+          "What actually left the payer's account in the group or friendship currency for an expense in another currency. Splex uses it instead of the official rate, so card fees and card exchange rates are shared.",
+        link: {
+          href: "/docs/adding-expenses/#currencies-and-the-date-of-the-expense-4",
+          label: "Currencies and the date of the expense"
+        }
+      },
+      {
         term: "Currency calculator",
         synonyms: ["Converter", "exchange-rate calculator", "Währungsrechner"],
         description:
@@ -221,6 +231,16 @@ export const glossaryPage: GlossaryPageEntry = {
         description:
           "Eine Gruppenansicht, bei der gleich bleibt, wer am Ende wie viel zahlen oder bekommen soll. Splex schlägt nur weniger Zahlungen vor, um die Gruppe auszugleichen.",
         link: { href: "/de/dokumentation/offene-betraege-und-ausgleich/#vereinfachte-schulden-4", label: "Vereinfachte Schulden" }
+      },
+      {
+        term: "Tatsächlich bezahlt",
+        synonyms: ["Kartenbetrag", "abgebuchter Betrag", "amount paid"],
+        description:
+          "Der Betrag, der bei einer Ausgabe in einer anderen Währung wirklich in der Währung der Gruppe oder Freundschaft vom Konto abgebucht wurde. Splex nutzt ihn statt des offiziellen Kurses, damit Kartengebühren und Kartenkurse mit geteilt werden.",
+        link: {
+          href: "/de/dokumentation/ausgaben-erfassen/#wahrungen-und-das-ausgabendatum-4",
+          label: "Währungen und das Ausgabendatum"
+        }
       },
       {
         term: "Währungsrechner",

@@ -359,6 +359,7 @@ export const guidePages: GuidePageEntry[] = [
               type: "list",
               items: [
                 "Enter amounts in the local currency instead of converting them in your head.",
+                "Paid by card? Add the amount your bank actually charged, so card fees are shared like the rest of the bill.",
                 "Only include selected people when not everyone joined a meal or taxi ride.",
                 "Paid cash at a restaurant and everyone contributed a bit? Add multiple payers to one expense.",
                 "Save an expense offline when the connection is bad and sync it later.",
@@ -412,6 +413,7 @@ export const guidePages: GuidePageEntry[] = [
               type: "list",
               items: [
                 "Beträge in der lokalen Währung eintragen, statt im Kopf umzurechnen.",
+                "Mit Karte bezahlt? Den Betrag eintragen, den deine Bank wirklich abgebucht hat, damit auch Kartengebühren fair geteilt werden.",
                 "Nur ausgewählte Personen einbeziehen, wenn nicht alle beim Essen oder im Taxi dabei waren.",
                 "Bezahlt ihr im Restaurant bar und jeder gibt ein bisschen dazu? Kein Problem: einfach mehrere Zahler eintragen.",
                 "Eine Ausgabe offline speichern, wenn die Verbindung schlecht ist, und später synchronisieren.",

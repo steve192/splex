@@ -807,6 +807,11 @@ export const documentationPages: DocumentationPageEntry[] = [
               type: "paragraph",
               text:
                 "Costs and exact splits are entered in the original expense currency. The stored shares are saved in the currency of the group or friendship."
+            },
+            {
+              type: "paragraph",
+              text:
+                "If you paid with a card or account in the group or friendship currency, your bank usually charged a little more than the official rate. Enter the amount from your bank as \"Amount paid\". Splex then uses exactly that amount for the balance and splits it in the same proportions as the amounts from the receipt. The field is optional and appears for expenses in another currency with one payer. You can also add it later by editing the expense. The expense details show the resulting rate and how far it is from the official rate."
             }
           ]
         },
@@ -987,6 +992,11 @@ export const documentationPages: DocumentationPageEntry[] = [
               type: "paragraph",
               text:
                 "Kosten und exakte Aufteilungen gibst du in der Originalwährung der Ausgabe ein. Gespeichert werden die Anteile in der Währung der Gruppe oder Freundschaft."
+            },
+            {
+              type: "paragraph",
+              text:
+                "Wenn du mit einer Karte oder einem Konto in der Währung der Gruppe oder Freundschaft bezahlt hast, hat deine Bank meist etwas mehr als zum offiziellen Kurs abgebucht. Trag den Betrag von deiner Bank als „Tatsächlich bezahlt“ ein. Splex nutzt dann genau diesen Betrag für den offenen Betrag und teilt ihn im selben Verhältnis auf wie die Beträge vom Beleg. Das Feld ist optional und erscheint bei Ausgaben in einer anderen Währung mit einer zahlenden Person. Du kannst es auch später beim Bearbeiten der Ausgabe nachtragen. In der Detailansicht siehst du den daraus berechneten Kurs und wie weit er vom offiziellen Kurs abweicht."
             }
           ]
         },
