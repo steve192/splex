@@ -109,6 +109,8 @@ export type Expense = {
   // Date represented by exchange_rate. Usually equals date; kept separate so
   // detail views can be honest when a fallback/latest rate was used.
   exchange_rate_date?: string | null;
+  // Provider rate for comparison when exchange_rate comes from the amount paid.
+  official_exchange_rate?: string | null;
   split_method: SplitMethod;
   split_payload?: Record<string, unknown>;
   latitude?: number | null;

@@ -1,5 +1,10 @@
 import { asNumber } from "../../shared/lib/money";
 import type { Expense } from "../../shared/types/models";
+import {
+  isAmountPaidExpense,
+  rateComparison,
+  type RateComparison,
+} from "./amountPaidModel";
 
 export function isConvertedExpense(expense: Expense): boolean {
   return (
@@ -23,7 +28,25 @@ export function expensePersonalNet(
   return paid - owed;
 }
 
-export function expenseExchangeRateText(expense: Expense): string | null {
+export function expenseExchangeRate(expense: Expense): number | null {
   if (!isConvertedExpense(expense) || !expense.exchange_rate) return null;
-  return `1 ${expense.original_currency} = ${expense.exchange_rate} ${expense.converted_currency}`;
+  return asNumber(expense.exchange_rate);
+}
+
+export function expenseRateComparison(
+  expense: Expense,
+  locale: string,
+): RateComparison | null {
+  if (
+    !isAmountPaidExpense(expense) ||
+    !expense.exchange_rate ||
+    !expense.official_exchange_rate
+  ) {
+    return null;
+  }
+  return rateComparison(
+    asNumber(expense.exchange_rate),
+    asNumber(expense.official_exchange_rate),
+    locale,
+  );
 }
