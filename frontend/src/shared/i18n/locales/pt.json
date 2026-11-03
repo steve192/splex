@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Taxa de câmbio",
   "expense.exchangeRateDate": "Taxa de {date}",
   "expense.amountPaid": "Valor efetivamente pago ({currency})",
-  "expense.amountPaidHelp": "Opcional: o valor debitado da sua conta, segundo o seu banco.",
+  "expense.amountPaidHelp": "Opcional: o valor efetivamente debitado da conta de quem pagou, segundo o banco.",
   "expense.amountPaidEstimate": "≈ {amount} à taxa oficial",
   "expense.amountPaidSinglePayerOnly": "O valor efetivamente pago só pode ser indicado com um único pagador. É usada a taxa oficial.",
   "expense.amountPaidCheck": "Verifique o valor pago.",

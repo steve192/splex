@@ -236,7 +236,7 @@ export const glossaryPage: GlossaryPageEntry = {
         term: "Tatsächlich bezahlt",
         synonyms: ["Kartenbetrag", "abgebuchter Betrag", "amount paid"],
         description:
-          "Der Betrag, der bei einer Ausgabe in einer anderen Währung wirklich in der Währung der Gruppe oder Freundschaft vom Konto abgebucht wurde. Splex nutzt ihn statt des offiziellen Kurses, damit Kartengebühren und Kartenkurse mit geteilt werden.",
+          "Der Betrag, der bei einer Ausgabe in einer anderen Währung wirklich in der Währung der Gruppe oder Freundschaft vom Konto abgebucht wurde. Splex nutzt ihn statt des offiziellen Kurses, damit Kartengebühren und Kartenkurse ebenfalls geteilt werden.",
         link: {
           href: "/de/dokumentation/ausgaben-erfassen/#wahrungen-und-das-ausgabendatum-4",
           label: "Währungen und das Ausgabendatum"

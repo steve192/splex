@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Curs valutar",
   "expense.exchangeRateDate": "Curs din {date}",
   "expense.amountPaid": "Sumă plătită efectiv ({currency})",
-  "expense.amountPaidHelp": "Opțional: suma debitată din contul tău, conform băncii.",
+  "expense.amountPaidHelp": "Opțional: suma debitată efectiv din contul plătitorului, conform băncii.",
   "expense.amountPaidEstimate": "≈ {amount} la cursul oficial",
   "expense.amountPaidSinglePayerOnly": "Suma plătită efectiv se poate introduce doar cu un singur plătitor. Se folosește cursul oficial.",
   "expense.amountPaidCheck": "Verifică suma plătită.",

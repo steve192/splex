@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Курс",
   "expense.exchangeRateDate": "Курс од {date}",
   "expense.amountPaid": "Стварно плаћено ({currency})",
-  "expense.amountPaidHelp": "Опционо: износ који вам је банка скинула са рачуна.",
+  "expense.amountPaidHelp": "Опционо: износ који је банка стварно скинула са рачуна платиоца.",
   "expense.amountPaidEstimate": "≈ {amount} по званичном курсу",
   "expense.amountPaidSinglePayerOnly": "Стварно плаћени износ може да се унесе само уз једног платиоца. Користи се званични курс.",
   "expense.amountPaidCheck": "Проверите плаћени износ.",

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Айырбас бағамы",
   "expense.exchangeRateDate": "{date} күнгі бағам",
   "expense.amountPaid": "Нақты төленген ({currency})",
-  "expense.amountPaidHelp": "Міндетті емес: банк шотыңыздан шегерген сома.",
+  "expense.amountPaidHelp": "Міндетті емес: банк төлеушінің шотынан нақты шегерген сома.",
   "expense.amountPaidEstimate": "Ресми бағам бойынша ≈ {amount}",
   "expense.amountPaidSinglePayerOnly": "Нақты төленген соманы тек бір төлеушімен енгізуге болады. Ресми бағам қолданылады.",
   "expense.amountPaidCheck": "Төленген соманы тексеріңіз.",

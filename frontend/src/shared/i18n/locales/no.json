@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Valutakurs",
   "expense.exchangeRateDate": "Kurs fra {date}",
   "expense.amountPaid": "Faktisk betalt ({currency})",
-  "expense.amountPaidHelp": "Valgfritt: beløpet som ble trukket fra kontoen din ifølge banken.",
+  "expense.amountPaidHelp": "Valgfritt: beløpet banken faktisk trakk fra betalerens konto.",
   "expense.amountPaidEstimate": "≈ {amount} til offisiell kurs",
   "expense.amountPaidSinglePayerOnly": "Faktisk betalt beløp kan bare angis med én betaler. Offisiell kurs brukes.",
   "expense.amountPaidCheck": "Sjekk det betalte beløpet.",

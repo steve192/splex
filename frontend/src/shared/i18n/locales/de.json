@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Wechselkurs",
   "expense.exchangeRateDate": "Kurs vom {date}",
   "expense.amountPaid": "Tatsächlich bezahlt ({currency})",
-  "expense.amountPaidHelp": "Optional: der Betrag, den deine Bank von deinem Konto abgebucht hat.",
+  "expense.amountPaidHelp": "Optional: der Betrag, den die Bank vom Konto der zahlenden Person abgebucht hat.",
   "expense.amountPaidEstimate": "≈ {amount} zum offiziellen Kurs",
   "expense.amountPaidSinglePayerOnly": "Der tatsächlich bezahlte Betrag ist nur mit einer zahlenden Person möglich. Es wird der offizielle Kurs verwendet.",
   "expense.amountPaidCheck": "Bitte prüfe den tatsächlich bezahlten Betrag.",

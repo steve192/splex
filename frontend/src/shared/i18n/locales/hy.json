@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Փոխարժեք",
   "expense.exchangeRateDate": "Փոխարժեքը՝ {date}",
   "expense.amountPaid": "Փաստացի վճարված ({currency})",
-  "expense.amountPaidHelp": "Ըստ ցանկության՝ գումարը, որը բանկը գանձել է ձեր հաշվից։",
+  "expense.amountPaidHelp": "Ըստ ցանկության՝ գումարը, որը բանկը փաստացի գանձել է վճարողի հաշվից։",
   "expense.amountPaidEstimate": "≈ {amount} պաշտոնական փոխարժեքով",
   "expense.amountPaidSinglePayerOnly": "Փաստացի վճարված գումարը կարելի է մուտքագրել միայն մեկ վճարողի դեպքում։ Կիրառվում է պաշտոնական փոխարժեքը։",
   "expense.amountPaidCheck": "Խնդրում ենք ստուգել վճարված գումարը։",

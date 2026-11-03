@@ -211,7 +211,7 @@ def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense
     assert_sum("Owed shares", owed_shares.values(), original_amount)
     conversion = resolve_expense_conversion(
         amount=original_amount,
-        currency=original_currency,
+        original_currency=original_currency,
         context_currency=currency,
         rate_date=expense_date,
         amount_paid=data.get("converted_amount"),

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Обменен курс",
   "expense.exchangeRateDate": "Курс от {date}",
   "expense.amountPaid": "Действително платено ({currency})",
-  "expense.amountPaidHelp": "По избор: сумата, изтеглена от сметката Ви според банката.",
+  "expense.amountPaidHelp": "По избор: сумата, която банката действително е изтеглила от сметката на платеца.",
   "expense.amountPaidEstimate": "≈ {amount} по официалния курс",
   "expense.amountPaidSinglePayerOnly": "Действително платената сума може да се въведе само при един платец. Използва се официалният курс.",
   "expense.amountPaidCheck": "Моля, проверете платената сума.",

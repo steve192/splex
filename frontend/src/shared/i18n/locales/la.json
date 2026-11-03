@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Rata permutationis",
   "expense.exchangeRateDate": "Rata diei {date}",
   "expense.amountPaid": "Summa vere soluta ({currency})",
-  "expense.amountPaidHelp": "Ad libitum: summa quae ex ratione tua a argentaria detracta est.",
+  "expense.amountPaidHelp": "Ad libitum: summa quae ab argentaria ex ratione solventis vere detracta est.",
   "expense.amountPaidEstimate": "≈ {amount} rata publica",
   "expense.amountPaidSinglePayerOnly": "Summa vere soluta tantum cum uno solvente inseri potest. Rata publica adhibetur.",
   "expense.amountPaidCheck": "Summam solutam inspice.",

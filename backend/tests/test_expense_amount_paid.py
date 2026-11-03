@@ -20,6 +20,7 @@ from splex.groups.services import (
 )
 from splex.notifications.models import Notification
 from splex.participants.services import get_or_create_user_participant
+from splex.shared.api import ApiErrorCode
 from splex.shared.errors import ErrorCode
 from splex.sync.models import ClientMutation
 
@@ -487,5 +488,27 @@ def test_offline_sync_rejects_invalid_expense_payload(trip):
     )
 
     assert response.status_code == 400
+    assert response.json()["error"]["code"] == ApiErrorCode.VALIDATION_ERROR
     mutation = ClientMutation.objects.get(client_mutation_id="offline-2")
     assert mutation.status == ClientMutation.Status.FAILED
+
+
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_editing_fills_an_official_rate_that_was_unavailable(trip):
+    CurrencyRateSnapshot.objects.all().delete()
+    expense = _create_with_amount_paid(trip)
+    assert expense.official_exchange_rate is None
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=EXPENSE_DATE,
+        rates={"EUR": "1", "NOK": "10"},
+        source="seed",
+    )
+
+    response = trip["client"].patch(
+        f"/api/expenses/{expense.id}/", {"description": "Fish dinner"}, format="json"
+    )
+
+    assert response.status_code == 200
+    expense.refresh_from_db()
+    assert expense.official_exchange_rate == Decimal("0.10000000")

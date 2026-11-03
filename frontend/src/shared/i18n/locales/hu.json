@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Árfolyam",
   "expense.exchangeRateDate": "Árfolyam dátuma: {date}",
   "expense.amountPaid": "Ténylegesen fizetett ({currency})",
-  "expense.amountPaidHelp": "Nem kötelező: az összeg, amelyet a bankod levont a számládról.",
+  "expense.amountPaidHelp": "Nem kötelező: az összeg, amelyet a bank ténylegesen levont a fizető számlájáról.",
   "expense.amountPaidEstimate": "≈ {amount} hivatalos árfolyamon",
   "expense.amountPaidSinglePayerOnly": "A ténylegesen fizetett összeg csak egy fizető esetén adható meg. A hivatalos árfolyam érvényes.",
   "expense.amountPaidCheck": "Ellenőrizd a fizetett összeget.",

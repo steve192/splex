@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Vaihtokurssi",
   "expense.exchangeRateDate": "Kurssi päivältä {date}",
   "expense.amountPaid": "Todellisuudessa maksettu ({currency})",
-  "expense.amountPaidHelp": "Valinnainen: summa, jonka pankki veloitti tililtäsi.",
+  "expense.amountPaidHelp": "Valinnainen: summa, jonka pankki todellisuudessa veloitti maksajan tililtä.",
   "expense.amountPaidEstimate": "≈ {amount} virallisella kurssilla",
   "expense.amountPaidSinglePayerOnly": "Todellisuudessa maksetun summan voi syöttää vain yhden maksajan kanssa. Käytetään virallista kurssia.",
   "expense.amountPaidCheck": "Tarkista maksettu summa.",

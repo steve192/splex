@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Tasso di cambio",
   "expense.exchangeRateDate": "Tasso del {date}",
   "expense.amountPaid": "Importo effettivamente pagato ({currency})",
-  "expense.amountPaidHelp": "Facoltativo: quanto è uscito dal tuo conto, secondo la tua banca.",
+  "expense.amountPaidHelp": "Facoltativo: quanto è effettivamente uscito dal conto di chi ha pagato, secondo la banca.",
   "expense.amountPaidEstimate": "≈ {amount} al tasso ufficiale",
   "expense.amountPaidSinglePayerOnly": "L'importo effettivamente pagato si può inserire solo con un unico pagante. Viene usato il tasso ufficiale.",
   "expense.amountPaidCheck": "Controlla l'importo pagato.",

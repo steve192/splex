@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Gengi",
   "expense.exchangeRateDate": "Gengi frá {date}",
   "expense.amountPaid": "Raunverulega greitt ({currency})",
-  "expense.amountPaidHelp": "Valfrjálst: upphæðin sem bankinn tók af reikningnum þínum.",
+  "expense.amountPaidHelp": "Valfrjálst: upphæðin sem bankinn tók í raun af reikningi greiðandans.",
   "expense.amountPaidEstimate": "≈ {amount} á opinberu gengi",
   "expense.amountPaidSinglePayerOnly": "Aðeins er hægt að slá inn raunverulega greidda upphæð með einum greiðanda. Opinbert gengi er notað.",
   "expense.amountPaidCheck": "Athugaðu greiddu upphæðina.",

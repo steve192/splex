@@ -76,34 +76,42 @@ export function amountPaidRate(
     : null;
 }
 
-/**
- * The official rate the form compares against: the one stored on the edited
- * expense while its currencies and date are unchanged, otherwise the latest one.
- */
-export function formOfficialRate({
+/** The official rate stored on the edited expense, while its currencies and date are unchanged. */
+export function storedOfficialRate({
   loadedExpense,
   currency,
   contextCurrency,
   date,
-  latestRate,
 }: Readonly<{
   loadedExpense: Expense | null;
   currency: CurrencyCode;
   contextCurrency: CurrencyCode;
   date: string;
-  latestRate: number | null;
 }>): number | null {
   if (
-    loadedExpense?.original_currency === currency &&
-    loadedExpense.converted_currency === contextCurrency &&
-    loadedExpense.date === date
+    loadedExpense?.original_currency !== currency ||
+    loadedExpense.converted_currency !== contextCurrency ||
+    loadedExpense.date !== date
   ) {
-    const storedRate = isAmountPaidExpense(loadedExpense)
-      ? loadedExpense.official_exchange_rate
-      : loadedExpense.exchange_rate;
-    if (storedRate) return asNumber(storedRate);
+    return null;
   }
-  return latestRate;
+  const storedRate = isAmountPaidExpense(loadedExpense)
+    ? loadedExpense.official_exchange_rate
+    : loadedExpense.exchange_rate;
+  return storedRate ? asNumber(storedRate) : null;
+}
+
+/** An amount paid is in the context currency, so it no longer applies once that changes. */
+export function amountPaidAfterContextChange({
+  amountPaid,
+  previousContextCurrency,
+  nextContextCurrency,
+}: Readonly<{
+  amountPaid: string;
+  previousContextCurrency: string | undefined;
+  nextContextCurrency: string;
+}>): string {
+  return previousContextCurrency === nextContextCurrency ? amountPaid : "";
 }
 
 export function officialEstimate(

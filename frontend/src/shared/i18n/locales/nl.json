@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Wisselkoers",
   "expense.exchangeRateDate": "Koers van {date}",
   "expense.amountPaid": "Werkelijk betaald ({currency})",
-  "expense.amountPaidHelp": "Optioneel: wat er volgens je bank van je rekening is afgeschreven.",
+  "expense.amountPaidHelp": "Optioneel: wat de bank werkelijk van de rekening van de betaler heeft afgeschreven.",
   "expense.amountPaidEstimate": "≈ {amount} tegen de officiële koers",
   "expense.amountPaidSinglePayerOnly": "Het werkelijk betaalde bedrag kan alleen met één betaler worden ingevoerd. De officiële koers wordt gebruikt.",
   "expense.amountPaidCheck": "Controleer het betaalde bedrag.",

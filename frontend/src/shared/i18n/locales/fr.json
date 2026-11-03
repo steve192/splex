@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Taux de change",
   "expense.exchangeRateDate": "Taux du {date}",
   "expense.amountPaid": "Montant réellement payé ({currency})",
-  "expense.amountPaidHelp": "Facultatif : le montant débité de votre compte, selon votre banque.",
+  "expense.amountPaidHelp": "Facultatif : le montant réellement débité du compte du payeur, selon la banque.",
   "expense.amountPaidEstimate": "≈ {amount} au taux officiel",
   "expense.amountPaidSinglePayerOnly": "Le montant réellement payé ne peut être saisi qu'avec un seul payeur. Le taux officiel est utilisé.",
   "expense.amountPaidCheck": "Veuillez vérifier le montant payé.",

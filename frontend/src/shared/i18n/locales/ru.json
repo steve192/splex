@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Обменный курс",
   "expense.exchangeRateDate": "Курс от {date}",
   "expense.amountPaid": "Фактически оплачено ({currency})",
-  "expense.amountPaidHelp": "Необязательно: сумма, которую банк списал с вашего счёта.",
+  "expense.amountPaidHelp": "Необязательно: сумма, которую банк фактически списал со счёта плательщика.",
   "expense.amountPaidEstimate": "≈ {amount} по официальному курсу",
   "expense.amountPaidSinglePayerOnly": "Фактически оплаченную сумму можно указать только при одном плательщике. Используется официальный курс.",
   "expense.amountPaidCheck": "Проверьте оплаченную сумму.",

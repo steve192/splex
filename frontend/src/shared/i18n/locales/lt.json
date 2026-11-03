@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Valiutos kursas",
   "expense.exchangeRateDate": "{date} kursas",
   "expense.amountPaid": "Faktiškai sumokėta ({currency})",
-  "expense.amountPaidHelp": "Neprivaloma: suma, kurią bankas nurašė iš jūsų sąskaitos.",
+  "expense.amountPaidHelp": "Neprivaloma: suma, kurią bankas iš tikrųjų nurašė iš mokėtojo sąskaitos.",
   "expense.amountPaidEstimate": "≈ {amount} oficialiu kursu",
   "expense.amountPaidSinglePayerOnly": "Faktiškai sumokėtą sumą galima įvesti tik su vienu mokėtoju. Naudojamas oficialus kursas.",
   "expense.amountPaidCheck": "Patikrinkite sumokėtą sumą.",

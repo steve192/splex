@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Девизен курс",
   "expense.exchangeRateDate": "Курс од {date}",
   "expense.amountPaid": "Реално платено ({currency})",
-  "expense.amountPaidHelp": "Опционално: износот што банката го симна од вашата сметка.",
+  "expense.amountPaidHelp": "Опционално: износот што банката навистина го симна од сметката на плаќачот.",
   "expense.amountPaidEstimate": "≈ {amount} по официјалниот курс",
   "expense.amountPaidSinglePayerOnly": "Реално платениот износ може да се внесе само со еден плаќач. Се користи официјалниот курс.",
   "expense.amountPaidCheck": "Проверете го платениот износ.",

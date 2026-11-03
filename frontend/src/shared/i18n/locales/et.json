@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Vahetuskurss",
   "expense.exchangeRateDate": "Kurss kuupäeval {date}",
   "expense.amountPaid": "Tegelikult makstud ({currency})",
-  "expense.amountPaidHelp": "Valikuline: summa, mille pank sinu kontolt maha võttis.",
+  "expense.amountPaidHelp": "Valikuline: summa, mille pank maksja kontolt tegelikult maha võttis.",
   "expense.amountPaidEstimate": "≈ {amount} ametliku kursiga",
   "expense.amountPaidSinglePayerOnly": "Tegelikult makstud summat saab sisestada ainult ühe maksjaga. Kasutatakse ametlikku kurssi.",
   "expense.amountPaidCheck": "Kontrolli makstud summat.",

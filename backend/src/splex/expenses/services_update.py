@@ -25,7 +25,12 @@ EXPENSE_CONTEXT_FRIENDSHIP = "friendship"
 
 
 def _requested_amount_paid(
-    expense: Expense, data: dict, *, currency: str, context_currency: str, payer_shares: dict
+    expense: Expense,
+    data: dict,
+    *,
+    original_currency: str,
+    context_currency: str,
+    payer_shares: dict[int, Decimal],
 ) -> Decimal | None:
     if "converted_amount" in data:
         return data["converted_amount"]
@@ -33,7 +38,9 @@ def _requested_amount_paid(
         expense.exchange_rate_source == ExchangeRateSource.MANUAL
         and context_currency == expense.converted_currency
         and is_amount_paid_applicable(
-            currency=currency, context_currency=context_currency, payer_shares=payer_shares
+            original_currency=original_currency,
+            context_currency=context_currency,
+            payer_shares=payer_shares,
         )
     )
     return expense.converted_amount if keeps_amount_paid else None
@@ -47,7 +54,9 @@ def _resolve_split_payload(expense: Expense, data: dict, method: str) -> dict:
     return expense.split_metadata
 
 
-def _requested_payer_shares(expense: Expense, data: dict, original_amount) -> dict:
+def _requested_payer_shares(
+    expense: Expense, data: dict, original_amount: Decimal
+) -> dict[int, Decimal]:
     payments = data.get("payments")
     if payments is None:
         # Stored rows are in the context currency; only their proportions are reused.
@@ -137,13 +146,13 @@ def update_expense(*, actor, expense: Expense, data: dict) -> Expense:
     )
     conversion = resolve_expense_conversion(
         amount=original_amount,
-        currency=original_currency,
+        original_currency=original_currency,
         context_currency=currency,
         rate_date=expense_date,
         amount_paid=_requested_amount_paid(
             expense,
             data,
-            currency=original_currency,
+            original_currency=original_currency,
             context_currency=currency,
             payer_shares=payer_shares,
         ),
@@ -175,12 +184,8 @@ def update_expense(*, actor, expense: Expense, data: dict) -> Expense:
             "date",
             "original_amount",
             "original_currency",
-            "converted_amount",
             "converted_currency",
-            "exchange_rate",
-            "exchange_rate_source",
-            "exchange_rate_date",
-            "official_exchange_rate",
+            *conversion.model_fields(),
             "split_method",
             "split_metadata",
             "latitude",

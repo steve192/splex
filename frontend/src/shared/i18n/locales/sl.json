@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Menjalni tečaj",
   "expense.exchangeRateDate": "Tečaj z dne {date}",
   "expense.amountPaid": "Dejansko plačano ({currency})",
-  "expense.amountPaidHelp": "Neobvezno: znesek, ki ga je banka bremenila z vašega računa.",
+  "expense.amountPaidHelp": "Neobvezno: znesek, ki ga je banka dejansko bremenila z računa plačnika.",
   "expense.amountPaidEstimate": "≈ {amount} po uradnem tečaju",
   "expense.amountPaidSinglePayerOnly": "Dejansko plačani znesek lahko vnesete le z enim plačnikom. Uporabi se uradni tečaj.",
   "expense.amountPaidCheck": "Preverite plačani znesek.",

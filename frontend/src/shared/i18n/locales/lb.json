@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Wiesselcours",
   "expense.exchangeRateDate": "Cours vum {date}",
   "expense.amountPaid": "Effektiv bezuelt ({currency})",
-  "expense.amountPaidHelp": "Fakultativ: de Betrag, deen deng Bank vun dengem Kont ofgebucht huet.",
+  "expense.amountPaidHelp": "Fakultativ: de Betrag, deen d'Bank effektiv vum Kont vun der bezuelender Persoun ofgebucht huet.",
   "expense.amountPaidEstimate": "≈ {amount} zum offiziellen Cours",
   "expense.amountPaidSinglePayerOnly": "Den effektiv bezuelte Betrag geet just mat enger bezuelender Persoun. Et gëtt den offiziellen Cours benotzt.",
   "expense.amountPaidCheck": "Kontrolléier w.e.g. de bezuelte Betrag.",

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Rata tal-kambju",
   "expense.exchangeRateDate": "Rata minn {date}",
   "expense.amountPaid": "Ammont attwalment imħallas ({currency})",
-  "expense.amountPaidHelp": "Mhux obbligatorju: l-ammont li l-bank ħareġ mill-kont tiegħek.",
+  "expense.amountPaidHelp": "Mhux obbligatorju: l-ammont li l-bank attwalment ħareġ mill-kont ta' min ħallas.",
   "expense.amountPaidEstimate": "≈ {amount} bir-rata uffiċjali",
   "expense.amountPaidSinglePayerOnly": "L-ammont attwalment imħallas jista' jiddaħħal biss b'persuna waħda li tħallas. Tintuża r-rata uffiċjali.",
   "expense.amountPaidCheck": "Iċċekkja l-ammont imħallas.",

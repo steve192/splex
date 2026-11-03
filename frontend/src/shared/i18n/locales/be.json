@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Абменны курс",
   "expense.exchangeRateDate": "Курс на {date}",
   "expense.amountPaid": "Фактычна заплачана ({currency})",
-  "expense.amountPaidHelp": "Неабавязкова: сума, якую ваш банк спісаў з рахунку.",
+  "expense.amountPaidHelp": "Неабавязкова: сума, якую банк фактычна спісаў з рахунку плацельшчыка.",
   "expense.amountPaidEstimate": "≈ {amount} па афіцыйным курсе",
   "expense.amountPaidSinglePayerOnly": "Фактычна заплачаную суму можна ўвесці толькі пры адным плацельшчыку. Выкарыстоўваецца афіцыйны курс.",
   "expense.amountPaidCheck": "Праверце заплачаную суму.",

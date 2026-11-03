@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Směnný kurz",
   "expense.exchangeRateDate": "Kurz z {date}",
   "expense.amountPaid": "Skutečně zaplaceno ({currency})",
-  "expense.amountPaidHelp": "Volitelné: částka, kterou vám banka strhla z účtu.",
+  "expense.amountPaidHelp": "Volitelné: částka, kterou banka skutečně strhla z účtu plátce.",
   "expense.amountPaidEstimate": "≈ {amount} podle oficiálního kurzu",
   "expense.amountPaidSinglePayerOnly": "Skutečně zaplacenou částku lze zadat jen s jedním plátcem. Použije se oficiální kurz.",
   "expense.amountPaidCheck": "Zkontrolujte prosím zaplacenou částku.",

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Exchange rate",
   "expense.exchangeRateDate": "Rate from {date}",
   "expense.amountPaid": "Amount paid ({currency})",
-  "expense.amountPaidHelp": "Optional: what left your account, as shown by your bank.",
+  "expense.amountPaidHelp": "Optional: what actually left the payer's account, as shown by the bank.",
   "expense.amountPaidEstimate": "≈ {amount} at the official rate",
   "expense.amountPaidSinglePayerOnly": "The amount paid can only be entered with one payer. The official rate is used.",
   "expense.amountPaidCheck": "Please check the amount paid.",

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Valūtas kurss",
   "expense.exchangeRateDate": "Kurss {date}",
   "expense.amountPaid": "Faktiski samaksāts ({currency})",
-  "expense.amountPaidHelp": "Neobligāti: summa, ko banka noņēma no jūsu konta.",
+  "expense.amountPaidHelp": "Neobligāti: summa, ko banka faktiski noņēma no maksātāja konta.",
   "expense.amountPaidEstimate": "≈ {amount} pēc oficiālā kursa",
   "expense.amountPaidSinglePayerOnly": "Faktiski samaksāto summu var ievadīt tikai ar vienu maksātāju. Tiek izmantots oficiālais kurss.",
   "expense.amountPaidCheck": "Lūdzu, pārbaudiet samaksāto summu.",

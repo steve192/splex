@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Curs da barat",
   "expense.exchangeRateDate": "Curs dal {date}",
   "expense.amountPaid": "Effectivamain pajà ({currency})",
-  "expense.amountPaidHelp": "Facultativ: la summa che tia banca ha debità da tes conto.",
+  "expense.amountPaidHelp": "Facultativ: la summa che la banca ha effectivamain debità dal conto da la persuna che paja.",
   "expense.amountPaidEstimate": "≈ {amount} tenor il curs uffizial",
   "expense.amountPaidSinglePayerOnly": "La summa effectivamain pajada po vegnir endatada mo cun ina persuna che paja. I vegn duvrà il curs uffizial.",
   "expense.amountPaidCheck": "Controlla la summa pajada.",

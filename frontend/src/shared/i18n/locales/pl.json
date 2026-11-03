@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Kurs wymiany",
   "expense.exchangeRateDate": "Kurs z {date}",
   "expense.amountPaid": "Faktycznie zapłacono ({currency})",
-  "expense.amountPaidHelp": "Opcjonalnie: kwota, którą bank pobrał z Twojego konta.",
+  "expense.amountPaidHelp": "Opcjonalnie: kwota, którą bank faktycznie pobrał z konta płacącego.",
   "expense.amountPaidEstimate": "≈ {amount} po oficjalnym kursie",
   "expense.amountPaidSinglePayerOnly": "Faktycznie zapłaconą kwotę można podać tylko przy jednym płacącym. Używany jest oficjalny kurs.",
   "expense.amountPaidCheck": "Sprawdź zapłaconą kwotę.",

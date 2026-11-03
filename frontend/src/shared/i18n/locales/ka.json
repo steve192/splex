@@ -236,7 +236,7 @@
   "expense.exchangeRate": "გაცვლითი კურსი",
   "expense.exchangeRateDate": "კურსი {date}-დან",
   "expense.amountPaid": "ფაქტობრივად გადახდილი ({currency})",
-  "expense.amountPaidHelp": "არასავალდებულო: თანხა, რომელიც ბანკმა თქვენი ანგარიშიდან ჩამოჭრა.",
+  "expense.amountPaidHelp": "არასავალდებულო: თანხა, რომელიც ბანკმა რეალურად ჩამოჭრა გადამხდელის ანგარიშიდან.",
   "expense.amountPaidEstimate": "≈ {amount} ოფიციალური კურსით",
   "expense.amountPaidSinglePayerOnly": "ფაქტობრივად გადახდილი თანხის შეყვანა მხოლოდ ერთი გადამხდელის შემთხვევაშია შესაძლებელი. გამოიყენება ოფიციალური კურსი.",
   "expense.amountPaidCheck": "გთხოვთ, გადაამოწმოთ გადახდილი თანხა.",

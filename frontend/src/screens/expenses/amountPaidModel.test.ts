@@ -2,16 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import type { Expense } from "../../shared/types/models";
 import {
+  amountPaidAfterContextChange,
   amountPaidFieldState,
   amountPaidFormValue,
   amountPaidNeedsReview,
   amountPaidPayload,
   amountPaidRate,
-  formOfficialRate,
   isAmountPaidExpense,
   isAmountPaidInvalid,
   officialEstimate,
   rateComparison,
+  storedOfficialRate,
   type AmountPaidFieldState,
 } from "./amountPaidModel";
 
@@ -121,7 +122,7 @@ describe("amountPaidRate", () => {
   });
 });
 
-describe("formOfficialRate", () => {
+describe("storedOfficialRate", () => {
   const officialExpense: Expense = {
     ...amountPaidExpense,
     converted_amount: "107.13",
@@ -133,33 +134,54 @@ describe("formOfficialRate", () => {
     currency: "NOK",
     contextCurrency: "EUR",
     date: "2026-11-02",
-    latestRate: 0.09,
   } as const;
 
-  it("uses the rate stored on an unchanged edited expense", () => {
+  it("returns the official rate stored on an unchanged edited expense", () => {
     expect(
-      formOfficialRate({ ...unchanged, loadedExpense: officialExpense }),
+      storedOfficialRate({ ...unchanged, loadedExpense: officialExpense }),
     ).toBe(0.0857);
     expect(
-      formOfficialRate({ ...unchanged, loadedExpense: amountPaidExpense }),
+      storedOfficialRate({ ...unchanged, loadedExpense: amountPaidExpense }),
     ).toBe(0.0857);
   });
 
-  it("falls back to the latest rate for new or changed expenses", () => {
-    expect(formOfficialRate({ ...unchanged, loadedExpense: null })).toBe(0.09);
+  it("has no stored rate for new or changed expenses", () => {
+    expect(storedOfficialRate({ ...unchanged, loadedExpense: null })).toBeNull();
     expect(
-      formOfficialRate({
+      storedOfficialRate({
         ...unchanged,
         date: "2026-11-03",
         loadedExpense: officialExpense,
       }),
-    ).toBe(0.09);
+    ).toBeNull();
     expect(
-      formOfficialRate({
+      storedOfficialRate({
         ...unchanged,
         loadedExpense: { ...amountPaidExpense, official_exchange_rate: null },
       }),
-    ).toBe(0.09);
+    ).toBeNull();
+  });
+});
+
+describe("amountPaidAfterContextChange", () => {
+  it("keeps the amount paid while the context currency stays the same", () => {
+    expect(
+      amountPaidAfterContextChange({
+        amountPaid: "108.73",
+        previousContextCurrency: "EUR",
+        nextContextCurrency: "EUR",
+      }),
+    ).toBe("108.73");
+  });
+
+  it("clears the amount paid when the context currency changes", () => {
+    expect(
+      amountPaidAfterContextChange({
+        amountPaid: "108.73",
+        previousContextCurrency: "EUR",
+        nextContextCurrency: "CHF",
+      }),
+    ).toBe("");
   });
 });
 

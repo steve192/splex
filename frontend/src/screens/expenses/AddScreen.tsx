@@ -98,6 +98,7 @@ import {
 import type { ActiveSheet } from "./addScreenTypes";
 import { AmountPaidField } from "./AmountPaidField";
 import {
+  amountPaidAfterContextChange,
   amountPaidFieldState,
   amountPaidFormValue,
   amountPaidPayload,
@@ -274,6 +275,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       : null,
     multiPayer,
   });
+  const amountPaidInvalid = isAmountPaidInvalid(amountPaidState, amountPaid);
   const selectedAllParticipants = allParticipantsSelected(
     participants,
     selectedParticipantIds,
@@ -585,7 +587,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     ) {
       return;
     }
-    if (option.currency !== selectedContext?.currency) setAmountPaid("");
+    setAmountPaid((current) =>
+      amountPaidAfterContextChange({
+        amountPaid: current,
+        previousContextCurrency: selectedContext?.currency,
+        nextContextCurrency: option.currency,
+      }),
+    );
     setContextType(option.type);
     setContextId(option.id);
     setCurrency((current) =>
@@ -641,7 +649,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       setMessage(t("group.archivedReadOnly"));
       return;
     }
-    if (splitConfigInvalid || paymentConfigInvalid) return;
+    if (splitConfigInvalid || paymentConfigInvalid || amountPaidInvalid) return;
     setSaving(true);
     const expense: ExpenseSaveExpense = {
       client_id: draftClientId,
@@ -782,7 +790,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     !contextArchived &&
     !splitConfigInvalid &&
     !paymentConfigInvalid &&
-    !isAmountPaidInvalid(amountPaidState, amountPaid);
+    !amountPaidInvalid;
 
   const locationDescription = t(
     expenseLocationDescriptionKey({
@@ -848,6 +856,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 date={date}
                 loadedExpense={loadedExpense}
                 value={amountPaid}
+                invalid={amountPaidInvalid}
                 disabled={contextArchived}
                 onChangeText={setAmountPaid}
               />

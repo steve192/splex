@@ -3,16 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CURRENCY_RATES_PATH,
   bootstrapCurrencyRates,
+  currencyRatePath,
   currencyRatesAreStale,
+  loadCurrencyRate,
   loadCurrencyRates,
 } from "./rates";
 
-const { readCachedResponse, refreshCachedGet } = vi.hoisted(() => ({
+const { cachedGet, readCachedResponse, refreshCachedGet } = vi.hoisted(() => ({
+  cachedGet: vi.fn(),
   readCachedResponse: vi.fn(),
   refreshCachedGet: vi.fn(),
 }));
 
-vi.mock("../lib/offlineCache", () => ({ readCachedResponse, refreshCachedGet }));
+vi.mock("../lib/offlineCache", () => ({
+  cachedGet,
+  readCachedResponse,
+  refreshCachedGet,
+}));
 
 const freshSnapshot = {
   base_currency: "EUR",
@@ -94,5 +101,46 @@ describe("loadCurrencyRates", () => {
     await bootstrapCurrencyRates({} as never);
 
     expect(refreshCachedGet).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadCurrencyRate", () => {
+  it("builds the dated rate path and omits the date for today", () => {
+    expect(
+      currencyRatePath({
+        baseCurrency: "NOK",
+        quoteCurrency: "EUR",
+        date: "2026-11-02",
+      }),
+    ).toBe(
+      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02",
+    );
+    expect(currencyRatePath({ baseCurrency: "NOK", quoteCurrency: "EUR" })).toBe(
+      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR",
+    );
+  });
+
+  it("loads the rate through the offline cache", async () => {
+    const api = {};
+    const rate = {
+      base_currency: "NOK",
+      quote_currency: "EUR",
+      rate: "0.08570000",
+      rate_date: "2026-11-02",
+      source: "frankfurter",
+    };
+    cachedGet.mockResolvedValueOnce(rate);
+
+    await expect(
+      loadCurrencyRate(api as never, {
+        baseCurrency: "NOK",
+        quoteCurrency: "EUR",
+        date: "2026-11-02",
+      }),
+    ).resolves.toEqual(rate);
+    expect(cachedGet).toHaveBeenCalledWith(
+      api,
+      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02",
+    );
   });
 });

@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Tipo de cambio",
   "expense.exchangeRateDate": "Tipo del {date}",
   "expense.amountPaid": "Importe pagado ({currency})",
-  "expense.amountPaidHelp": "Opcional: lo que salió de tu cuenta, según tu banco.",
+  "expense.amountPaidHelp": "Opcional: lo que realmente salió de la cuenta de quien pagó, según el banco.",
   "expense.amountPaidEstimate": "≈ {amount} al tipo oficial",
   "expense.amountPaidSinglePayerOnly": "El importe pagado solo se puede indicar con una sola persona pagadora. Se usa el tipo oficial.",
   "expense.amountPaidCheck": "Revisa el importe pagado.",

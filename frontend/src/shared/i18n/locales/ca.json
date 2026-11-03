@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Tipus de canvi",
   "expense.exchangeRateDate": "Tipus del {date}",
   "expense.amountPaid": "Import pagat ({currency})",
-  "expense.amountPaidHelp": "Opcional: el que ha sortit del teu compte, segons el banc.",
+  "expense.amountPaidHelp": "Opcional: el que realment ha sortit del compte de qui ha pagat, segons el banc.",
   "expense.amountPaidEstimate": "≈ {amount} al tipus oficial",
   "expense.amountPaidSinglePayerOnly": "L'import pagat només es pot indicar amb una sola persona pagadora. S'utilitza el tipus oficial.",
   "expense.amountPaidCheck": "Comprova l'import pagat.",

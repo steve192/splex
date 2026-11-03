@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Döviz kuru",
   "expense.exchangeRateDate": "{date} tarihli kur",
   "expense.amountPaid": "Gerçekte ödenen ({currency})",
-  "expense.amountPaidHelp": "İsteğe bağlı: bankanızın hesabınızdan çektiği tutar.",
+  "expense.amountPaidHelp": "İsteğe bağlı: bankanın ödeyenin hesabından gerçekte çektiği tutar.",
   "expense.amountPaidEstimate": "Resmi kurla ≈ {amount}",
   "expense.amountPaidSinglePayerOnly": "Gerçekte ödenen tutar yalnızca tek ödeyenle girilebilir. Resmi kur kullanılır.",
   "expense.amountPaidCheck": "Lütfen ödenen tutarı kontrol edin.",

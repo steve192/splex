@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Kursi i këmbimit",
   "expense.exchangeRateDate": "Kursi nga {date}",
   "expense.amountPaid": "Shuma e paguar realisht ({currency})",
-  "expense.amountPaidHelp": "Opsionale: shuma që banka ju tërhoqi nga llogaria.",
+  "expense.amountPaidHelp": "Opsionale: shuma që banka tërhoqi realisht nga llogaria e paguesit.",
   "expense.amountPaidEstimate": "≈ {amount} me kursin zyrtar",
   "expense.amountPaidSinglePayerOnly": "Shuma e paguar realisht mund të vendoset vetëm me një pagues. Përdoret kursi zyrtar.",
   "expense.amountPaidCheck": "Ju lutemi kontrolloni shumën e paguar.",

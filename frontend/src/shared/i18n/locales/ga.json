@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Ráta malairte",
   "expense.exchangeRateDate": "Ráta ó {date}",
   "expense.amountPaid": "Méid a íocadh ({currency})",
-  "expense.amountPaidHelp": "Roghnach: an méid a baineadh de do chuntas, de réir do bhainc.",
+  "expense.amountPaidHelp": "Roghnach: an méid a baineadh i ndáiríre de chuntas an íocóra, de réir an bhainc.",
   "expense.amountPaidEstimate": "≈ {amount} ag an ráta oifigiúil",
   "expense.amountPaidSinglePayerOnly": "Ní féidir an méid a íocadh a iontráil ach le híocóir amháin. Úsáidtear an ráta oifigiúil.",
   "expense.amountPaidCheck": "Seiceáil an méid a íocadh.",

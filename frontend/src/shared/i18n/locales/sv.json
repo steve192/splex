@@ -236,7 +236,7 @@
   "expense.exchangeRate": "Växelkurs",
   "expense.exchangeRateDate": "Kurs från {date}",
   "expense.amountPaid": "Faktiskt betalt ({currency})",
-  "expense.amountPaidHelp": "Valfritt: beloppet som drogs från ditt konto enligt banken.",
+  "expense.amountPaidHelp": "Valfritt: beloppet som banken faktiskt drog från betalarens konto.",
   "expense.amountPaidEstimate": "≈ {amount} till officiell kurs",
   "expense.amountPaidSinglePayerOnly": "Faktiskt betalt belopp kan bara anges med en betalare. Den officiella kursen används.",
   "expense.amountPaidCheck": "Kontrollera det betalda beloppet.",
