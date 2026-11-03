@@ -104,6 +104,9 @@ class ExpenseCreateSerializer(serializers.Serializer):
     split_method = serializers.CharField(required=False)
     split_payload = serializers.JSONField(required=False)
     payments = serializers.ListField(child=serializers.DictField(), required=False)
+    converted_amount = serializers.DecimalField(
+        max_digits=12, decimal_places=2, required=False, allow_null=True
+    )
     latitude = serializers.DecimalField(
         max_digits=9, decimal_places=6, required=False, allow_null=True
     )

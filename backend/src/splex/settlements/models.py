@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 
+from splex.currency.constants import ExchangeRateSource
 from splex.shared.managers import SoftDeletableManager
 from splex.shared.models import TimeStampedModel
 
@@ -33,7 +34,9 @@ class Settlement(TimeStampedModel):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3)
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=8, default=1)
-    exchange_rate_source = models.CharField(max_length=80, default="identity")
+    exchange_rate_source = models.CharField(
+        max_length=80, default=ExchangeRateSource.IDENTITY
+    )
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.MANUAL)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
