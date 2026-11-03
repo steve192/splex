@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
-from splex.currency.services import convert_for_rate_date
+from splex.expenses.conversion import resolve_expense_conversion
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.groups.services import assert_group_member
 from splex.notifications.services import create_notifications_for_activity
@@ -188,44 +188,42 @@ def create_expense(*, actor, group=None, friendship=None, data: dict) -> Expense
             return existing
     currency = context_currency(group, friendship)
     expense_date = data.get("date") or timezone.localdate()
-    # Look up rates for the user-facing expense date. The returned rate keeps
-    # the actual provider date so we can show when a fallback rate was used.
-    converted_amount, rate = convert_for_rate_date(
-        data["amount"],
-        data["currency"],
-        currency,
-        expense_date,
-    )
+    original_amount = money(data["amount"])
+    original_currency = data["currency"].upper()
     method = data.get("split_method") or Expense.SplitMethod.EQUAL_ALL
-    participants = context_participants(group, friendship)
     payer_shares = _parse_payer_shares(data.get("payments") or [])
     if not payer_shares:
-        payer_shares[get_or_create_user_participant(actor).id] = money(data["amount"])
+        payer_shares[get_or_create_user_participant(actor).id] = original_amount
     # API payload shares are entered in the expense currency. Ledger shares are
     # stored in the context currency, so validate first and then scale.
-    assert_sum("Payment shares", payer_shares.values(), money(data["amount"]))
-    payer_shares = scale_shares_to_total(payer_shares, converted_amount)
+    assert_sum("Payment shares", payer_shares.values(), original_amount)
     owed_shares = normalize_owed_shares(
-        money(data["amount"]),
+        original_amount,
         method,
         data.get("split_payload") or {},
-        participants,
+        context_participants(group, friendship),
     )
-    assert_sum("Owed shares", owed_shares.values(), money(data["amount"]))
-    owed_shares = scale_shares_to_total(owed_shares, converted_amount)
+    assert_sum("Owed shares", owed_shares.values(), original_amount)
+    conversion = resolve_expense_conversion(
+        amount=original_amount,
+        currency=original_currency,
+        context_currency=currency,
+        rate_date=expense_date,
+        amount_paid=data.get("converted_amount"),
+        payer_count=len(payer_shares),
+    )
+    payer_shares = scale_shares_to_total(payer_shares, conversion.converted_amount)
+    owed_shares = scale_shares_to_total(owed_shares, conversion.converted_amount)
     expense = Expense.objects.create(
         client_id=data.get("client_id", ""),
         group=group,
         friendship=friendship,
         description=data["description"],
         date=expense_date,
-        original_amount=money(data["amount"]),
-        original_currency=data["currency"].upper(),
-        converted_amount=converted_amount,
+        original_amount=original_amount,
+        original_currency=original_currency,
         converted_currency=currency,
-        exchange_rate=rate.rate,
-        exchange_rate_source=rate.source,
-        exchange_rate_date=rate.rate_date,
+        **conversion.model_fields(),
         split_method=method,
         split_metadata=data.get("split_payload") or {},
         latitude=data.get("latitude") if actor.location_tracking_enabled else None,

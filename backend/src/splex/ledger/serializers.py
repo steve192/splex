@@ -31,6 +31,11 @@ def serialize_expense(expense):
         "exchange_rate": str(expense.exchange_rate),
         "exchange_rate_source": expense.exchange_rate_source,
         "exchange_rate_date": expense.exchange_rate_date,
+        "official_exchange_rate": (
+            str(expense.official_exchange_rate)
+            if expense.official_exchange_rate is not None
+            else None
+        ),
         "split_method": expense.split_method,
         "split_payload": expense.split_metadata,
         "latitude": float(expense.latitude) if expense.latitude else None,

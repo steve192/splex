@@ -6,7 +6,11 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 
-from splex.currency.constants import CURRENCY_SNAPSHOT_BASE, SUPPORTED_CURRENCIES
+from splex.currency.constants import (
+    CURRENCY_SNAPSHOT_BASE,
+    SUPPORTED_CURRENCIES,
+    ExchangeRateSource,
+)
 from splex.currency.models import CurrencyRateSnapshot
 from splex.shared.errors import DomainError, ErrorCode
 from splex.shared.money import money
@@ -37,7 +41,7 @@ def _identity_rate(
         base_currency=base_currency,
         quote_currency=quote_currency,
         rate=Decimal("1"),
-        source="identity",
+        source=ExchangeRateSource.IDENTITY,
         fetched_at=timezone.now(),
         rate_date=rate_date,
     )
