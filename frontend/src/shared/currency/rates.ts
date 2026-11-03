@@ -1,5 +1,5 @@
 import type { ApiClient } from "../api/client";
-import { cachedGet, readCachedResponse, refreshCachedGet } from "../lib/offlineCache";
+import { readCachedResponse, refreshCachedGet } from "../lib/offlineCache";
 
 export const CURRENCY_RATES_PATH = "/api/currency/rates/";
 export const CURRENCY_RATE_PATH = "/api/currency/rate/";
@@ -84,10 +84,20 @@ export function currencyRatePath({
   return `${CURRENCY_RATE_PATH}?${params.toString()}`;
 }
 
-/** The official rate the backend applies to an expense on the given date. */
-export function loadCurrencyRate(
+/**
+ * The official rate the backend applies to an expense on the given date. Fresh
+ * when online, so "today" never comes from an older cached day; cached offline.
+ */
+export async function loadCurrencyRate(
   api: ApiClient,
   query: CurrencyRateQuery,
 ): Promise<CurrencyRate> {
-  return cachedGet<CurrencyRate>(api, currencyRatePath(query));
+  const path = currencyRatePath(query);
+  try {
+    return await refreshCachedGet<CurrencyRate>(api, path);
+  } catch (error) {
+    const cached = await readCachedResponse<CurrencyRate>(path);
+    if (cached) return cached;
+    throw error;
+  }
 }

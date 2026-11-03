@@ -2,6 +2,7 @@ from datetime import date
 
 import pytest
 from django.test import override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from splex.accounts.models import User
@@ -75,3 +76,25 @@ def test_currency_rate_api_rejects_unsupported_currency():
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == ApiErrorCode.VALIDATION_ERROR
+
+
+@pytest.mark.django_db
+@override_settings(CURRENCY_RATE_PROVIDER="placeholder")
+def test_currency_rate_api_defaults_to_today():
+    user = User.objects.create_user(email="currency@example.com")
+    CurrencyRateSnapshot.objects.create(
+        base_currency="EUR",
+        rate_date=timezone.localdate(),
+        rates={"EUR": "1", "NOK": "10"},
+        source="today",
+    )
+    client = APIClient()
+    client.force_authenticate(user=user)
+
+    response = client.get(
+        "/api/currency/rate/", {"base_currency": "NOK", "quote_currency": "EUR"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rate"] == "0.10000000"
+    assert response.json()["rate_date"] == timezone.localdate().isoformat()

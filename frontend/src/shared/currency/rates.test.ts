@@ -9,17 +9,12 @@ import {
   loadCurrencyRates,
 } from "./rates";
 
-const { cachedGet, readCachedResponse, refreshCachedGet } = vi.hoisted(() => ({
-  cachedGet: vi.fn(),
+const { readCachedResponse, refreshCachedGet } = vi.hoisted(() => ({
   readCachedResponse: vi.fn(),
   refreshCachedGet: vi.fn(),
 }));
 
-vi.mock("../lib/offlineCache", () => ({
-  cachedGet,
-  readCachedResponse,
-  refreshCachedGet,
-}));
+vi.mock("../lib/offlineCache", () => ({ readCachedResponse, refreshCachedGet }));
 
 const freshSnapshot = {
   base_currency: "EUR",
@@ -105,42 +100,52 @@ describe("loadCurrencyRates", () => {
 });
 
 describe("loadCurrencyRate", () => {
+  const ratePath =
+    "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02";
+  const query = {
+    baseCurrency: "NOK",
+    quoteCurrency: "EUR",
+    date: "2026-11-02",
+  } as const;
+  const rate = {
+    base_currency: "NOK",
+    quote_currency: "EUR",
+    rate: "0.08570000",
+    rate_date: "2026-11-02",
+    source: "frankfurter",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("builds the dated rate path and omits the date for today", () => {
-    expect(
-      currencyRatePath({
-        baseCurrency: "NOK",
-        quoteCurrency: "EUR",
-        date: "2026-11-02",
-      }),
-    ).toBe(
-      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02",
-    );
+    expect(currencyRatePath(query)).toBe(ratePath);
     expect(currencyRatePath({ baseCurrency: "NOK", quoteCurrency: "EUR" })).toBe(
       "/api/currency/rate/?base_currency=NOK&quote_currency=EUR",
     );
   });
 
-  it("loads the rate through the offline cache", async () => {
-    const api = {};
-    const rate = {
-      base_currency: "NOK",
-      quote_currency: "EUR",
-      rate: "0.08570000",
-      rate_date: "2026-11-02",
-      source: "frankfurter",
-    };
-    cachedGet.mockResolvedValueOnce(rate);
+  it("prefers a fresh rate over the cached one", async () => {
+    refreshCachedGet.mockResolvedValueOnce(rate);
 
-    await expect(
-      loadCurrencyRate(api as never, {
-        baseCurrency: "NOK",
-        quoteCurrency: "EUR",
-        date: "2026-11-02",
-      }),
-    ).resolves.toEqual(rate);
-    expect(cachedGet).toHaveBeenCalledWith(
-      api,
-      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02",
-    );
+    await expect(loadCurrencyRate({} as never, query)).resolves.toEqual(rate);
+    expect(refreshCachedGet).toHaveBeenCalledWith({}, ratePath);
+    expect(readCachedResponse).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the cached rate offline", async () => {
+    refreshCachedGet.mockRejectedValueOnce(new Error("offline"));
+    readCachedResponse.mockResolvedValueOnce(rate);
+
+    await expect(loadCurrencyRate({} as never, query)).resolves.toEqual(rate);
+    expect(readCachedResponse).toHaveBeenCalledWith(ratePath);
+  });
+
+  it("fails when offline without a cached rate", async () => {
+    refreshCachedGet.mockRejectedValueOnce(new Error("offline"));
+    readCachedResponse.mockResolvedValueOnce(null);
+
+    await expect(loadCurrencyRate({} as never, query)).rejects.toThrow("offline");
   });
 });

@@ -110,14 +110,8 @@ function AmountPaidHints({
   loadedExpense,
   value,
   officialRate,
-}: Readonly<{
-  amount: string;
-  currency: CurrencyCode;
-  contextCurrency: CurrencyCode;
-  loadedExpense: Expense | null;
-  value: string;
-  officialRate: number | null;
-}>) {
+}: Pick<AmountPaidInputProps, "amount" | "currency" | "loadedExpense" | "value"> &
+  Readonly<{ contextCurrency: CurrencyCode; officialRate: number | null }>) {
   const { t, locale } = useI18n();
   const rate = amountPaidRate(amount, value);
 
