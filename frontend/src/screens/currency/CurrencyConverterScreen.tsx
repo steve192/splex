@@ -19,9 +19,11 @@ import {
 import { Screen } from "../../shared/ui/Screen";
 import type { SelectionOption } from "../../shared/ui/SelectionSheet";
 import {
-  commonConversionRows,
   conversionRate,
   convertedAmount,
+} from "../../shared/currency/conversion";
+import {
+  commonConversionRows,
   currencyPairAfterSelection,
   type ActiveCurrencyPicker,
 } from "./currencyConverterModel";

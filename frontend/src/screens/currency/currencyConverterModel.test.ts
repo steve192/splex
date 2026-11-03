@@ -3,29 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   COMMON_CONVERSION_AMOUNTS,
   commonConversionRows,
-  conversionRate,
   currencyForActivePicker,
   currencyPairAfterSelection,
   currencyPickerTitleKey,
-  convertedAmount,
 } from "./currencyConverterModel";
 
 const rates = { EUR: "1", USD: "1.08", GBP: "0.86" };
 
 describe("currency converter model", () => {
-  it("converts through the snapshot base currency", () => {
-    expect(convertedAmount("100", "USD", "GBP", rates)).toBeCloseTo(
-      79.62962963,
-    );
-    expect(conversionRate("EUR", "USD", rates)).toBe(1.08);
-  });
-
-  it("accepts decimal commas and rejects invalid amounts or rates", () => {
-    expect(convertedAmount("12,5", "EUR", "USD", rates)).toBe(13.5);
-    expect(convertedAmount("12.", "EUR", "USD", rates)).toBeNull();
-    expect(convertedAmount("12", "EUR", "CHF", rates)).toBeNull();
-  });
-
   it("builds common conversion rows from the shared common amount list", () => {
     const rows = commonConversionRows("EUR", "USD", rates);
 

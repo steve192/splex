@@ -36,9 +36,11 @@ import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { expenseDetailViewState } from "./expenseLoading";
+import { isAmountPaidExpense } from "./amountPaidModel";
 import {
   expenseExchangeRateText,
   expensePersonalNet,
+  expenseRateComparison,
   isConvertedExpense,
 } from "./expenseDetailModel";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
@@ -313,20 +315,39 @@ function ExpenseMetrics({
           <Card.Content>
             <Text variant="labelLarge">{t("expense.exchangeRate")}</Text>
             <Text variant="titleMedium">{exchangeRateText}</Text>
-            {/* This is the provider/snapshot date for the displayed rate, not
-                just the purchase date. They differ when the backend falls back. */}
-            {expense.exchange_rate_date ? (
-              <Text variant="bodySmall">
-                {t("expense.exchangeRateDate", {
-                  date: formatDeviceDate(expense.exchange_rate_date),
-                })}
-              </Text>
-            ) : null}
+            <ExchangeRateOrigin expense={expense} />
           </Card.Content>
         </Card>
       ) : null}
     </View>
   );
+}
+
+function ExchangeRateOrigin({ expense }: Readonly<{ expense: Expense }>) {
+  const { t, locale } = useI18n();
+
+  if (isAmountPaidExpense(expense)) {
+    const comparison = expenseRateComparison(expense, locale);
+    return (
+      <>
+        <Text variant="bodySmall">{t("expense.rateFromAmountPaid")}</Text>
+        {comparison ? (
+          <Text variant="bodySmall">
+            {t(comparison.key, { percent: comparison.percent })}
+          </Text>
+        ) : null}
+      </>
+    );
+  }
+  // This is the provider/snapshot date for the displayed rate, not just the
+  // purchase date. They differ when the backend falls back.
+  return expense.exchange_rate_date ? (
+    <Text variant="bodySmall">
+      {t("expense.exchangeRateDate", {
+        date: formatDeviceDate(expense.exchange_rate_date),
+      })}
+    </Text>
+  ) : null;
 }
 
 function ExpenseSharesCard({ expense }: Readonly<{ expense: Expense }>) {

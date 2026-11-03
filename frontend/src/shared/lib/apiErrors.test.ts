@@ -76,6 +76,8 @@ describe("apiErrorMessage", () => {
   it.each([
     ["currency_rate_unavailable", "apiError.currencyRateUnavailable"],
     ["expense_access_denied", "expense.accessDenied"],
+    ["expense_amount_paid_invalid", "expense.amountPaidInvalid"],
+    ["expense_amount_paid_not_applicable", "expense.amountPaidNotApplicable"],
     ["expense_context_required", "expense.contextRequired"],
     ["expense_friend_move_forbidden", "expense.friendMoveForbidden"],
     ["expense_move_group_only", "expense.moveGroupOnly"],

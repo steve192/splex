@@ -95,6 +95,14 @@ import {
   type ExpenseSavePayload,
 } from "./addScreenSaveModel";
 import type { ActiveSheet } from "./addScreenTypes";
+import { AmountPaidField } from "./AmountPaidField";
+import {
+  amountPaidFieldState,
+  amountPaidFormValue,
+  amountPaidNeedsReview,
+  amountPaidPayload,
+  isAmountPaidInvalid,
+} from "./amountPaidModel";
 
 type AddScreenProps =
   | NativeStackScreenProps<OverviewStackParamList, "AddExpense">
@@ -131,6 +139,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<CurrencyCode>("EUR");
+  const [amountPaid, setAmountPaid] = useState("");
   const [date, setDate] = useState("");
   const [splitMethod, setSplitMethod] = useState<SplitMethod>("equal_all");
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<
@@ -208,6 +217,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     setDescription("");
     setAmount("");
     setCurrency("EUR");
+    setAmountPaid("");
     setDate("");
     setSplitMethod("equal_all");
     setSelectedParticipantIds([]);
@@ -257,6 +267,14 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
   });
   const canRevealOptions =
     description.trim().length > 0 && amount.trim().length > 0;
+  const contextCurrency = selectedContext
+    ? currencyCodeOrFallback(selectedContext.currency)
+    : null;
+  const amountPaidState = amountPaidFieldState({
+    currency,
+    contextCurrency,
+    multiPayer,
+  });
   const selectedAllParticipants = allParticipantsSelected(
     participants,
     selectedParticipantIds,
@@ -369,6 +387,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setDescription(expense.description);
         setAmount(expense.original_amount);
         setCurrency(currencyCodeOrFallback(expense.original_currency));
+        setAmountPaid(amountPaidFormValue(expense));
         setDate(expense.date);
         setSplitMethod(expense.split_method);
         setContextType(expense.group_id ? "group" : "friendship");
@@ -414,6 +433,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
             description: string;
             amount: string;
             currency: string;
+            converted_amount?: string | null;
             date?: string;
             split_method?: SplitMethod;
             split_payload?: Record<string, any>;
@@ -426,6 +446,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         setDescription(expense.description);
         setAmount(expense.amount);
         setCurrency(currencyCodeOrFallback(expense.currency));
+        setAmountPaid(expense.converted_amount ?? "");
         setDate(expense.date ?? "");
         const splitMethodFromPayload = expense.split_method ?? "equal_all";
         setSplitMethod(splitMethodFromPayload);
@@ -621,6 +642,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
       description: description.trim(),
       amount: moneyValue(amount),
       currency: currency.toUpperCase(),
+      converted_amount: amountPaidPayload(amountPaidState, amountPaid),
       date: date || undefined,
       split_method: effectiveSplitMethod(splitMethod, selectedAllParticipants),
       split_payload: buildSplitPayload({
@@ -678,6 +700,7 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
         prepareNextCreateDraft();
         setDescription("");
         setAmount("");
+        setAmountPaid("");
         setDate("");
         setSplitValues({});
         setPaymentValues({});
@@ -752,7 +775,8 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     selectedParticipantIds.length > 0 &&
     !contextArchived &&
     !splitConfigInvalid &&
-    !paymentConfigInvalid;
+    !paymentConfigInvalid &&
+    !isAmountPaidInvalid(amountPaidState, amountPaid);
 
   const locationDescription = t(
     expenseLocationDescriptionKey({
@@ -810,6 +834,22 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
                 {currency}
               </Button>
             </View>
+            {contextCurrency && amountPaidState !== "hidden" ? (
+              <AmountPaidField
+                state={amountPaidState}
+                amount={amount}
+                currency={currency}
+                contextCurrency={contextCurrency}
+                value={amountPaid}
+                needsReview={amountPaidNeedsReview({
+                  loadedExpense,
+                  amount,
+                  amountPaid,
+                })}
+                disabled={contextArchived}
+                onChangeText={setAmountPaid}
+              />
+            ) : null}
             <LocationSuggestionsInput
               value={description}
               onChangeText={setDescription}

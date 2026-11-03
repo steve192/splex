@@ -8,6 +8,7 @@ import {
   useTheme,
 } from "react-native-paper";
 
+import { formatExchangeRate } from "../../shared/currency/conversion";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import type { CurrencyRatesSnapshot } from "../../shared/currency/rates";
 import type { CurrencyCode } from "../../shared/lib/currencies";
@@ -34,12 +35,6 @@ function formatMoney(
     currencyDisplay: "code",
     maximumFractionDigits: 2,
   }).format(amount);
-}
-
-function formatRate(rate: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { maximumSignificantDigits: 6 }).format(
-    rate,
-  );
 }
 
 function formatFetchedAt(fetchedAt: string, locale: string): string {
@@ -319,7 +314,7 @@ function CurrencyResultCard({
             {t("currencyConverter.rate", {
               from: fromCurrency,
               to: toCurrency,
-              rate: formatRate(rate, locale),
+              rate: formatExchangeRate(rate, locale),
             })}
           </Text>
         ) : null}

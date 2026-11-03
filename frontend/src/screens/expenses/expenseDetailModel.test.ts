@@ -4,6 +4,7 @@ import type { Expense } from "../../shared/types/models";
 import {
   expenseExchangeRateText,
   expensePersonalNet,
+  expenseRateComparison,
   isConvertedExpense,
 } from "./expenseDetailModel";
 
@@ -54,6 +55,52 @@ describe("expenseExchangeRateText", () => {
 
   it("omits exchange-rate text when no conversion happened", () => {
     expect(expenseExchangeRateText(baseExpense)).toBeNull();
+  });
+});
+
+describe("expenseRateComparison", () => {
+  const foreignExpense: Expense = {
+    ...baseExpense,
+    original_currency: "NOK",
+    original_amount: "1250.00",
+    converted_amount: "108.73",
+    exchange_rate: "0.08698400",
+  };
+
+  it("compares an amount-paid rate with the stored official rate", () => {
+    expect(
+      expenseRateComparison(
+        {
+          ...foreignExpense,
+          exchange_rate_source: "manual",
+          official_exchange_rate: "0.08570000",
+        },
+        "en",
+      ),
+    ).toEqual({
+      key: "expense.rateAboveOfficial",
+      percent: "1.5%",
+      suspicious: false,
+    });
+  });
+
+  it("has no comparison for official rates or a missing official rate", () => {
+    expect(
+      expenseRateComparison(
+        { ...foreignExpense, exchange_rate_source: "frankfurter" },
+        "en",
+      ),
+    ).toBeNull();
+    expect(
+      expenseRateComparison(
+        {
+          ...foreignExpense,
+          exchange_rate_source: "manual",
+          official_exchange_rate: null,
+        },
+        "en",
+      ),
+    ).toBeNull();
   });
 });
 
