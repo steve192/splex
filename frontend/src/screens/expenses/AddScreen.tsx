@@ -79,6 +79,7 @@ import { AddScreenSheets } from "./AddScreenSheets";
 import {
   activeContextOptions,
   allParticipantsSelected,
+  expenseCurrencyAfterContextChange,
   loadedFriendContext,
   loadedGroupContext,
   nextPayerId,
@@ -587,7 +588,13 @@ export function AddScreen({ route, navigation }: AddScreenProps) {
     if (option.currency !== selectedContext?.currency) setAmountPaid("");
     setContextType(option.type);
     setContextId(option.id);
-    setCurrency(currencyCodeOrFallback(option.currency));
+    setCurrency((current) =>
+      expenseCurrencyAfterContextChange({
+        editing,
+        currency: current,
+        contextCurrency: currencyCodeOrFallback(option.currency),
+      }),
+    );
     setContextArchived(false);
     setArchivedContextOption(null);
     // Only contexts chosen here (i.e. when opened from navigation) are remembered.
