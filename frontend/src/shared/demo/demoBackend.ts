@@ -7,6 +7,7 @@
  */
 import { demoFixtures, groupDetail, statisticsForFriend, statisticsForGroup } from "./demoFixtures";
 import { DemoWriteBlockedError, notifyDemoWriteBlocked } from "./demoMode";
+import type { CurrencyRate } from "../currency/rates";
 import { CURRENCIES } from "../lib/currencies";
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
@@ -79,6 +80,17 @@ const STATIC_GET_RESPONSES: Record<string, () => unknown> = {
   "/api/me/payment-methods/": () => demoFixtures.paymentMethods
 };
 
+function demoCurrencyRate(query: string): CurrencyRate {
+  const params = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query);
+  return {
+    base_currency: params.get("base_currency") ?? "",
+    quote_currency: params.get("quote_currency") ?? "",
+    rate: "1",
+    rate_date: params.get("date") ?? "2026-06-26",
+    source: "frankfurter"
+  };
+}
+
 function handleGroupSubpath(groupId: number, segments: string[], query: string): unknown {
   if (segments.length === 3) return groupDetail(groupId);
   const tail = segments.slice(3).join("/");
@@ -114,6 +126,7 @@ function handleFriendSubpath(friendId: number, segments: string[], query: string
 function handleGet(path: string, query: string): unknown {
   const staticResponse = STATIC_GET_RESPONSES[path];
   if (staticResponse) return staticResponse();
+  if (path === "/api/currency/rate/") return demoCurrencyRate(query);
 
   const segments = path.split("/").filter(Boolean);
   if (segments[0] !== "api") return undefined;

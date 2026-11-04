@@ -40,7 +40,7 @@ I started looking for an open source alternative that matched my needs. I found 
 - Track expenses in groups (any number of people) and 1-to-1 with friends
 - Five split methods per expense: equal, equal among selected, exact amounts, percentages, and adjusted-equal
 - Multiple payers per expense (e.g. you cover 70 €, your partner 30 €)
-- Multi-currency expenses with automatic conversion at the time of entry
+- Multi-currency expenses with automatic conversion at the time of entry, or at the amount your bank actually charged (so card fees are shared too)
 - Optional location for each expense, with a small map on the detail screen
 - Suggestions for nearby expense descriptions based on your history
 - Receipt attachments: upload images (JPEG/PNG/WebP) or PDFs per expense, up to a configurable size limit and per-group total quota

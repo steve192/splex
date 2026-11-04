@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 SUPPORTED_CURRENCIES = (
     "AED", "AFN", "ALL", "AMD", "ANG", "AOA", "ARS", "AUD", "AWG", "AZN",
     "BAM", "BBD", "BDT", "BHD", "BIF", "BMD", "BND", "BOB", "BRL", "BSD",
@@ -19,3 +21,8 @@ SUPPORTED_CURRENCIES = (
 )
 
 CURRENCY_SNAPSHOT_BASE = "EUR"
+
+
+class ExchangeRateSource(StrEnum):
+    IDENTITY = "identity"
+    MANUAL = "manual"

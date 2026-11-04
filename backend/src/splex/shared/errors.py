@@ -50,6 +50,8 @@ class ErrorCode(StrEnum):
     CURRENCY_RATE_UNAVAILABLE = "currency_rate_unavailable"
     EXPENSE_ACCESS_DENIED = "expense_access_denied"
     EXPENSE_ADJUSTMENT_NEGATIVE = "expense_adjustment_negative"
+    EXPENSE_AMOUNT_PAID_INVALID = "expense_amount_paid_invalid"
+    EXPENSE_AMOUNT_PAID_NOT_APPLICABLE = "expense_amount_paid_not_applicable"
     EXPENSE_CONTEXT_REQUIRED = "expense_context_required"
     EXPENSE_FRIEND_MOVE_FORBIDDEN = "expense_friend_move_forbidden"
     EXPENSE_MOVE_GROUP_ONLY = "expense_move_group_only"

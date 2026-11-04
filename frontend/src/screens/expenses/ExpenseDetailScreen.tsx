@@ -21,6 +21,7 @@ import {
   ActivityStackParamList,
   OverviewStackParamList,
 } from "../../application/navigationTypes";
+import { formatExchangeRate } from "../../shared/currency/conversion";
 import { useI18n } from "../../shared/i18n/I18nContext";
 import { useSnackbar } from "../../shared/feedback/SnackbarContext";
 import { apiWriteErrorMessage } from "../../shared/lib/apiErrors";
@@ -36,9 +37,11 @@ import { ReceiptList } from "../../shared/receipts/ReceiptList";
 import { Screen } from "../../shared/ui/Screen";
 import { styles } from "../../shared/ui/styles";
 import { expenseDetailViewState } from "./expenseLoading";
+import { isAmountPaidExpense } from "./amountPaidModel";
 import {
-  expenseExchangeRateText,
+  expenseExchangeRate,
   expensePersonalNet,
+  expenseRateComparison,
   isConvertedExpense,
 } from "./expenseDetailModel";
 import { isGroupArchived } from "../groups/groupArchivePolicy";
@@ -270,8 +273,8 @@ function ExpenseMetrics({
   expense,
   personalNet,
 }: Readonly<{ expense: Expense; personalNet: number | null }>) {
-  const { t } = useI18n();
-  const exchangeRateText = expenseExchangeRateText(expense);
+  const { t, locale } = useI18n();
+  const exchangeRate = expenseExchangeRate(expense);
 
   return (
     <View style={styles.metricGrid}>
@@ -308,25 +311,50 @@ function ExpenseMetrics({
           </Card.Content>
         </Card>
       ) : null}
-      {exchangeRateText ? (
+      {exchangeRate === null ? null : (
         <Card mode="elevated" style={styles.metricTile}>
           <Card.Content>
             <Text variant="labelLarge">{t("expense.exchangeRate")}</Text>
-            <Text variant="titleMedium">{exchangeRateText}</Text>
-            {/* This is the provider/snapshot date for the displayed rate, not
-                just the purchase date. They differ when the backend falls back. */}
-            {expense.exchange_rate_date ? (
-              <Text variant="bodySmall">
-                {t("expense.exchangeRateDate", {
-                  date: formatDeviceDate(expense.exchange_rate_date),
-                })}
-              </Text>
-            ) : null}
+            <Text variant="titleMedium">
+              {t("currency.rate", {
+                from: expense.original_currency,
+                rate: formatExchangeRate(exchangeRate, locale),
+                to: expense.converted_currency,
+              })}
+            </Text>
+            <ExchangeRateOrigin expense={expense} />
           </Card.Content>
         </Card>
-      ) : null}
+      )}
     </View>
   );
+}
+
+function ExchangeRateOrigin({ expense }: Readonly<{ expense: Expense }>) {
+  const { t, locale } = useI18n();
+
+  if (isAmountPaidExpense(expense)) {
+    const comparison = expenseRateComparison(expense, locale);
+    return (
+      <>
+        <Text variant="bodySmall">{t("expense.rateFromAmountPaid")}</Text>
+        {comparison ? (
+          <Text variant="bodySmall">
+            {t(comparison.key, { percent: comparison.percent })}
+          </Text>
+        ) : null}
+      </>
+    );
+  }
+  // This is the provider/snapshot date for the displayed rate, not just the
+  // purchase date. They differ when the backend falls back.
+  return expense.exchange_rate_date ? (
+    <Text variant="bodySmall">
+      {t("expense.exchangeRateDate", {
+        date: formatDeviceDate(expense.exchange_rate_date),
+      })}
+    </Text>
+  ) : null;
 }
 
 function ExpenseSharesCard({ expense }: Readonly<{ expense: Expense }>) {

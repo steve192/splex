@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { Expense } from "../../shared/types/models";
 import {
-  expenseExchangeRateText,
+  expenseExchangeRate,
   expensePersonalNet,
+  expenseRateComparison,
   isConvertedExpense,
 } from "./expenseDetailModel";
 
@@ -38,10 +39,10 @@ describe("isConvertedExpense", () => {
   });
 });
 
-describe("expenseExchangeRateText", () => {
-  it("shows the stored conversion rate for converted expenses", () => {
+describe("expenseExchangeRate", () => {
+  it("returns the stored conversion rate for converted expenses", () => {
     expect(
-      expenseExchangeRateText({
+      expenseExchangeRate({
         ...baseExpense,
         original_currency: "NOK",
         converted_currency: "EUR",
@@ -49,11 +50,57 @@ describe("expenseExchangeRateText", () => {
         converted_amount: "430.00",
         exchange_rate: "0.08600000",
       }),
-    ).toBe("1 NOK = 0.08600000 EUR");
+    ).toBe(0.086);
   });
 
-  it("omits exchange-rate text when no conversion happened", () => {
-    expect(expenseExchangeRateText(baseExpense)).toBeNull();
+  it("omits the rate when no conversion happened", () => {
+    expect(expenseExchangeRate(baseExpense)).toBeNull();
+  });
+});
+
+describe("expenseRateComparison", () => {
+  const foreignExpense: Expense = {
+    ...baseExpense,
+    original_currency: "NOK",
+    original_amount: "1250.00",
+    converted_amount: "108.73",
+    exchange_rate: "0.08698400",
+  };
+
+  it("compares an amount-paid rate with the stored official rate", () => {
+    expect(
+      expenseRateComparison(
+        {
+          ...foreignExpense,
+          exchange_rate_source: "manual",
+          official_exchange_rate: "0.08570000",
+        },
+        "en",
+      ),
+    ).toEqual({
+      key: "expense.rateAboveOfficial",
+      percent: "1.5%",
+      suspicious: false,
+    });
+  });
+
+  it("has no comparison for official rates or a missing official rate", () => {
+    expect(
+      expenseRateComparison(
+        { ...foreignExpense, exchange_rate_source: "frankfurter" },
+        "en",
+      ),
+    ).toBeNull();
+    expect(
+      expenseRateComparison(
+        {
+          ...foreignExpense,
+          exchange_rate_source: "manual",
+          official_exchange_rate: null,
+        },
+        "en",
+      ),
+    ).toBeNull();
   });
 });
 

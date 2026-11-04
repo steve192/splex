@@ -4,6 +4,7 @@ import type { Friend, Group } from "../../shared/types/models";
 import {
   activeContextOptions,
   allParticipantsSelected,
+  expenseCurrencyAfterContextChange,
   loadedFriendContext,
   loadedGroupContext,
   nextPayerId,
@@ -128,5 +129,27 @@ describe("allParticipantsSelected", () => {
     expect(allParticipantsSelected(participants, [11, 12])).toBe(true);
     expect(allParticipantsSelected(participants, [11])).toBe(false);
     expect(allParticipantsSelected(participants, [11, 99])).toBe(false);
+  });
+});
+
+describe("expenseCurrencyAfterContextChange", () => {
+  it("starts a new expense in the chosen context currency", () => {
+    expect(
+      expenseCurrencyAfterContextChange({
+        editing: false,
+        currency: "NOK",
+        contextCurrency: "EUR",
+      }),
+    ).toBe("EUR");
+  });
+
+  it("keeps the receipt currency when an expense is moved", () => {
+    expect(
+      expenseCurrencyAfterContextChange({
+        editing: true,
+        currency: "NOK",
+        contextCurrency: "EUR",
+      }),
+    ).toBe("NOK");
   });
 });

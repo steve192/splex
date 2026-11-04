@@ -91,6 +91,22 @@ describe("demoBackend GET", () => {
   });
 });
 
+describe("demoBackend currency rate", () => {
+  it("returns the demo's flat rate for the requested pair and date", async () => {
+    const rate = await handleDemoRequest(
+      "GET",
+      "/api/currency/rate/?base_currency=USD&quote_currency=EUR&date=2026-06-20",
+    );
+    expect(rate).toEqual({
+      base_currency: "USD",
+      quote_currency: "EUR",
+      rate: "1",
+      rate_date: "2026-06-20",
+      source: "frankfurter",
+    });
+  });
+});
+
 describe("demoBackend writes", () => {
   beforeEach(() => {
     vi.clearAllMocks();

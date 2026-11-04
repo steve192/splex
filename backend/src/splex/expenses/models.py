@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 
+from splex.currency.constants import ExchangeRateSource
 from splex.shared.managers import SoftDeletableManager
 from splex.shared.models import TimeStampedModel
 
@@ -29,10 +30,16 @@ class Expense(TimeStampedModel):
     converted_amount = models.DecimalField(max_digits=12, decimal_places=2)
     converted_currency = models.CharField(max_length=3)
     exchange_rate = models.DecimalField(max_digits=18, decimal_places=8, default=1)
-    exchange_rate_source = models.CharField(max_length=80, default="identity")
+    exchange_rate_source = models.CharField(
+        max_length=80, default=ExchangeRateSource.IDENTITY
+    )
     # Date represented by exchange_rate. Usually equals date; differs when the
     # requested historical rate is unavailable and conversion falls back.
     exchange_rate_date = models.DateField(null=True, blank=True)
+    # Provider rate for comparison when exchange_rate is derived from the amount paid.
+    official_exchange_rate = models.DecimalField(
+        max_digits=18, decimal_places=8, null=True, blank=True
+    )
     split_method = models.CharField(max_length=32, choices=SplitMethod.choices)
     split_metadata = models.JSONField(default=dict, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)

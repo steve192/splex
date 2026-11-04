@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from splex.activity.events import EventType
 from splex.activity.services import record_activity
+from splex.currency.constants import ExchangeRateSource
 from splex.expenses.models import Expense, ExpenseOwedShare, ExpensePaymentShare
 from splex.friends.models import Friendship
 from splex.friends.services import active_friendship_for, get_or_create_friendship
@@ -298,7 +299,7 @@ def _settle_and_soft_delete(*, group: Group, participant: Participant) -> int:
             amount=amount,
             currency=group.default_currency,
             exchange_rate=1,
-            exchange_rate_source="identity",
+            exchange_rate_source=ExchangeRateSource.IDENTITY,
             kind=Settlement.Kind.AUTO_WRITE_OFF,
         )
 

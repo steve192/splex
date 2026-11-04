@@ -1,3 +1,4 @@
+import type { CurrencyCode } from "../../shared/lib/currencies";
 import {
   buildParticipantsForFriend,
 } from "../../shared/lib/money";
@@ -139,4 +140,17 @@ export function allParticipantsSelected(
       selectedParticipantIds.includes(participant.id),
     )
   );
+}
+
+/** Editing keeps the receipt currency; a new expense starts in the context currency. */
+export function expenseCurrencyAfterContextChange({
+  editing,
+  currency,
+  contextCurrency,
+}: Readonly<{
+  editing: boolean;
+  currency: CurrencyCode;
+  contextCurrency: CurrencyCode;
+}>): CurrencyCode {
+  return editing ? currency : contextCurrency;
 }

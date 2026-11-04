@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CURRENCY_RATES_PATH,
   bootstrapCurrencyRates,
+  currencyRatePath,
   currencyRatesAreStale,
+  loadCurrencyRate,
   loadCurrencyRates,
 } from "./rates";
 
@@ -94,5 +96,56 @@ describe("loadCurrencyRates", () => {
     await bootstrapCurrencyRates({} as never);
 
     expect(refreshCachedGet).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadCurrencyRate", () => {
+  const ratePath =
+    "/api/currency/rate/?base_currency=NOK&quote_currency=EUR&date=2026-11-02";
+  const query = {
+    baseCurrency: "NOK",
+    quoteCurrency: "EUR",
+    date: "2026-11-02",
+  } as const;
+  const rate = {
+    base_currency: "NOK",
+    quote_currency: "EUR",
+    rate: "0.08570000",
+    rate_date: "2026-11-02",
+    source: "frankfurter",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("builds the dated rate path and omits the date for today", () => {
+    expect(currencyRatePath(query)).toBe(ratePath);
+    expect(currencyRatePath({ baseCurrency: "NOK", quoteCurrency: "EUR" })).toBe(
+      "/api/currency/rate/?base_currency=NOK&quote_currency=EUR",
+    );
+  });
+
+  it("prefers a fresh rate over the cached one", async () => {
+    refreshCachedGet.mockResolvedValueOnce(rate);
+
+    await expect(loadCurrencyRate({} as never, query)).resolves.toEqual(rate);
+    expect(refreshCachedGet).toHaveBeenCalledWith({}, ratePath);
+    expect(readCachedResponse).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the cached rate offline", async () => {
+    refreshCachedGet.mockRejectedValueOnce(new Error("offline"));
+    readCachedResponse.mockResolvedValueOnce(rate);
+
+    await expect(loadCurrencyRate({} as never, query)).resolves.toEqual(rate);
+    expect(readCachedResponse).toHaveBeenCalledWith(ratePath);
+  });
+
+  it("fails when offline without a cached rate", async () => {
+    refreshCachedGet.mockRejectedValueOnce(new Error("offline"));
+    readCachedResponse.mockResolvedValueOnce(null);
+
+    await expect(loadCurrencyRate({} as never, query)).rejects.toThrow("offline");
   });
 });

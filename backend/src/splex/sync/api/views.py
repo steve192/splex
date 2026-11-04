@@ -5,12 +5,14 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from splex.expenses.models import Expense
 from splex.expenses.services import create_expense
 from splex.friends.models import Friendship
+from splex.groups.api.serializers import ExpenseCreateSerializer
 from splex.groups.models import Group
 from splex.ledger.serializers import serialize_expense
 from splex.shared.errors import DomainError, ErrorCode
@@ -62,17 +64,19 @@ class SyncMutationsView(APIView):
 
             with transaction.atomic():
                 context_type = payload["context_type"]
+                serializer = ExpenseCreateSerializer(data=payload["expense"])
+                serializer.is_valid(raise_exception=True)
                 if context_type == "group":
                     expense = create_expense(
                         actor=request.user,
                         group=Group.objects.get(id=payload["context_id"]),
-                        data=payload["expense"],
+                        data=serializer.validated_data,
                     )
                 elif context_type == "friendship":
                     expense = create_expense(
                         actor=request.user,
                         friendship=Friendship.objects.get(id=payload["context_id"]),
-                        data=payload["expense"],
+                        data=serializer.validated_data,
                     )
                 else:
                     raise DomainError(
@@ -94,7 +98,7 @@ class SyncMutationsView(APIView):
                 mutation.processed_at = timezone.now()
                 mutation.save(update_fields=["response_payload", "status", "processed_at"])
             return Response(response_payload, status=status.HTTP_201_CREATED)
-        except DomainError:
+        except (DomainError, ValidationError):
             if mutation is not None:
                 ClientMutation.objects.filter(pk=mutation.pk).update(
                     status=ClientMutation.Status.FAILED,
