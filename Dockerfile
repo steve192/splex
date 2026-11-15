@@ -27,7 +27,7 @@ ENV LANDING_SITE_URL=${LANDING_SITE_URL}
 ENV ASTRO_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM python:3.14-slim AS backend
+FROM python:3.15-slim AS backend
 LABEL org.opencontainers.image.source=https://github.com/steve192/splex
 
 ENV PYTHONDONTWRITEBYTECODE=1
