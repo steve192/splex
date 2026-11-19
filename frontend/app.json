@@ -2,7 +2,7 @@
   "expo": {
     "name": "Splex",
     "slug": "splex",
-    "version": "2.8.19",
+    "version": "2.8.20",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/pwa-maskable-icon.png",
