@@ -21,7 +21,7 @@ dependencies = [
   "psycopg[binary]==3.3.9",
   "python-dotenv==1.2.4",
   "requests==2.34.2",
-  "gunicorn==26.2.0",
+  "gunicorn==27.0.1",
   "pywebpush==2.5.0",
   "Pillow==13.0.0",
   "whitenoise==6.12.0",
